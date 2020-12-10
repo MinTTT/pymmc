@@ -5,6 +5,8 @@ from pycromanager import Acquisition, multi_d_acquisition_events
 import time
 import tifffile as tiff
 import os
+import json
+import sys
 bridge = Bridge()
 
 bridge.get_core()
@@ -36,7 +38,7 @@ def snap_image(**kwargs):
     :param kwargs: 'exposure'
     :return:
     """
-    core = bridge.get_core()
+    # core = bridge.get_core()
     if 'exposure' in kwargs:
         core.set_exposure(kwargs['exposure'])
     core.snap_image()
@@ -46,7 +48,7 @@ def snap_image(**kwargs):
     return im, tagged_image.tags
 
 
-def save_image(im, meta, dir, name):
+def save_image(im, dir, name, meta):
     """
     save image acquired to defined dir.
     :param im: ndarray
@@ -60,18 +62,141 @@ def save_image(im, meta, dir, name):
     except FileExistsError:
         pass
     save_dir = dir + name + '.tiff'
-    tiff.imsave(file=save_dir,
-                data=im,
-                meta=meta)
+    meta['time'] = get_current_time()
+    tiff.imwrite(file=save_dir, data=im, metadata=meta)
     return None
 
 
+def active_auto_shutter(shutter):
+    core.set_shutter_device(shutter)
+    core.set_auto_shutter(True)
+    return None
+
+
+def set_light_path(grop, preset, shutter=None):
+    """
+    set the light path of microscope
+    :param grop: str, group of mm configuration
+    :param preset: str, preset of mm configuration
+    :param shutter: str, set the shutter given at auto state
+    :return: None
+    """
+    core.set_config(grop, preset)
+    # wait device finish
+    while core.system_busy():
+        time.sleep(0.1)
+    if shutter:
+        active_auto_shutter(shutter)
+    return None
+
+
+def parse_position(fp, type='mm'):
+    """
+    Parse the multiple positions in file, now, this function support files exported
+    from micro-manager.
+    :param fp: str, file path
+    :param type: str, file type
+    :return: list, a list contat
+    """
+    if type == 'mm':
+        with open(fp, 'r') as jfile:
+            poss = json.load(jfile)
+        poss = poss['map']['StagePositions']['array']
+        pos_num = len(poss)
+        XY_DEVICE = poss[0]['DefaultXYStage']['scalar']
+        Z_DEVICE = poss[0]['DefaultZStage']['scalar']
+        PFS_KEY = 'PFSOffset'
+        poss_list = []
+        for pos_index in range(pos_num):
+            pos = poss[pos_index]['DevicePositions']['array']
+            for key in pos:
+                if key['Device']['scalar'] == Z_DEVICE:
+                    z = key['Position_um']['array']
+                if key['Device']['scalar'] == XY_DEVICE:
+                    xy = key['Position_um']['array']
+                if key['Device']['scalar'] == PFS_KEY:
+                    pfs = key['Position_um']['array']
+            pos_dic = dict(xy=xy, z=z, pfsoffset=pfs)
+            poss_list.append(pos_dic)
+        print(f'Get {len(poss_list)} positions.\n')
+    return poss_list
+
+
+def waiting_device():
+    while core.system_busy():
+        time.sleep(0.1)
+
+
+def parse_second(list):
+    weight = [60*60, 60, 1]
+    return sum([x*y for x, y in zip(list, weight)])
+
+
+def move_xyz_pfs(fov, turnoffz=True):
+    XY_DEVICE = core.get_xy_stage_device()
+    if 'xy' in fov:
+        core.set_xy_position(XY_DEVICE, fov['xy'][0], fov['xy'][1])
+    if turnoffz:
+        if 'pfsoffset' in fov:
+            core.set_auto_focus_offset(fov['pfsoffset'][0])
+    else:
+        if 'z' in fov:
+            core.set_position(fov['z'][0])
+    waiting_device()
+    return None
+
+
+def countdown(t, step=1, msg='sleeping'):  # in seconds
+    pad_str = ' ' * len('%d' % step)
+    for i in range(t, 0, -step):
+        print('%s for the next %d seconds %s\r' % (msg, i, pad_str))
+        sys.stdout.flush()
+        time.sleep(step)
+    print('Done %s for %d seconds!  %s' % (msg, t, pad_str))
+
 get_current_time()
-core.snap_image()
-im = core.get_tagged_image()
+
 # %%
+EXPOSURE_GREEN = 50  # ms
+EXPOSURE_PHASE = 10  # ms
+EXPOSURE_RED = 100  # ms
+
+DIR = r'./test_data/test1/'
+POSITION_FILE = r'./test_data/PositionList.pos'
+SHUTTER_LAMP = 'DiaLamp'
+SHUTTER_LED = 'XCite-Exacte'
+SHUTTER_TURRET = 'Turret1Shutter'
+XY_DEVICE = core.get_xy_stage_device()
+fovs = parse_position(POSITION_FILE)
+# %%
+count = 0
+time_step = [0, 10, 0]  # [hr, min, s]
+time_duration = [4, 0, 0]
+loops = parse_second(time_duration) // parse_second(time_step)
+set_light_path('BF', '40X', SHUTTER_LAMP)
+while loops:
+    for fov_index, fov in enumerate(fovs):
+        move_xyz_pfs(fov)
+        # acquire photos
+        im, tags = snap_image()
+        waiting_device()
+        image_dir = DIR + f'fov_{fov_index}/'
+        save_image(im, dir=image_dir, name=f'lp{loops}_test{count}', meta=tags)
+
+        print(f'go to next xy')
+        count += 1
+    print('Waiting next loop')
+    countdown(parse_second(time_step), 10)
+    loops -= 1
 
 
+
+# %%
+set_light_path('BF', '40X', SHUTTER_LAMP)
+
+im, tags = snap_image()
+save_image(im, dir=DIR, name='test', meta=tags)
+# %%
 if __name__ == '__main__':
     #     with Acquisition(directory=r'.', name='test', show_display=False) as acq:
     #         z_post = core.get_position()
@@ -81,9 +206,6 @@ if __name__ == '__main__':
     #         acq.acquire(events)
 
     # ACQUISITION　PARAMETERS
-    EXPOSURE_GREEN = 50  # ms
-    EXPOSURE_PHASE = 10  # ms
-    EXPOSURE_RED = 100  # ms
 
     im = []
     with Acquisition(image_process_fn=get_aframe, show_display=False) as acq:
