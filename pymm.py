@@ -1,19 +1,13 @@
 # %%
 from pycromanager import Bridge
 import numpy as np
-from pycromanager import Acquisition, multi_d_acquisition_events
-import time
+# from pycromanager import Acquisition, multi_d_acquisition_events
 import tifffile as tiff
-import os
-import json
-import sys
+import os, json, sys, time
+
 bridge = Bridge()
-
-bridge.get_core()
-
-core = bridge.get_core()  # if
-
-
+global core
+core = bridge.get_core()
 # studio = bridge.get_studio()
 
 
@@ -95,9 +89,10 @@ def parse_position(fp, type='mm'):
     Parse the multiple positions in file, now, this function support files exported
     from micro-manager.
     :param fp: str, file path
-    :param type: str, file type
+    :param type: str, file type mm or ns
     :return: list, a list contat
     """
+    poss_list = []
     if type == 'mm':
         with open(fp, 'r') as jfile:
             poss = json.load(jfile)
@@ -106,7 +101,7 @@ def parse_position(fp, type='mm'):
         XY_DEVICE = poss[0]['DefaultXYStage']['scalar']
         Z_DEVICE = poss[0]['DefaultZStage']['scalar']
         PFS_KEY = 'PFSOffset'
-        poss_list = []
+
         for pos_index in range(pos_num):
             pos = poss[pos_index]['DevicePositions']['array']
             for key in pos:
@@ -118,7 +113,26 @@ def parse_position(fp, type='mm'):
                     pfs = key['Position_um']['array']
             pos_dic = dict(xy=xy, z=z, pfsoffset=pfs)
             poss_list.append(pos_dic)
-        print(f'Get {len(poss_list)} positions.\n')
+
+    if type == 'ns':
+        import xml.etree.ElementTree as ET
+        poss = ET.parse(fp)
+        elemt = poss.getroot()
+        for pos in elemt[0]:
+            if pos.attrib['runtype'] == 'NDSetupMultipointListItem':
+                for e in pos:
+                    # print(e.tag, e.attrib)
+                    if e.tag == 'dXPosition':
+                        xy = [float(e.attrib['value'])]
+                    if e.tag == 'dYPosition':
+                        xy.append(float(e.attrib['value']))
+                    if e.tag == 'dZPosition':
+                        z = [float(e.attrib['value'])]
+                    if e.tag == 'dPFSOffset':
+                        pfs = [float(e.attrib['value'])]
+                pos_dic = dict(xy=xy, z=z, pfsoffset=pfs)
+                poss_list.append(pos_dic)
+    print(f'Get {len(poss_list)} positions.\n')
     return poss_list
 
 
@@ -154,73 +168,72 @@ def countdown(t, step=1, msg='sleeping'):  # in seconds
         time.sleep(step)
     print('Done %s for %d seconds!  %s' % (msg, t, pad_str))
 
-get_current_time()
 
+# # %%
+# EXPOSURE_GREEN = 50  # ms
+# EXPOSURE_PHASE = 10  # ms
+# EXPOSURE_RED = 100  # ms
+#
+# DIR = r'./test_data/test1/'
+# POSITION_FILE = r'./test_data/PositionList.pos'
+# SHUTTER_LAMP = 'DiaLamp'
+# SHUTTER_LED = 'XCite-Exacte'
+# SHUTTER_TURRET = 'Turret1Shutter'
+# XY_DEVICE = core.get_xy_stage_device()
+# fovs = parse_position(POSITION_FILE)
+# # %%
+# count = 0
+# time_step = [0, 10, 0]  # [hr, min, s]
+# time_duration = [4, 0, 0]
+# loops = parse_second(time_duration) // parse_second(time_step)
+# set_light_path('BF', '40X', SHUTTER_LAMP)
+# while loops:
+#     for fov_index, fov in enumerate(fovs):
+#         move_xyz_pfs(fov)
+#         # acquire photos
+#         im, tags = snap_image()
+#         waiting_device()
+#         image_dir = DIR + f'fov_{fov_index}/'
+#         save_image(im, dir=image_dir, name=f'lp{loops}_test{count}', meta=tags)
+#
+#         print(f'go to next xy')
+#         count += 1
+#     print('Waiting next loop')
+#     countdown(parse_second(time_step), 10)
+#     loops -= 1
+#
+#
+#
+# # %%
+# set_light_path('BF', '100X', SHUTTER_LAMP)
+# waiting_device()
+# im, tags = snap_image()
+# save_image(im, dir=DIR, name='test', meta=tags)
 # %%
-EXPOSURE_GREEN = 50  # ms
-EXPOSURE_PHASE = 10  # ms
-EXPOSURE_RED = 100  # ms
-
-DIR = r'./test_data/test1/'
-POSITION_FILE = r'./test_data/PositionList.pos'
-SHUTTER_LAMP = 'DiaLamp'
-SHUTTER_LED = 'XCite-Exacte'
-SHUTTER_TURRET = 'Turret1Shutter'
-XY_DEVICE = core.get_xy_stage_device()
-fovs = parse_position(POSITION_FILE)
-# %%
-count = 0
-time_step = [0, 10, 0]  # [hr, min, s]
-time_duration = [4, 0, 0]
-loops = parse_second(time_duration) // parse_second(time_step)
-set_light_path('BF', '40X', SHUTTER_LAMP)
-while loops:
-    for fov_index, fov in enumerate(fovs):
-        move_xyz_pfs(fov)
-        # acquire photos
-        im, tags = snap_image()
-        waiting_device()
-        image_dir = DIR + f'fov_{fov_index}/'
-        save_image(im, dir=image_dir, name=f'lp{loops}_test{count}', meta=tags)
-
-        print(f'go to next xy')
-        count += 1
-    print('Waiting next loop')
-    countdown(parse_second(time_step), 10)
-    loops -= 1
-
-
-
-# %%
-set_light_path('BF', '40X', SHUTTER_LAMP)
-
-im, tags = snap_image()
-save_image(im, dir=DIR, name='test', meta=tags)
-# %%
-if __name__ == '__main__':
-    #     with Acquisition(directory=r'.', name='test', show_display=False) as acq:
-    #         z_post = core.get_position()
-    #         half_range = 0.8  # miu m
-    #         events = multi_d_acquisition_events(z_start=z_post - half_range, z_end=z_post + half_range,
-    #                                             z_step=0.1)
-    #         acq.acquire(events)
-
-    # ACQUISITION　PARAMETERS
-
-    im = []
-    with Acquisition(image_process_fn=get_aframe, show_display=False) as acq:
-        z_post = core.get_position()
-        frams_num = 17
-        half_range = 0.8
-        step = half_range / (frams_num // 2)
-        events = multi_d_acquisition_events(z_start=z_post - half_range, z_end=z_post + half_range,
-                                            z_step=step)
-        acq.acquire(events)
-
-    images = np.array(im)
-    print(f'image size: {images.shape}')
-    image1 = np.sum(images[..., 0:8], axis=2)
-    image2 = np.sum(images[..., 10:-1], axis=2)
-    corr_im = image2 - image1
-    corred_im = corr_im - corr_im.min * (255 / (corr_im.max - corr_im.min))
-    print(corred_im)
+# if __name__ == '__main__':
+#     #     with Acquisition(directory=r'.', name='test', show_display=False) as acq:
+#     #         z_post = core.get_position()
+#     #         half_range = 0.8  # miu m
+#     #         events = multi_d_acquisition_events(z_start=z_post - half_range, z_end=z_post + half_range,
+#     #                                             z_step=0.1)
+#     #         acq.acquire(events)
+#
+#     # ACQUISITION　PARAMETERS
+#
+#     im = []
+#     with Acquisition(image_process_fn=get_aframe, show_display=False) as acq:
+#         z_post = core.get_position()
+#         frams_num = 17
+#         half_range = 0.8
+#         step = half_range / (frams_num // 2)
+#         events = multi_d_acquisition_events(z_start=z_post - half_range, z_end=z_post + half_range,
+#                                             z_step=step)
+#         acq.acquire(events)
+#
+#     images = np.array(im)
+#     print(f'image size: {images.shape}')
+#     image1 = np.sum(images[..., 0:8], axis=2)
+#     image2 = np.sum(images[..., 10:-1], axis=2)
+#     corr_im = image2 - image1
+#     corred_im = corr_im - corr_im.min * (255 / (corr_im.max - corr_im.min))
+#     print(corred_im)
