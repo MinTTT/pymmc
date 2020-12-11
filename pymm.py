@@ -8,6 +8,8 @@ import os, json, sys, time
 bridge = Bridge()
 global core
 core = bridge.get_core()
+
+
 # studio = bridge.get_studio()
 
 
@@ -153,8 +155,8 @@ def parse_second(time_list):
     :param time_list: list. a list containing [h, min, s]
     :return: float. seconds
     """
-    weight = [60*60, 60, 1]
-    return sum([x*y for x, y in zip(time_list, weight)])
+    weight = [60 * 60, 60, 1]
+    return sum([x * y for x, y in zip(time_list, weight)])
 
 
 def move_xyz_pfs(fov, turnoffz=True):
@@ -195,6 +197,7 @@ def countdown(t, step=1, msg='sleeping'):
         t -= step
     print(CGRE + 'Start the next loop.' + CEND)
     return None
+
 
 # # %%
 # EXPOSURE_GREEN = 50  # ms

@@ -15,7 +15,7 @@ SHUTTER_TURRET = 'Turret1Shutter'
 XY_DEVICE = core.get_xy_stage_device()
 # %%
 # ==========get multiple positions============
-fovs = mm.parse_position(POSITION_FILE, type='ns')
+fovs = mm.parse_position(POSITION_FILE, file_type='ns')
 # ==========set loop parameters===============
 time_step = [0, 2, 30]  # [hr, min, s]
 flu_step = 7  # very 4 phase loops acuq
@@ -24,7 +24,7 @@ loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-loop_index = 5  # default is 0
+loop_index = 29  # default is 0
 while loop_index != loops_num:
     # ========start phase 100X acq loop=================#
     mm.set_light_path('BF', '100X', SHUTTER_LAMP)  # set phase contrast light path config before start xy acquisition.
