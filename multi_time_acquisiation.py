@@ -21,6 +21,8 @@ time_step = [0, 2, 30]  # [hr, min, s]
 flu_step = 7  # very 4 phase loops acuq
 time_duration = [24, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
+print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
+
 
 # %% loop body
 loop_index = 5
