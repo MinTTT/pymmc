@@ -11,10 +11,10 @@ core = bridge.get_core()
 # studio = bridge.get_studio()
 
 
-def get_aframe(image, metadata):
-    global im
-    im.append(image)
-    print('acquired!')
+# def get_aframe(image, metadata):
+#     global im
+#     im.append(image)
+#     print('acquired!')
 
 
 def get_current_time():
@@ -84,16 +84,17 @@ def set_light_path(grop, preset, shutter=None):
     return None
 
 
-def parse_position(fp, type='mm'):
+def parse_position(fp, file_type='mm'):
     """
-    Parse the multiple positions in file, now, this function support files exported
-    from micro-manager.
+    Parse the multiple positions in file. now, this function support files exported
+    from micro-manager and Nikon NS.
     :param fp: str, file path
-    :param type: str, file type mm or ns
-    :return: list, a list contat
+    :param file_type: str, file type mm(out put from micro manager, json file) or ns(output from NS, xml file)
+    :return: list, a list containing all positions. each position is a dictionary,
+    {xy:[float, float], z:[float], pfsoffset:[float]}
     """
     poss_list = []
-    if type == 'mm':
+    if file_type == 'mm':
         with open(fp, 'r') as jfile:
             poss = json.load(jfile)
         poss = poss['map']['StagePositions']['array']
@@ -114,7 +115,7 @@ def parse_position(fp, type='mm'):
             pos_dic = dict(xy=xy, z=z, pfsoffset=pfs)
             poss_list.append(pos_dic)
 
-    if type == 'ns':
+    if file_type == 'ns':
         import xml.etree.ElementTree as ET
         poss = ET.parse(fp)
         elemt = poss.getroot()
@@ -137,16 +138,32 @@ def parse_position(fp, type='mm'):
 
 
 def waiting_device():
+    """
+    waiting for micro-scope done all commands.
+    :return: None
+    """
     while core.system_busy():
         time.sleep(0.1)
+    return None
 
 
-def parse_second(list):
+def parse_second(time_list):
+    """
+    Transform a time list [h, min, s] into seconds.
+    :param time_list: list. a list containing [h, min, s]
+    :return: float. seconds
+    """
     weight = [60*60, 60, 1]
-    return sum([x*y for x, y in zip(list, weight)])
+    return sum([x*y for x, y in zip(time_list, weight)])
 
 
 def move_xyz_pfs(fov, turnoffz=True):
+    """
+    Move stage xy and z position.
+    :param fov:
+    :param turnoffz: bool, if ture, microscope will keep the pfs working and skipping moving the z device.
+    :return: None
+    """
     XY_DEVICE = core.get_xy_stage_device()
     if 'xy' in fov:
         core.set_xy_position(XY_DEVICE, fov['xy'][0], fov['xy'][1])
@@ -160,14 +177,24 @@ def move_xyz_pfs(fov, turnoffz=True):
     return None
 
 
-def countdown(t, step=1, msg='sleeping'):  # in seconds
-    pad_str = ' ' * len('%d' % step)
-    for i in range(t, 0, -step):
-        print('%s for the next %d seconds %s\r' % (msg, i, pad_str))
-        sys.stdout.flush()
+def countdown(t, step=1, msg='sleeping'):
+    """
+    a countdown timer print waiting time in second.
+    :param t: time lasting for sleeping
+    :param step: the time step between the refreshment of screen.
+    :param msg:
+    :return: None
+    """
+    CRED = '\033[91m'
+    CGRE = '\033[92m'
+    CEND = '\033[0m'
+    while t > 0:
+        mins, secs = divmod(t, 60)
+        print(CRED + f"""{msg} for {mins}:{secs}.""" + CEND, end='\r')
         time.sleep(step)
-    print('Done %s for %d seconds!  %s' % (msg, t, pad_str))
-
+        t -= step
+    print(CGRE + 'Start the next loop.' + CEND)
+    return None
 
 # # %%
 # EXPOSURE_GREEN = 50  # ms
@@ -210,30 +237,5 @@ def countdown(t, step=1, msg='sleeping'):  # in seconds
 # im, tags = snap_image()
 # save_image(im, dir=DIR, name='test', meta=tags)
 # %%
-# if __name__ == '__main__':
-#     #     with Acquisition(directory=r'.', name='test', show_display=False) as acq:
-#     #         z_post = core.get_position()
-#     #         half_range = 0.8  # miu m
-#     #         events = multi_d_acquisition_events(z_start=z_post - half_range, z_end=z_post + half_range,
-#     #                                             z_step=0.1)
-#     #         acq.acquire(events)
-#
-#     # ACQUISITION　PARAMETERS
-#
-#     im = []
-#     with Acquisition(image_process_fn=get_aframe, show_display=False) as acq:
-#         z_post = core.get_position()
-#         frams_num = 17
-#         half_range = 0.8
-#         step = half_range / (frams_num // 2)
-#         events = multi_d_acquisition_events(z_start=z_post - half_range, z_end=z_post + half_range,
-#                                             z_step=step)
-#         acq.acquire(events)
-#
-#     images = np.array(im)
-#     print(f'image size: {images.shape}')
-#     image1 = np.sum(images[..., 0:8], axis=2)
-#     image2 = np.sum(images[..., 10:-1], axis=2)
-#     corr_im = image2 - image1
-#     corred_im = corr_im - corr_im.min * (255 / (corr_im.max - corr_im.min))
-#     print(corred_im)
+if __name__ == '__main__':
+    countdown(10)
