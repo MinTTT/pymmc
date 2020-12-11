@@ -143,7 +143,7 @@ def waiting_device():
     :return: None
     """
     while core.system_busy():
-        time.sleep(0.1)
+        time.sleep(0.01)
     return None
 
 
