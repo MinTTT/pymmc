@@ -7,7 +7,7 @@ EXPOSURE_GREEN = 50  # ms
 EXPOSURE_PHASE = 10  # ms
 EXPOSURE_RED = 400  # ms
 
-DIR = r'./test_data/20201211/'
+DIR = r'G:/test_data/20201211/'
 POSITION_FILE = r'./test_data/multipoints.xml'
 SHUTTER_LAMP = 'DiaLamp'
 SHUTTER_LED = 'XCite-Exacte'
@@ -19,12 +19,12 @@ fovs = mm.parse_position(POSITION_FILE, file_type='ns')
 # ==========set loop parameters===============
 time_step = [0, 2, 30]  # [hr, min, s]
 flu_step = 7  # very 4 phase loops acuq
-time_duration = [24, 0, 0]
+time_duration = [48, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-loop_index = 29  # default is 0
+loop_index = 117  # default is 0
 while loop_index != loops_num:
     # ========start phase 100X acq loop=================#
     mm.set_light_path('BF', '100X', SHUTTER_LAMP)  # set phase contrast light path config before start xy acquisition.
@@ -54,8 +54,11 @@ while loop_index != loops_num:
             image_dir = DIR + f'fov_{fov_index}/' + 'red/'
             mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
     print('Waiting next loop')
+    core.clear_circular_buffer()
+    core.remove_image_synchro_all()
     mm.countdown(mm.parse_second(time_step), 10)
     loop_index += 1
+
 
 # # %%
 # mm.set_light_path('FLU', 'RFP_100', SHUTTER_LED)
