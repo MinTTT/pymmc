@@ -84,10 +84,9 @@ def set_light_path(grop, preset, shutter=None):
     """
     core.set_config(grop, preset)
     # wait device finish
-    while core.system_busy():
-        time.sleep(0.1)
     if shutter:
         active_auto_shutter(shutter)
+    waiting_device()
     return None
 
 
