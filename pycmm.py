@@ -1,18 +1,25 @@
-MM_PATH = r'C:/Program Files/Micro-Manager-2.0gamma/'
-CONFIG = "mmc2_ti2_light_path.cfg"
-import sys
+# -*- coding: utf-8 -*-
 
-sys.path.insert(0, MM_PATH)
+"""
+ @auther: Pan M. CHU
+"""
+
+# Built-in/Generic Imports
+import os
+import sys
+# […]
+
+# Libs
+import pandas as pd
+import numpy as np  # Or any other
+
+MM_DIR = r'D:/python_code/micro_manager/Micro-Manager-2.0gamma/'
+sys.path.insert(0, MM_DIR)
+
 import pymmcore
 
-# import MMCorePy
+# […]
+#%%
 
-
-# %%
-# global core
-core = pymmcore.CMMCore()
-core.setDeviceAdapterSearchPaths([MM_PATH])
-core.loadSystemConfiguration(MM_PATH + CONFIG)
-
-core.snapImage()
-im = core.getImage()
+cmm = pymmcore.CMMCore()
+cmm.loadSystemConfiguration(MM_DIR + 'mmc2_ti2_light_path.cfg')
