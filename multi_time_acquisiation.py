@@ -2,7 +2,7 @@
 import pymm as mm
 
 core = mm.core
-core.set_property('Core', 'TimeoutMs', 20000)
+core.set_property('Core', 'TimeoutMs', 40000)
 
 EXPOSURE_GREEN = 50  # ms
 EXPOSURE_PHASE = 10  # ms
@@ -34,19 +34,19 @@ loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-loop_index = 161  # default is 0
+loop_index = 328  # default is 0
 while loop_index != loops_num:
     # ========start phase 100X acq loop=================#
     mm.set_light_path('BF', '100X', SHUTTER_LAMP)  # set phase contrast light path config before start xy acquisition.
     for fov_index, fov in enumerate(fovs):
         mm.move_xyz_pfs(fov)
+        print(f'''go to next xy {fov['xy']}.\n''')
         mm.waiting_device()
         # acquire photos
         im, tags = mm.snap_image()
         print('Snap image.\n')
         image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
         mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
-        print(f'''go to next xy {fov['xy']}.''')
     # ===============================================#
     if loop_index % flu_step == 0:
         mm.set_light_path('FLU', 'GFP_100', SHUTTER_LED)
@@ -72,8 +72,6 @@ while loop_index != loops_num:
             mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
     # ======================waiting cycle=========
     print('Waiting next loop')
-    core.clear_circular_buffer()
-    core.remove_image_synchro_all()
     mm.countdown(mm.parse_second(time_step), 1)
     loop_index += 1
 

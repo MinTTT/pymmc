@@ -1,9 +1,12 @@
 # %%
-from pycromanager import Bridge
+import json
+import os
+import time
+
 import numpy as np
 # from pycromanager import Acquisition, multi_d_acquisition_events
 import tifffile as tiff
-import os, json, sys, time
+from pycromanager import Bridge
 
 bridge = Bridge()
 global core
