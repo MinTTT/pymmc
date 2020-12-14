@@ -14,6 +14,7 @@ import sys
 import numpy as np  # Or any other
 
 MM_DIR = r'D:/python_code/micro_manager/Micro-Manager-2.0gamma/'
+CFG_DIR = r'./cfg_folder/'
 sys.path.insert(0, MM_DIR)
 
 import pymmcore
@@ -21,5 +22,6 @@ import pymmcore
 # […]
 #%%
 
-cmm = pymmcore.CMMCore()
-cmm.loadSystemConfiguration(MM_DIR + 'mmc2_ti2_light_path.cfg')
+core = pymmcore.CMMCore()
+core.setDeviceAdapterSearchPaths([MM_DIR])
+core.loadSystemConfiguration(CFG_DIR + '*.cfg')
