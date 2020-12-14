@@ -10,7 +10,7 @@ import sys
 # […]
 
 # Libs
-import pandas as pd
+
 import numpy as np  # Or any other
 
 MM_DIR = r'D:/python_code/micro_manager/Micro-Manager-2.0gamma/'
