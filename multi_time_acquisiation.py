@@ -6,10 +6,10 @@ core.set_property('Core', 'TimeoutMs', 40000)
 
 EXPOSURE_GREEN = 50  # ms
 EXPOSURE_PHASE = 10  # ms
-EXPOSURE_RED = 400  # ms
+EXPOSURE_RED = 100  # ms
 
-DIR = r'G:/test_data/20201211/'
-POSITION_FILE = r'./test_data/multipoints.xml'
+DIR = r'G:/Image_Data/moma_data/20201221_NH2_PECJ3/'
+POSITION_FILE = r'G:/Image_Data/moma_data/20201221_NH2_PECJ3/multipoints.xml'
 SHUTTER_LAMP = 'DiaLamp'
 SHUTTER_LED = 'XCite-Exacte'
 SHUTTER_TURRET = 'Turret1Shutter'
@@ -28,19 +28,19 @@ def get_exposure(state):
 fovs = mm.parse_position(POSITION_FILE, file_type='ns')
 # ==========set loop parameters===============
 time_step = [0, 3, 30]  # [hr, min, s]
-flu_step = 6  # very 4 phase loops acuq
+flu_step = 4  # very 4 phase loops acuq
 time_duration = [48, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-loop_index = 328  # default is 0
+loop_index = 0  # default is 0
 while loop_index != loops_num:
     # ========start phase 100X acq loop=================#
     mm.set_light_path('BF', '100X', SHUTTER_LAMP)  # set phase contrast light path config before start xy acquisition.
     for fov_index, fov in enumerate(fovs):
         mm.move_xyz_pfs(fov)
-        print(f'''go to next xy {fov['xy']}.\n''')
+        print(f'''go to next xy[{fov_index+1}/{loops_num}] {fov['xy']}.\n''')
         mm.waiting_device()
         # acquire photos
         im, tags = mm.snap_image()
