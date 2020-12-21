@@ -27,20 +27,20 @@ def get_exposure(state):
 # ==========get multiple positions============
 fovs = mm.parse_position(POSITION_FILE, file_type='ns')
 # ==========set loop parameters===============
-time_step = [0, 3, 30]  # [hr, min, s]
+time_step = [0, 3, 0]  # [hr, min, s]
 flu_step = 4  # very 4 phase loops acuq
 time_duration = [48, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-loop_index = 0  # default is 0
+loop_index = 5  # default is 0
 while loop_index != loops_num:
     # ========start phase 100X acq loop=================#
     mm.set_light_path('BF', '100X', SHUTTER_LAMP)  # set phase contrast light path config before start xy acquisition.
     for fov_index, fov in enumerate(fovs):
         mm.move_xyz_pfs(fov)
-        print(f'''go to next xy[{fov_index+1}/{loops_num}] {fov['xy']}.\n''')
+        print(f'''go to next xy[{fov_index+1}/{len(fovs)}].\n''')
         mm.waiting_device()
         # acquire photos
         im, tags = mm.snap_image()
@@ -53,7 +53,7 @@ while loop_index != loops_num:
         light_path_state = 'green/'
         for fov_index, fov in enumerate(fovs):
             mm.move_xyz_pfs(fov)  # move stage xy.
-            print(f'''go to next xy {fov['xy']}.''')
+            print(f'''go to next xy[{fov_index+1}/{len(fovs)}].\n''')
             # First Channel
             im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
             print('Snap image.\n')
@@ -71,7 +71,7 @@ while loop_index != loops_num:
             image_dir = DIR + f'fov_{fov_index}/' + light_path_state
             mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
     # ======================waiting cycle=========
-    print('Waiting next loop')
+    print(f'Waiting next loop[{loop_index+1}].')
     mm.countdown(mm.parse_second(time_step), 1)
     loop_index += 1
 
