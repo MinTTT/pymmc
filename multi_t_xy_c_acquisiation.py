@@ -50,7 +50,8 @@ while loop_index != loops_num:
                 image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
                 mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
 
-                mm.set_light_path('FLU', 'GFP_100', SHUTTER_LED)
+                # mm.set_light_path('FLU', 'GFP_100', SHUTTER_LED)
+                mm.active_auto_shutter(SHUTTER_LED)
                 im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
                 print('Snap image (green).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + light_path_state
@@ -77,7 +78,8 @@ while loop_index != loops_num:
                 image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
                 mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
 
-                mm.set_light_path('FLU', 'GFP_100', SHUTTER_LED)
+                # mm.set_light_path('FLU', 'GFP_100', SHUTTER_LED)
+                mm.active_auto_shutter(SHUTTER_LED)
                 im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
                 print('Snap image (green).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + light_path_state
