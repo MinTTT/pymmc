@@ -5,15 +5,23 @@ core = mm.core
 core.set_property('Core', 'TimeoutMs', 40000)
 
 EXPOSURE_GREEN = 50  # ms
-EXPOSURE_PHASE = 10  # ms
+EXPOSURE_PHASE = 19.9968  # ms
 EXPOSURE_RED = 100  # ms
 
-DIR = r'G:/Image_Data/moma_data/20201221_NH2_PECJ3/'
-POSITION_FILE = r'G:/Image_Data/moma_data/20201221_NH2_PECJ3/multipoints.xml'
+DIR = r'G:/Image_Data/moma_data/20201225_NCM_pECJ3_M5_L3/'
+POSITION_FILE = r'G:/Image_Data/moma_data/20201225_NCM_pECJ3_M5_L3/multipoints.xml'
 SHUTTER_LAMP = 'DiaLamp'
 SHUTTER_LED = 'XCite-Exacte'
 SHUTTER_TURRET = 'Turret1Shutter'
 XY_DEVICE = core.get_xy_stage_device()
+
+
+def green_to_red(core, shift_type):
+    """This function is used to set light from green to red
+    """
+    if shift_type == "g2r":
+        core.set_state('FilterTurret1', 5)
+
 
 
 def get_exposure(state):
@@ -27,29 +35,28 @@ def get_exposure(state):
 # ==========get multiple positions============
 fovs = mm.parse_position(POSITION_FILE, file_type='ns')
 # ==========set loop parameters===============
-time_step = [0, 3, 0]  # [hr, min, s]
+time_step = [0, 3, 30]  # [hr, min, s]
 flu_step = 4  # very 4 phase loops acq
 time_duration = [48, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-loop_index = 5  # default is 0
+loop_index = 24  # default is 0
 while loop_index != loops_num:
     if loop_index % flu_step == 0:
         light_path_state = 'green/'
+        mm.set_light_path('BF', '100X', SHUTTER_LAMP)
         for fov_index, fov in enumerate(fovs):
             mm.move_xyz_pfs(fov)  # move stage xy.
             print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
             # First Channel
             if light_path_state == 'green/':
-
-                mm.set_light_path('BF', '100X', SHUTTER_LAMP)
-                im, tags = mm.snap_image()
+                mm.active_auto_shutter(SHUTTER_LAMP)
+                im, tags = mm.snap_image(exposure=EXPOSURE_PHASE)
                 print('Snap image (phase).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
                 mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
-
                 # mm.set_light_path('FLU', 'GFP_100', SHUTTER_LED)
                 mm.active_auto_shutter(SHUTTER_LED)
                 im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
@@ -63,7 +70,6 @@ while loop_index != loops_num:
                 mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
             # Second Channel
             if light_path_state == 'green/':
-
                 mm.set_light_path('FLU', 'RFP_100', SHUTTER_LED)
                 light_path_state = 'red/'
                 im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
@@ -73,7 +79,7 @@ while loop_index != loops_num:
             else:
                 light_path_state = 'green/'
                 mm.set_light_path('BF', '100X', SHUTTER_LAMP)
-                im, tags = mm.snap_image()
+                im, tags = mm.snap_image(exposure=EXPOSURE_PHASE)
                 print('Snap image (phase).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
                 mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
