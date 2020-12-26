@@ -16,12 +16,24 @@ SHUTTER_TURRET = 'Turret1Shutter'
 XY_DEVICE = core.get_xy_stage_device()
 
 
-def green_to_red(core, shift_type):
-    """This function is used to set light from green to red
+def green_to_red(core, shift_type, micro_device='Ti2E'):
     """
-    if shift_type == "g2r":
-        core.set_state('FilterTurret1', 5)
-
+    This function is used to set light from green to red
+    :param core: mmcore
+    :param shift_type: str, 'g2r' or 'r2g'
+    :param micro_device: str, which device?
+    :return: None
+    """
+    if micro_device == 'Ti2E':
+        if shift_type == "g2r":
+            core.set_property('FilterTurret1', 'State', 5)  # set filer in 5 pos
+            core.set_property('XCite-Exacte', 'Lamp-Intensity', 50)  # set xcite lamp intensity 50
+            mm.waiting_device()
+        if shift_type == "r2g":
+            core.set_property('FilterTurret1', 'State', 2)  # set filer in 5 pos
+            core.set_property('XCite-Exacte', 'Lamp-Intensity', 5)  # set xcite lamp intensity 50
+            mm.waiting_device()
+    return None
 
 
 def get_exposure(state):
@@ -70,7 +82,8 @@ while loop_index != loops_num:
                 mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
             # Second Channel
             if light_path_state == 'green/':
-                mm.set_light_path('FLU', 'RFP_100', SHUTTER_LED)
+                # mm.set_light_path('FLU', 'RFP_100', SHUTTER_LED)
+                green_to_red(core, 'g2r')
                 light_path_state = 'red/'
                 im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
                 print(f'Snap image (red).\n')
@@ -78,7 +91,8 @@ while loop_index != loops_num:
                 mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
             else:
                 light_path_state = 'green/'
-                mm.set_light_path('BF', '100X', SHUTTER_LAMP)
+                # mm.set_light_path('BF', '100X', SHUTTER_LAMP)
+                green_to_red(core, 'r2g')
                 im, tags = mm.snap_image(exposure=EXPOSURE_PHASE)
                 print('Snap image (phase).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
