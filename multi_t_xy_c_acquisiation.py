@@ -30,8 +30,8 @@ def green_to_red(core, shift_type, micro_device='Ti2E'):
             core.set_property('XCite-Exacte', 'Lamp-Intensity', 50)  # set xcite lamp intensity 50
             mm.waiting_device()
         if shift_type == "r2g":
-            core.set_property('FilterTurret1', 'State', 2)  # set filer in 5 pos
-            core.set_property('XCite-Exacte', 'Lamp-Intensity', 5)  # set xcite lamp intensity 50
+            core.set_property('FilterTurret1', 'State', 2)  # set filer in 2 pos
+            core.set_property('XCite-Exacte', 'Lamp-Intensity', 5)  # set xcite lamp intensity 2
             mm.waiting_device()
     return None
 
