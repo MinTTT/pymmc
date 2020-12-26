@@ -54,7 +54,7 @@ loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-loop_index = 24  # default is 0
+loop_index = 256  # default is 0
 while loop_index != loops_num:
     if loop_index % flu_step == 0:
         light_path_state = 'green/'
@@ -93,6 +93,7 @@ while loop_index != loops_num:
                 light_path_state = 'green/'
                 # mm.set_light_path('BF', '100X', SHUTTER_LAMP)
                 green_to_red(core, 'r2g')
+                mm.active_auto_shutter(SHUTTER_LAMP)
                 im, tags = mm.snap_image(exposure=EXPOSURE_PHASE)
                 print('Snap image (phase).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
