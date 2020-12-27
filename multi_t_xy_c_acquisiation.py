@@ -4,23 +4,6 @@ import pymm as mm
 core = mm.core
 core.set_property('Core', 'TimeoutMs', 40000)
 
-# ------------------------ acq parameters ------------------------------------
-EXPOSURE_GREEN = 50  # ms
-EXPOSURE_PHASE = 19.9968  # ms
-EXPOSURE_RED = 100  # ms
-
-DIR = r'G:/Image_Data/moma_data/20201225_NCM_pECJ3_M5_L3/'
-POSITION_FILE = r'G:/Image_Data/moma_data/20201225_NCM_pECJ3_M5_L3/multipoints.xml'
-MICROSCOPE = 'Ti2E'
-
-# --------------------------Set Microscope Parameters-----------------------
-if MICROSCOPE == 'Ti2E':
-    SHUTTER_LAMP = 'DiaLamp'
-    SHUTTER_LED = 'XCite-Exacte'
-    FILTER_TURRET = 'FilterTurret1'
-    FLU_EXCITE = 'XCite-Exacte'
-    XY_DEVICE = core.get_xy_stage_device()
-
 
 def green_to_red(core, shift_type, micro_device='Ti2E'):
     """
@@ -28,7 +11,7 @@ def green_to_red(core, shift_type, micro_device='Ti2E'):
     For Ti2E, two devices shall be changed their states. 1. FilterTurret, filter states
     :param core: mmcore
     :param shift_type: str, 'g2r' or 'r2g'
-    :param micro_device: str, which device?
+    :param micro_device: str, which device? 'Ti2E' or 'Ti2E_H'.
     :return: None
     """
     if micro_device == 'Ti2E':
@@ -40,6 +23,19 @@ def green_to_red(core, shift_type, micro_device='Ti2E'):
             core.set_property(FILTER_TURRET, 'State', 2)  # set filer in 2 pos
             core.set_property(FLU_EXCITE, 'Lamp-Intensity', 5)  # set xcite lamp intensity 2
             mm.waiting_device()
+    elif micro_device == 'Ti2E_H':
+        if shift_type == "r2g":
+            core.set_property(SHUTTER_LED, 'Cyan_Level', 50)
+            core.set_property(SHUTTER_LED, 'Cyan_Enable', 1)
+            core.set_property(SHUTTER_LED, 'Green_Enable', 0)
+            core.set_property(FILTER_TURRET, 'State', 3)
+            mm.waiting_device()
+        if shift_type == 'g2r':
+            core.set_property(SHUTTER_LED, 'Green_Level', 50)
+            core.set_property(SHUTTER_LED, 'Green_Enable', 1)
+            core.set_property(SHUTTER_LED, 'Cyan_Enable', 0)
+            core.set_property(FILTER_TURRET, 'State', 7)
+            mm.waiting_device()
     return None
 
 
@@ -48,6 +44,29 @@ def get_exposure(state):
         return EXPOSURE_GREEN
     else:
         return EXPOSURE_RED
+
+
+# ------------------------ acq parameters ----c--------------------------------
+EXPOSURE_GREEN = 50  # ms
+EXPOSURE_PHASE = 19.9968  # ms
+EXPOSURE_RED = 100  # ms
+
+DIR = r'D:/DATA/FULAB/ZJW/test/'
+POSITION_FILE = r'./cfg_folder/multipoints.xml'
+MICROSCOPE = 'Ti2E_H'
+
+# --------------------------Set Microscope Parameters-----------------------
+if MICROSCOPE == 'Ti2E':
+    SHUTTER_LAMP = 'DiaLamp'
+    SHUTTER_LED = 'XCite-Exacte'
+    FILTER_TURRET = 'FilterTurret1'
+    FLU_EXCITE = 'XCite-Exacte'
+    XY_DEVICE = core.get_xy_stage_device()
+elif MICROSCOPE == 'Ti2E_H':
+    SHUTTER_LAMP = 'DiaLamp'
+    SHUTTER_LED = 'Spectra'
+    FILTER_TURRET = 'LudlWheel'
+
 # -----------------------------------------------------------------------------------
 
 # %%
@@ -61,7 +80,7 @@ loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-loop_index = 256  # default is 0
+loop_index = 1  # default is 0
 while loop_index != loops_num:
     if loop_index % flu_step == 0:
         light_path_state = 'green/'
@@ -90,7 +109,7 @@ while loop_index != loops_num:
             # Second Channel
             if light_path_state == 'green/':
                 # mm.set_light_path('FLU', 'RFP_100', SHUTTER_LED)
-                green_to_red(core, 'g2r')
+                green_to_red(core, 'g2r', micro_device=MICROSCOPE)
                 light_path_state = 'red/'
                 im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
                 print(f'Snap image (red).\n')
@@ -99,7 +118,7 @@ while loop_index != loops_num:
             else:
                 light_path_state = 'green/'
                 # mm.set_light_path('BF', '100X', SHUTTER_LAMP)
-                green_to_red(core, 'r2g')
+                green_to_red(core, 'r2g', micro_device=MICROSCOPE)
                 mm.active_auto_shutter(SHUTTER_LAMP)
                 im, tags = mm.snap_image(exposure=EXPOSURE_PHASE)
                 print('Snap image (phase).\n')
