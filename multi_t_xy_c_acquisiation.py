@@ -18,7 +18,8 @@ XY_DEVICE = core.get_xy_stage_device()
 
 def green_to_red(core, shift_type, micro_device='Ti2E'):
     """
-    This function is used to set light from green to red
+    This function is used to set light from green to red channel.
+    For Ti2E, two devices shall be changed their states. 1. FilterTurret, filter states
     :param core: mmcore
     :param shift_type: str, 'g2r' or 'r2g'
     :param micro_device: str, which device?
