@@ -80,7 +80,7 @@ loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-loop_index = 1  # default is 0
+loop_index = 0  # default is 0
 while loop_index != loops_num:
     if loop_index % flu_step == 0:
         light_path_state = 'green/'
