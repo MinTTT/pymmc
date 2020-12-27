@@ -4,21 +4,28 @@ import pymm as mm
 core = mm.core
 core.set_property('Core', 'TimeoutMs', 40000)
 
+# ------------------------ acq parameters ------------------------------------
 EXPOSURE_GREEN = 50  # ms
 EXPOSURE_PHASE = 19.9968  # ms
 EXPOSURE_RED = 100  # ms
 
 DIR = r'G:/Image_Data/moma_data/20201225_NCM_pECJ3_M5_L3/'
 POSITION_FILE = r'G:/Image_Data/moma_data/20201225_NCM_pECJ3_M5_L3/multipoints.xml'
-SHUTTER_LAMP = 'DiaLamp'
-SHUTTER_LED = 'XCite-Exacte'
-SHUTTER_TURRET = 'Turret1Shutter'
-XY_DEVICE = core.get_xy_stage_device()
+MICROSCOPE = 'Ti2E'
+
+# --------------------------Set Microscope Parameters-----------------------
+if MICROSCOPE == 'Ti2E':
+    SHUTTER_LAMP = 'DiaLamp'
+    SHUTTER_LED = 'XCite-Exacte'
+    FILTER_TURRET = 'FilterTurret1'
+    FLU_EXCITE = 'XCite-Exacte'
+    XY_DEVICE = core.get_xy_stage_device()
 
 
 def green_to_red(core, shift_type, micro_device='Ti2E'):
     """
-    This function is used to set light from green to red
+    This function is used to set light from green to red channel.
+    For Ti2E, two devices shall be changed their states. 1. FilterTurret, filter states
     :param core: mmcore
     :param shift_type: str, 'g2r' or 'r2g'
     :param micro_device: str, which device?
@@ -26,12 +33,12 @@ def green_to_red(core, shift_type, micro_device='Ti2E'):
     """
     if micro_device == 'Ti2E':
         if shift_type == "g2r":
-            core.set_property('FilterTurret1', 'State', 5)  # set filer in 5 pos
-            core.set_property('XCite-Exacte', 'Lamp-Intensity', 50)  # set xcite lamp intensity 50
+            core.set_property(FILTER_TURRET, 'State', 5)  # set filer in 5 pos
+            core.set_property(FLU_EXCITE, 'Lamp-Intensity', 50)  # set xcite lamp intensity 50
             mm.waiting_device()
         if shift_type == "r2g":
-            core.set_property('FilterTurret1', 'State', 2)  # set filer in 2 pos
-            core.set_property('XCite-Exacte', 'Lamp-Intensity', 5)  # set xcite lamp intensity 2
+            core.set_property(FILTER_TURRET, 'State', 2)  # set filer in 2 pos
+            core.set_property(FLU_EXCITE, 'Lamp-Intensity', 5)  # set xcite lamp intensity 2
             mm.waiting_device()
     return None
 
@@ -41,7 +48,7 @@ def get_exposure(state):
         return EXPOSURE_GREEN
     else:
         return EXPOSURE_RED
-
+# -----------------------------------------------------------------------------------
 
 # %%
 # ==========get multiple positions============
@@ -119,7 +126,7 @@ while loop_index != loops_num:
             mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
 
     # ======================waiting cycle=========
-    print(f'Waiting next loop[{loop_index+1}].')
+    print(f'Waiting next loop[{loop_index + 1}].')
     mm.countdown(mm.parse_second(time_step), 1)
     loop_index += 1
 
