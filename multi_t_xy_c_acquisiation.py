@@ -48,7 +48,7 @@ def get_exposure(state):
 
 # ------------------------ acq parameters ----c--------------------------------
 EXPOSURE_GREEN = 50  # ms
-EXPOSURE_PHASE = 19.9968  # ms
+EXPOSURE_PHASE = 40  # ms
 EXPOSURE_RED = 100  # ms
 
 DIR = r'D:/DATA/FULAB/ZJW/test/'
@@ -76,18 +76,18 @@ elif MICROSCOPE == 'Ti2E_H':
 # ==========get multiple positions============
 fovs = mm.parse_position(POSITION_FILE)
 # ==========set loop parameters===============
-time_step = [0, 3, 30]  # [hr, min, s]
-flu_step = 4  # very 4 phase loops acq
+time_step = [0, 0, 5]  # [hr, min, s]
+flu_step = 2  # very 4 phase loops acq
 time_duration = [48, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
+mm.set_light_path('BF', '100X', SHUTTER_LAMP)
+light_path_state = 'green/'
 loop_index = 0  # default is 0
 while loop_index != loops_num:
     if loop_index % flu_step == 0:
-        light_path_state = 'green/'
-        mm.set_light_path('BF', '100X', SHUTTER_LAMP)
         for fov_index, fov in enumerate(fovs):
             mm.move_xyz_pfs(fov)  # move stage xy.
             print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
@@ -136,13 +136,18 @@ while loop_index != loops_num:
                 mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
     else:
         # ========start phase 100X acq loop=================#
-        mm.set_light_path('BF', '100X', SHUTTER_LAMP)
+        if light_path_state == 'green':
+            pass
+        else:
+            green_to_red(core, 'r2g', micro_device=MICROSCOPE)
+            light_path_state = 'green/'
+        mm.active_auto_shutter(SHUTTER_LAMP)
         for fov_index, fov in enumerate(fovs):
             mm.move_xyz_pfs(fov)
             print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
             mm.waiting_device()
             # acquire photos
-            im, tags = mm.snap_image()
+            im, tags = mm.snap_image(exposure=EXPOSURE_PHASE)
             print('Snap image (phase).\n')
             image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
             mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
