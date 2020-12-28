@@ -85,6 +85,7 @@ print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/
 # %% loop body
 mm.set_light_path('BF', '100X', SHUTTER_LAMP)
 light_path_state = 'green/'
+green_to_red(core, 'r2g', MICROSCOPE)
 loop_index = 0  # default is 0
 while loop_index != loops_num:
     if loop_index % flu_step == 0:
