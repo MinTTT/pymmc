@@ -17,21 +17,21 @@ def green_to_red(core, shift_type, micro_device='Ti2E'):
     if micro_device == 'Ti2E':
         if shift_type == "g2r":
             core.set_property(FILTER_TURRET, 'State', 5)  # set filer in 5 pos
-            core.set_property(FLU_EXCITE, 'Lamp-Intensity', 50)  # set xcite lamp intensity 50
+            core.set_property(FLU_EXCITE, 'Lamp-Intensity', RED_EXCITE)  # set xcite lamp intensity 50
             mm.waiting_device()
         if shift_type == "r2g":
             core.set_property(FILTER_TURRET, 'State', 2)  # set filer in 2 pos
-            core.set_property(FLU_EXCITE, 'Lamp-Intensity', 5)  # set xcite lamp intensity 2
+            core.set_property(FLU_EXCITE, 'Lamp-Intensity', GREEN_EXCITE)  # set xcite lamp intensity 2
             mm.waiting_device()
     elif micro_device == 'Ti2E_H':
         if shift_type == "r2g":
-            core.set_property(SHUTTER_LED, 'Cyan_Level', 50)
+            core.set_property(SHUTTER_LED, 'Cyan_Level', GREEN_EXCITE)
             core.set_property(SHUTTER_LED, 'Cyan_Enable', 1)
             core.set_property(SHUTTER_LED, 'Green_Enable', 0)
             core.set_property(FILTER_TURRET, 'State', 3)
             mm.waiting_device()
         if shift_type == 'g2r':
-            core.set_property(SHUTTER_LED, 'Green_Level', 50)
+            core.set_property(SHUTTER_LED, 'Green_Level', RED_EXCITE)
             core.set_property(SHUTTER_LED, 'Green_Enable', 1)
             core.set_property(SHUTTER_LED, 'Cyan_Enable', 0)
             core.set_property(FILTER_TURRET, 'State', 7)
@@ -52,26 +52,29 @@ EXPOSURE_PHASE = 19.9968  # ms
 EXPOSURE_RED = 100  # ms
 
 DIR = r'D:/DATA/FULAB/ZJW/test/'
-POSITION_FILE = r'./cfg_folder/multipoints.xml'
+POSITION_FILE = r'./cfg_folder/PositionList.pos'
 MICROSCOPE = 'Ti2E_H'
 
-# --------------------------Set Microscope Parameters-----------------------
+# --------------------------Initial Microscope Parameters-----------------------
 if MICROSCOPE == 'Ti2E':
     SHUTTER_LAMP = 'DiaLamp'
     SHUTTER_LED = 'XCite-Exacte'
     FILTER_TURRET = 'FilterTurret1'
     FLU_EXCITE = 'XCite-Exacte'
-    XY_DEVICE = core.get_xy_stage_device()
+    GREEN_EXCITE = 5
+    RED_EXCITE = 50
+    XY_DEVRED_EXCITEICE = core.get_xy_stage_device()
 elif MICROSCOPE == 'Ti2E_H':
     SHUTTER_LAMP = 'DiaLamp'
     SHUTTER_LED = 'Spectra'
     FILTER_TURRET = 'LudlWheel'
-
+    GREEN_EXCITE = 50
+    RED_EXCITE = 50
 # -----------------------------------------------------------------------------------
 
 # %%
 # ==========get multiple positions============
-fovs = mm.parse_position(POSITION_FILE, file_type='ns')
+fovs = mm.parse_position(POSITION_FILE)
 # ==========set loop parameters===============
 time_step = [0, 3, 30]  # [hr, min, s]
 flu_step = 4  # very 4 phase loops acq

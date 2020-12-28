@@ -93,17 +93,17 @@ def set_light_path(grop, preset, shutter=None):
     return None
 
 
-def parse_position(fp, file_type='mm'):
+def parse_position(fp):
     """
     Parse the multiple positions in file. now, this function support files exported
     from micro-manager and Nikon NS.
     :param fp: str, file path
-    :param file_type: str, file type mm(out put from micro manager, json file) or ns(output from NS, xml file)
     :return: list, a list containing all positions. each position is a dictionary,
     {xy:[float, float], z:[float], pfsoffset:[float]}
     """
     poss_list = []
-    if file_type == 'mm':
+    file_type = fp.split('.')[-1]
+    if file_type == 'pos':
         with open(fp, 'r') as jfile:
             poss = json.load(jfile)
         poss = poss['map']['StagePositions']['array']
@@ -125,7 +125,7 @@ def parse_position(fp, file_type='mm'):
 
             poss_list.append(pos_dic)
 
-    if file_type == 'ns':
+    if file_type == 'xml':
         import xml.etree.ElementTree as ET
         poss = ET.parse(fp)
         elemt = poss.getroot()
