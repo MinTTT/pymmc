@@ -28,13 +28,13 @@ def green_to_red(core, shift_type, micro_device='Ti2E'):
             core.set_property(SHUTTER_LED, 'Cyan_Level', GREEN_EXCITE)
             core.set_property(SHUTTER_LED, 'Cyan_Enable', 1)
             core.set_property(SHUTTER_LED, 'Green_Enable', 0)
-            core.set_property(FILTER_TURRET, 'State', 3)
+            core.set_property(FILTER_TURRET, 'State', 3)  # pos 3 530
             mm.waiting_device()
         if shift_type == 'g2r':
             core.set_property(SHUTTER_LED, 'Green_Level', RED_EXCITE)
             core.set_property(SHUTTER_LED, 'Green_Enable', 1)
             core.set_property(SHUTTER_LED, 'Cyan_Enable', 0)
-            core.set_property(FILTER_TURRET, 'State', 7)
+            core.set_property(FILTER_TURRET, 'State', 7)  # pos7 631/36
             mm.waiting_device()
     return None
 
