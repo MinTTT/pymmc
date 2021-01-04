@@ -77,7 +77,7 @@ elif MICROSCOPE == 'Ti2E_H':
 # ==========get multiple positions============
 fovs = mm.parse_position(POSITION_FILE)
 # ==========set loop parameters===============
-time_step = [0, 5, 0]  # [hr, min, s]
+time_step = [0, 4, 0]  # [hr, min, s]
 flu_step = 3  # very 4 phase loops acq
 time_duration = [48*4, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
@@ -89,7 +89,7 @@ light_path_state = 'green/'
 green_to_red(core, 'r2g', MICROSCOPE)
 # TODO：I found the python console initialized and performed this code block first time,
 #  the Ti2E_H has no fluorescent emission light.
-loop_index = 480  # default is 0
+loop_index = 481  # default is 0
 while loop_index != loops_num:
     if loop_index % flu_step == 0:
         for fov_index, fov in enumerate(fovs):
