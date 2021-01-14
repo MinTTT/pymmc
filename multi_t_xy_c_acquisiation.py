@@ -1,9 +1,19 @@
 # %%
 import pymm as mm
-
+import time
 core = mm.core
 core.set_property('Core', 'TimeoutMs', 40000)
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 def green_to_red(core, shift_type, micro_device='Ti2E'):
     """
@@ -91,6 +101,7 @@ green_to_red(core, 'r2g', MICROSCOPE)
 #  the Ti2E_H has no fluorescent emission light.
 loop_index = 481  # default is 0
 while loop_index != loops_num:
+    t_init = time.time()
     if loop_index % flu_step == 0:
         for fov_index, fov in enumerate(fovs):
             mm.move_xyz_pfs(fov)  # move stage xy.
@@ -157,8 +168,13 @@ while loop_index != loops_num:
             mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
 
     # ======================waiting cycle=========
-    print(f'Waiting next loop[{loop_index + 1}].')
-    mm.countdown(mm.parse_second(time_step), 1)
+    t_of_acq = time.time() - t_init
+    waiting_t = time_step - t_of_acq
+    if waiting_t < 0:
+        print(f'{bcolors.WARNING}Waring: Acquisition loop is longer than default time step!, and the the next step will start immediately.{bcolors.ENDC}')
+    else:
+        print(f'Waiting next loop[{loop_index + 1}].')
+        mm.countdown(mm.parse_second(waiting_t), 1)
     loop_index += 1
 
 print('finished all loops!')
