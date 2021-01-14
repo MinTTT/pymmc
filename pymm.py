@@ -200,7 +200,7 @@ def countdown(t, step=1, msg='sleeping'):
     CEND = '\033[0m'
     while t > 0:
         mins, secs = divmod(t, 60)
-        print(CRED + f"""{msg} for {mins}:{secs}.""" + CEND, end='\r')
+        print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
         time.sleep(step)
         t -= step
     print(CGRE + 'Start the next loop.' + CEND)

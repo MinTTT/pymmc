@@ -87,7 +87,7 @@ elif MICROSCOPE == 'Ti2E_H':
 # ==========get multiple positions============
 fovs = mm.parse_position(POSITION_FILE)
 # ==========set loop parameters===============
-time_step = [0, 0, 18]  # [hr, min, s]
+time_step = [0, 0, 20]  # [hr, min, s]
 flu_step = 1  # very 4 phase loops acq
 time_duration = [48*4, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
@@ -99,7 +99,7 @@ light_path_state = 'green/'
 green_to_red(core, 'r2g', MICROSCOPE)
 # TODO：I found the python console initialized and performed this code block first time,
 #  the Ti2E_H has no fluorescent emission light.
-loop_index = 9  # default is 0
+loop_index = 15  # default is 0
 while loop_index != loops_num:
     t_init = time.time()
     if loop_index % flu_step == 0:
@@ -175,7 +175,7 @@ while loop_index != loops_num:
               f' and the the next step will start immediately.{bcolors.ENDC}')
     else:
         print(f'Waiting next loop[{loop_index + 1}].')
-        mm.countdown(mm.parse_second(waiting_t), 1)
+        mm.countdown(waiting_t, 1)
     loop_index += 1
 
 print('finished all loops!')
