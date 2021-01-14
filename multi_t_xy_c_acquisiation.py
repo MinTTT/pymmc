@@ -99,7 +99,7 @@ light_path_state = 'green/'
 green_to_red(core, 'r2g', MICROSCOPE)
 # TODO：I found the python console initialized and performed this code block first time,
 #  the Ti2E_H has no fluorescent emission light.
-loop_index = 481  # default is 0
+loop_index = 0  # default is 0
 while loop_index != loops_num:
     t_init = time.time()
     if loop_index % flu_step == 0:
