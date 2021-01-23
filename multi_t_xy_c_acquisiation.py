@@ -39,7 +39,7 @@ def green_to_red(core, shift_type, micro_device='Ti2E'):
             core.set_property(SHUTTER_LED, 'Cyan_Enable', 1)
             core.set_property(SHUTTER_LED, 'Green_Enable', 0)
             # core.set_property(SHUTTER_LED, 'State', 1)
-            core.set_property(FILTER_TURRET, 'State', 4)  # pos 4 530
+            core.set_property(FILTER_TURRET, 'State', 3)  # pos 3 521
             mm.waiting_device()
         if shift_type == 'g2r':
             core.set_property(SHUTTER_LED, 'Green_Level', RED_EXCITE)
@@ -60,11 +60,11 @@ def get_exposure(state):
 
 # ------------------------ acq parameters ----c--------------------------------
 EXPOSURE_GREEN = 50  # ms
-EXPOSURE_PHASE = 20  # ms
+EXPOSURE_PHASE = 10  # ms
 EXPOSURE_RED = 100  # ms
 
-DIR = r'D:\DATA\FULAB\ZJW\test/'
-POSITION_FILE = r'D:\DATA\FULAB\ZJW\test\multipoints.xml'
+DIR = r'E:\Image_Data\moma_data\20210116_NCM_pECJ3_M5_L3/'
+POSITION_FILE = r'E:\Image_Data\moma_data\20210116_NCM_pECJ3_M5_L3\multipoints.xml'
 MICROSCOPE = 'Ti2E_H'
 # --------------------------Initial Microscope Parameters-----------------------
 if MICROSCOPE == 'Ti2E':
@@ -87,8 +87,8 @@ elif MICROSCOPE == 'Ti2E_H':
 # ==========get multiple positions============
 fovs = mm.parse_position(POSITION_FILE)
 # ==========set loop parameters===============
-time_step = [0, 0, 20]  # [hr, min, s]
-flu_step = 1  # very 4 phase loops acq
+time_step = [0, 3, 30]  # [hr, min, s]
+flu_step = 4  # very 4 phase loops acq
 time_duration = [48*4, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
@@ -99,7 +99,7 @@ light_path_state = 'green/'
 green_to_red(core, 'r2g', MICROSCOPE)
 # TODO：I found the python console initialized and performed this code block first time,
 #  the Ti2E_H has no fluorescent emission light.
-loop_index = 15  # default is 0
+loop_index = 0  # default is 0
 while loop_index != loops_num:
     t_init = time.time()
     if loop_index % flu_step == 0:
