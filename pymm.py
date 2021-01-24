@@ -153,7 +153,7 @@ def waiting_device():
     :return: None
     """
     while core.system_busy():
-        time.sleep(0.001)
+        time.sleep(0.0001)
     return None
 
 
@@ -167,7 +167,7 @@ def parse_second(time_list):
     return sum([x * y for x, y in zip(time_list, weight)])
 
 
-def move_xyz_pfs(fov, turnoffz=True):
+def move_xyz_pfs(fov, turnoffz=True, step=3, fov_len=133.1):
     """
     Move stage xy and z position.
     :param fov:
@@ -176,14 +176,24 @@ def move_xyz_pfs(fov, turnoffz=True):
     """
     XY_DEVICE = core.get_xy_stage_device()
     if 'xy' in fov:
-        core.set_xy_position(XY_DEVICE, fov['xy'][0], fov['xy'][1])
+        x_f, y_f = core.get_x_position(XY_DEVICE), core.get_y_position(XY_DEVICE)
+        x_t, y_t = fov['xy'][0], fov['xy'][1]
+        dit = np.sqrt((x_t - x_f) ** 2 + (y_f - y_t) ** 2)
+        block_size = step * fov_len
+        num_block = int(dit // block_size + 2)
+        x_space = np.linspace(x_f, x_t, num=num_block)
+        y_space = np.linspace(y_f, y_t, num=num_block)
+        for i in range(len(x_space) - 1):
+            core.set_xy_position(XY_DEVICE, x_space[i + 1], y_space[i + 1])
+            waiting_device()
+
     if turnoffz:
         if 'pfsoffset' in fov:
             core.set_auto_focus_offset(fov['pfsoffset'][0])
     else:
         if 'z' in fov:
             core.set_position(fov['z'][0])
-    waiting_device()
+    # waiting_device()
     return None
 
 
@@ -250,5 +260,3 @@ def countdown(t, step=1, msg='sleeping'):
 # %%
 if __name__ == '__main__':
     countdown(10)
-
-
