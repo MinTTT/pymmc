@@ -12,14 +12,7 @@ bridge = Bridge()
 global core
 core = bridge.get_core()
 
-
-# studio = bridge.get_studio()
-
-
-# def get_aframe(image, metadata):
-#     global im
-#     im.append(image)
-#     print('acquired!')
+studio = bridge.get_studio()
 
 
 def get_current_time():
@@ -47,22 +40,29 @@ def snap_image(**kwargs):
     return im, tagged_image.tags
 
 
-def save_image(im, dir, name, meta):
+def save_image(im, im_dir, name, meta):
     """
     save image acquired to defined dir.
     :param im: ndarray
     :param meta: dictionary, some tags
-    :param dir: str, save folder
+    :param im_dir: str, save folder
     :param name: str, image name
     :return: NULL
     """
     try:
-        os.makedirs(dir)
+        os.makedirs(im_dir)
     except FileExistsError:
         pass
-    save_dir = dir + name + '.tiff'
+    save_im_dir = im_dir + name + '.tiff'
     meta['time'] = get_current_time()
-    tiff.imwrite(file=save_dir, data=im, metadata=meta)
+    tiff.imwrite(file=save_im_dir, data=im, metadata=meta)
+    return None
+
+
+def auto_acq_save(im_dir, name, shutter, exposure):
+    active_auto_shutter(shutter)
+    im, meta = snap_image(exposure=exposure)
+    save_image(im, im_dir, name, meta)
     return None
 
 

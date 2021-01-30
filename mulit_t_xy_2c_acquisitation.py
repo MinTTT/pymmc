@@ -58,6 +58,9 @@ def get_exposure(state):
         return EXPOSURE_RED
 
 
+
+
+
 # ------------------------ acq parameters ----c--------------------------------
 EXPOSURE_GREEN = 100  # ms
 EXPOSURE_PHASE = 10  # ms
@@ -82,7 +85,6 @@ elif MICROSCOPE == 'Ti2E_H':
     GREEN_EXCITE = 15
     RED_EXCITE = 50
 # -----------------------------------------------------------------------------------
-
 # %%
 # ==========get multiple positions============
 fovs = mm.parse_position(POSITION_FILE)
@@ -94,7 +96,7 @@ loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
 # %% loop body
-mm.set_light_path('BF', '100X', SHUTTER_LAMP)
+mm.set_light_path('BF', '100X')
 light_path_state = 'green/'
 green_to_red(core, 'r2g', MICROSCOPE)
 # TODO：I found the python console initialized and performed this code block first time,
@@ -119,36 +121,7 @@ while loop_index != loops_num:
                 print('Snap image (green).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + light_path_state
                 mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
-            # else:
-            #     im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
-            #     print('Snap image (red).\n')
-            #     image_dir = DIR + f'fov_{fov_index}/' + light_path_state
-            #     mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
-            # Second Channel
-            # if light_path_state == 'green/':
-            #     # mm.set_light_path('FLU', 'RFP_100', SHUTTER_LED)
-            #     green_to_red(core, 'g2r', micro_device=MICROSCOPE)
-            #     light_path_state = 'red/'
-            #     im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
-            #     print(f'Snap image (red).\n')
-            #     image_dir = DIR + f'fov_{fov_index}/' + light_path_state
-            #     mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
-            # else:
-            #     light_path_state = 'green/'
-            #     # mm.set_light_path('BF', '100X', SHUTTER_LAMP)
-            #     green_to_red(core, 'r2g', micro_device=MICROSCOPE)
-            #     mm.active_auto_shutter(SHUTTER_LAMP)
-            #     im, tags = mm.snap_image(exposure=EXPOSURE_PHASE)
-            #     print('Snap image (phase).\n')
-            #     image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
-            #     mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
-            #
-            #     # mm.set_light_path('FLU', 'GFP_100', SHUTTER_LED)
-            #     mm.active_auto_shutter(SHUTTER_LED)
-            #     im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
-            #     print('Snap image (green).\n')
-            #     image_dir = DIR + f'fov_{fov_index}/' + light_path_state
-            #     mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
+
     else:
         # ========start phase 100X acq loop=================#
         if light_path_state == 'green':
@@ -179,9 +152,3 @@ while loop_index != loops_num:
     loop_index += 1
 
 print('finished all loops!')
-
-# # %%
-# mm.set_light_path('FLU', 'RFP_100', SHUTTER_LED)
-# mm.waiting_device()
-# im, tags = mm.snap_image(exposure=EXPOSURE_GREEN)
-# mm.save_image(im, dir=DIR, name='test', meta=tags)
