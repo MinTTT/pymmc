@@ -62,20 +62,20 @@ def get_exposure(state):
 
 
 # ------------------------ acq parameters ----c--------------------------------
-EXPOSURE_GREEN = 50  # ms
+EXPOSURE_GREEN = 50  # 50 ms TiE2
 EXPOSURE_PHASE = 10  # ms
 EXPOSURE_RED = 100  # ms
 
-DIR = r'E:\20210130_pECJ3_M5L3/'
-POSITION_FILE = r'E:\20210130_pECJ3_M5L3\multipoints.xml'
-MICROSCOPE = 'Ti2E_H'
+DIR = r'G:\Image_Data\moma_data\20210130_pECJ3_M5_L3_2/'
+POSITION_FILE = r'G:\Image_Data\moma_data\20210130_pECJ3_M5_L3_2\multipoints.xml'
+MICROSCOPE = 'Ti2E'
 # --------------------------Initial Microscope Parameters-----------------------
 if MICROSCOPE == 'Ti2E':
     SHUTTER_LAMP = 'DiaLamp'
     SHUTTER_LED = 'XCite-Exacte'
     FILTER_TURRET = 'FilterTurret1'
     FLU_EXCITE = 'XCite-Exacte'
-    GREEN_EXCITE = 5
+    GREEN_EXCITE = 15
     RED_EXCITE = 50
     XY_DEVRED_EXCITEICE = core.get_xy_stage_device()
 elif MICROSCOPE == 'Ti2E_H':

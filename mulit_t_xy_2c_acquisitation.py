@@ -1,8 +1,10 @@
 # %%
 import pymm as mm
 import time
+
 core = mm.core
 core.set_property('Core', 'TimeoutMs', 40000)
+
 
 class bcolors:
     HEADER = '\033[95m'
@@ -14,6 +16,7 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
 
 def green_to_red(core, shift_type, micro_device='Ti2E'):
     """
@@ -58,16 +61,13 @@ def get_exposure(state):
         return EXPOSURE_RED
 
 
-
-
-
 # ------------------------ acq parameters ----c--------------------------------
-EXPOSURE_GREEN = 100  # ms
+EXPOSURE_GREEN = 50  # 50 ms TiE2, 100 ms sfGFP
 EXPOSURE_PHASE = 10  # ms
 EXPOSURE_RED = 100  # ms
 
-DIR = r'G:\Image_Data\moma_data\20210124/'
-POSITION_FILE = r'G:\Image_Data\moma_data\20210124\multipoints.xml'
+DIR = r'G:\Image_Data\moma_data\20210130_pECJ3_M5_L3_2/'
+POSITION_FILE = r'G:\Image_Data\moma_data\20210130_pECJ3_M5_L3_2\multipoints.xml'
 MICROSCOPE = 'Ti2E'
 # --------------------------Initial Microscope Parameters-----------------------
 if MICROSCOPE == 'Ti2E':
@@ -91,7 +91,7 @@ fovs = mm.parse_position(POSITION_FILE)
 # ==========set loop parameters===============
 time_step = [0, 3, 0]  # [hr, min, s]
 flu_step = 4  # very 4 phase loops acq
-time_duration = [48*4, 0, 0]
+time_duration = [48 * 4, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
