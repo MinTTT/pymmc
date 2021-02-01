@@ -59,9 +59,11 @@ def save_image(im, im_dir, name, meta):
     return None
 
 
-def auto_acq_save(im_dir, name, shutter, exposure):
-    active_auto_shutter(shutter)
+def auto_acq_save(im_dir, name, exposure: float, shutter=None):
+    if shutter:
+        active_auto_shutter(shutter)
     im, meta = snap_image(exposure=exposure)
+    # TODO: threading.
     save_image(im, im_dir, name, meta)
     return None
 

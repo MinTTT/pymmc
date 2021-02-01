@@ -18,38 +18,36 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def green_to_red(core, shift_type, micro_device='Ti2E'):
+def green_to_red(core_mmc, shift_type, micro_device='Ti2E'):
     """
     This function is used to set light from green to red channel.
     For Ti2E, two devices shall be changed their states. 1. FilterTurret, filter states
-    :param core: mmcore
+    :param core_mmc: mmcore
     :param shift_type: str, 'g2r' or 'r2g'
     :param micro_device: str, which device? 'Ti2E' or 'Ti2E_H'.
     :return: None
     """
     if micro_device == 'Ti2E':
         if shift_type == "g2r":
-            core.set_property(FILTER_TURRET, 'State', 5)  # set filer in 5 pos
-            core.set_property(FLU_EXCITE, 'Lamp-Intensity', RED_EXCITE)  # set xcite lamp intensity 50
+            core_mmc.set_property(FILTER_TURRET, 'State', 5)  # set filer in 5 pos
+            core_mmc.set_property(FLU_EXCITE, 'Lamp-Intensity', RED_EXCITE)  # set xcite lamp intensity 50
             mm.waiting_device()
         if shift_type == "r2g":
-            core.set_property(FILTER_TURRET, 'State', 2)  # set filer in 2 pos
-            core.set_property(FLU_EXCITE, 'Lamp-Intensity', GREEN_EXCITE)  # set xcite lamp intensity 2
+            core_mmc.set_property(FILTER_TURRET, 'State', 2)  # set filer in 2 pos
+            core_mmc.set_property(FLU_EXCITE, 'Lamp-Intensity', GREEN_EXCITE)  # set xcite lamp intensity 2
             mm.waiting_device()
     elif micro_device == 'Ti2E_H':
         if shift_type == "r2g":
-            core.set_property(SHUTTER_LED, 'Cyan_Level', GREEN_EXCITE)
-            core.set_property(SHUTTER_LED, 'Cyan_Enable', 1)
-            core.set_property(SHUTTER_LED, 'Green_Enable', 0)
-            # core.set_property(SHUTTER_LED, 'State', 1)
-            core.set_property(FILTER_TURRET, 'State', 3)  # pos 3 521
+            core_mmc.set_property(SHUTTER_LED, 'Cyan_Level', GREEN_EXCITE)
+            core_mmc.set_property(SHUTTER_LED, 'Cyan_Enable', 1)
+            core_mmc.set_property(SHUTTER_LED, 'Green_Enable', 0)
+            core_mmc.set_property(FILTER_TURRET, 'State', 3)  # pos 3 521
             mm.waiting_device()
         if shift_type == 'g2r':
-            core.set_property(SHUTTER_LED, 'Green_Level', RED_EXCITE)
-            core.set_property(SHUTTER_LED, 'Green_Enable', 1)
-            core.set_property(SHUTTER_LED, 'Cyan_Enable', 0)
-            # core.set_property(SHUTTER_LED, 'State', 1)
-            core.set_property(FILTER_TURRET, 'State', 5)  # pos5 631/36
+            core_mmc.set_property(SHUTTER_LED, 'Green_Level', RED_EXCITE)
+            core_mmc.set_property(SHUTTER_LED, 'Green_Enable', 1)
+            core_mmc.set_property(SHUTTER_LED, 'Cyan_Enable', 0)
+            core_mmc.set_property(FILTER_TURRET, 'State', 5)  # pos5 631/36
             mm.waiting_device()
     return None
 
@@ -102,7 +100,7 @@ light_path_state = 'green/'
 green_to_red(core, 'r2g', MICROSCOPE)
 # TODO：I found the python console initialized and performed this code block first time,
 #  the Ti2E_H has no fluorescent emission light.
-loop_index = 1  # default is 0
+loop_index = 656  # default is 0
 while loop_index != loops_num:
     t_init = time.time()
     if loop_index % flu_step == 0:
@@ -111,59 +109,39 @@ while loop_index != loops_num:
             print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
             # First Channel
             if light_path_state == 'green/':
-                # mm.active_auto_shutter(SHUTTER_LAMP)
-                # im, tags = mm.snap_image(exposure=EXPOSURE_PHASE)
                 print('Snap image (phase).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
-                # mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
                 mm.auto_acq_save(image_dir, name=f't{loop_index}',
                                  shutter=SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
-                # mm.active_auto_shutter(SHUTTER_LED)
-                # im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
                 print('Snap image (green).\n')
-                #
                 image_dir = DIR + f'fov_{fov_index}/' + light_path_state
-                # mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
                 mm.auto_acq_save(image_dir, name=f't{loop_index}',
                                  shutter=SHUTTER_LED, exposure=get_exposure(light_path_state))
-
             else:
-                # im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
                 print('Snap image (red).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + light_path_state
                 mm.auto_acq_save(image_dir, name=f't{loop_index}',
                                  shutter=SHUTTER_LED, exposure=get_exposure(light_path_state))
-                # mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
+
             # Second Channel
             if light_path_state == 'green/':
                 green_to_red(core, 'g2r', micro_device=MICROSCOPE)
                 light_path_state = 'red/'
-                # im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
                 image_dir = DIR + f'fov_{fov_index}/' + light_path_state
                 mm.auto_acq_save(image_dir, name=f't{loop_index}',
                                  shutter=SHUTTER_LED, exposure=get_exposure(light_path_state))
                 print(f'Snap image (red).\n')
-                # image_dir = DIR + f'fov_{fov_index}/' + light_path_state
-                # mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
             else:
                 light_path_state = 'green/'
-                # mm.set_light_path('BF', '100X', SHUTTER_LAMP)
                 green_to_red(core, 'r2g', micro_device=MICROSCOPE)
-
                 print('Snap image (phase).\n')
                 image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
-                # mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
                 mm.auto_acq_save(image_dir, name=f't{loop_index}',
                                  shutter=SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
-                # mm.active_auto_shutter(SHUTTER_LED)
-                # im, tags = mm.snap_image(exposure=get_exposure(light_path_state))
                 print('Snap image (green).\n')
-                #
                 image_dir = DIR + f'fov_{fov_index}/' + light_path_state
-                # mm.save_image(im, dir=image_dir, name=f't{loop_index}', meta=tags)
                 mm.auto_acq_save(image_dir, name=f't{loop_index}',
                                  shutter=SHUTTER_LED, exposure=get_exposure(light_path_state))
-
     else:
         # ========start phase 100X acq loop=================#
         if light_path_state == 'green':
@@ -178,8 +156,7 @@ while loop_index != loops_num:
             print('Snap image (phase).\n')
             image_dir = DIR + f'fov_{fov_index}/' + 'phase/'
             mm.auto_acq_save(image_dir, name=f't{loop_index}',
-                             shutter=SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
-
+                             exposure=EXPOSURE_PHASE)
 
     # ======================waiting cycle=========
     t_of_acq = time.time() - t_init
