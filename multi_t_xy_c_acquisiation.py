@@ -100,12 +100,12 @@ light_path_state = 'green/'
 green_to_red(core, 'r2g', MICROSCOPE)
 # TODO：I found the python console initialized and performed this code block first time,
 #  the Ti2E_H has no fluorescent emission light.
-loop_index = 656  # default is 0
+loop_index = 0  # default is 0
 while loop_index != loops_num:
     t_init = time.time()
     if loop_index % flu_step == 0:
         for fov_index, fov in enumerate(fovs):
-            mm.move_xyz_pfs(fov)  # move stage xy.
+            mm.move_xyz_pfs(fov, step=5)  # move stage xy.
             print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
             # First Channel
             if light_path_state == 'green/':
@@ -122,7 +122,6 @@ while loop_index != loops_num:
                 image_dir = DIR + f'fov_{fov_index}/' + light_path_state
                 mm.auto_acq_save(image_dir, name=f't{loop_index}',
                                  shutter=SHUTTER_LED, exposure=get_exposure(light_path_state))
-
             # Second Channel
             if light_path_state == 'green/':
                 green_to_red(core, 'g2r', micro_device=MICROSCOPE)
@@ -168,6 +167,7 @@ while loop_index != loops_num:
         print(f'Waiting next loop[{loop_index + 1}].')
         mm.countdown(waiting_t, 1)
     loop_index += 1
+    # ======================waiting cycle=========
 
 print('finished all loops!')
 
