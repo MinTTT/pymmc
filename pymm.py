@@ -6,8 +6,9 @@ import time
 import numpy as np
 # from pycromanager import Acquisition, multi_d_acquisition_events
 import tifffile as tiff
-from pycromanager import Bridge
+import _thread as thread
 
+from pycromanager import Bridge
 bridge = Bridge()
 global core
 core = bridge.get_core()
@@ -59,12 +60,20 @@ def save_image(im, im_dir, name, meta):
     return None
 
 
-def auto_acq_save(im_dir, name, exposure: float, shutter=None):
+def auto_acq_save(im_dir: str, name: str, exposure: float, shutter=None) -> None:
+    """
+    auto acquisition image and save.
+
+    :param im_dir: str, path
+    :param name: str, image name
+    :param exposure: float, set exposure time
+    :param shutter: None or str, if None, microscope use current shutter
+    :return: None
+    """
     if shutter:
         active_auto_shutter(shutter)
     im, meta = snap_image(exposure=exposure)
-    # TODO: threading.
-    save_image(im, im_dir, name, meta)
+    thread.start_new_thread(save_image, (im, im_dir, name, meta))
     return None
 
 
