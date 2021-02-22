@@ -54,7 +54,7 @@ def save_image(im, im_dir, name, meta):
         os.makedirs(im_dir)
     except FileExistsError:
         pass
-    save_im_dir = im_dir + name + '.tiff'
+    save_im_dir = os.path.join(im_dir, f'{name}.tiff')
     meta['time'] = get_current_time()
     tiff.imwrite(file=save_im_dir, data=im, metadata=meta)
     return None
