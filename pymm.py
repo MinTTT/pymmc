@@ -70,7 +70,7 @@ def auto_acq_save(im_dir: str, name: str, exposure: float, shutter=None) -> None
     :param shutter: None or str, if None, microscope use current shutter
     :return: None
     """
-    if shutter:
+    if shutter is not None:
         active_auto_shutter(shutter)
     im, meta = snap_image(exposure=exposure)
     thread.start_new_thread(save_image, (im, im_dir, name, meta))

@@ -64,8 +64,8 @@ EXPOSURE_GREEN = 50  # 50 ms TiE2
 EXPOSURE_PHASE = 10  # ms
 EXPOSURE_RED = 100  # ms
 
-DIR = r'G:\Image_Data\moma_data\20210130_pECJ3_M5_L3_2/'
-POSITION_FILE = r'G:\Image_Data\moma_data\20210130_pECJ3_M5_L3_2\multipoints.xml'
+DIR = r'G:\Image_Data\moma_data\20210219_pECJ3_M5_L3/'
+POSITION_FILE = r'G:\Image_Data\moma_data\20210219_pECJ3_M5_L3\multipoints.xml'
 MICROSCOPE = 'Ti2E'
 # --------------------------Initial Microscope Parameters-----------------------
 if MICROSCOPE == 'Ti2E':
@@ -88,9 +88,9 @@ elif MICROSCOPE == 'Ti2E_H':
 # ==========get multiple positions============
 fovs = mm.parse_position(POSITION_FILE)
 # ==========set loop parameters===============
-time_step = [0, 3, 30]  # [hr, min, s]
+time_step = [0, 4, 00]  # [hr, min, s]
 flu_step = 4  # very 4 phase loops acq
-time_duration = [48 * 4, 0, 0]
+time_duration = [24 * 4, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
@@ -161,7 +161,7 @@ while loop_index != loops_num:
     t_of_acq = time.time() - t_init
     waiting_t = mm.parse_second(time_step) - t_of_acq
     if waiting_t < 0:
-        print(f'{bcolors.WARNING}Waring: Acquisition loop {t_of_acq} s \n is longer than default time step!,'
+        print(f'{bcolors.WARNING}Waring: Acquisition loop {t_of_acq} s \n is longer than default time step!'
               f' and the the next step will start immediately.{bcolors.ENDC}')
     else:
         print(f'Waiting next loop[{loop_index + 1}].')
