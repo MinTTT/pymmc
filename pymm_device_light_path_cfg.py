@@ -41,6 +41,13 @@ class Microscope_Paras:
             self.FILTER_TURRET = 'FilterTurret1'
             self.GREEN_EXCITE = 15
             self.RED_EXCITE = 50
+        elif self.MICROSCOPE == 'Ti2E_LDJ':
+            self.SHUTTER_LAMP = 'DiaLamp'
+            self.SHUTTER_LED = 'XCite-Exacte'
+            self.FLU_EXCITE = 'XCite-Exacte'
+            self.FILTER_TURRET = 'FilterTurret1'
+            self.GREEN_EXCITE = 15
+            self.RED_EXCITE = 15
     def set_light_path(self, core_mmc, shift_type):
         """
         This function is used to set light from green to red channel.
@@ -60,6 +67,18 @@ class Microscope_Paras:
             if shift_type == "r2g":
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 2)  # set filer in 2 pos
                 core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity', self.GREEN_EXCITE)  # set xcite lamp intensity 2
+                mm.waiting_device()
+        elif self.MICROSCOPE == 'Ti2E_LDJ':
+            if shift_type == 'init_phase':
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 3)
+                mm.waiting_device()
+            if shift_type == 'r2g':
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 3)  # set filer in 5 pos
+                core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity', self.GREEN_EXCITE)  # set xcite lamp intensity 50
+                mm.waiting_device()
+            if shift_type == 'g2r':
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 5 pos
+                core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity', self.RED_EXCITE)  # set xcite lamp intensity 50
                 mm.waiting_device()
         elif self.MICROSCOPE == 'Ti2E_H':
             if shift_type == 'init_phase':

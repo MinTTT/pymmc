@@ -17,14 +17,22 @@ def get_exposure(state):
         return EXPOSURE_RED
 
 
+def if_acq(loop_index, flu_step):
+    try:
+        reamin = loop_index % flu_step
+        return reamin
+    except ZeroDivisionError:
+        return 1
+
+
 # ------------------------ acq parameters ----c--------------------------------
-EXPOSURE_GREEN = 50  # 50 ms TiE2
-EXPOSURE_PHASE = 10  # ms
+EXPOSURE_GREEN = 100  # 50 ms TiE2
+EXPOSURE_PHASE = 20  # ms
 EXPOSURE_RED = 100  # ms
 
-DIR = r'./cfg_folder'
-POSITION_FILE = r'G:\Image_Data\moma_data\20210130_pECJ3_M5_L3_2\multipoints.xml'
-MICROSCOPE = 'Ti2E'  # Ti2E, Ti2E_H, Ti2E_DB
+DIR = r'G:\20210223'
+POSITION_FILE = r'G:\20210223\multipoints.xml'
+MICROSCOPE = 'Ti2E_LDJ'  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
 # -----------------------------------------------------------------------------------
 device_cfg = pymm_cfg.Microscope_Paras(MICROSCOPE)
 set_light_path = device_cfg.set_light_path
@@ -32,9 +40,9 @@ set_light_path = device_cfg.set_light_path
 # ==========get multiple positions============
 fovs = mm.parse_position(POSITION_FILE)
 # ==========set loop parameters===============
-time_step = [0, 3, 30]  # [hr, min, s]
-flu_step = 4  # very 4 phase loops acq
-time_duration = [48 * 4, 0, 0]
+time_step = [0, 2, 0]  # [hr, min, s]
+flu_step = 2  # very 4 phase loops acq
+time_duration = [24 * 4, 0, 0]
 loops_num = mm.parse_second(time_duration) // mm.parse_second(time_step)
 print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
@@ -45,10 +53,10 @@ set_light_path(core, 'init_phase')
 set_light_path(core, 'r2g')
 # TODO：I found the python console initialized and performed this code block first time,
 #  the Ti2E_H has no fluorescent emission light.
-loop_index = 0  # default is 0
+loop_index = 264  # default is 0
 while loop_index != loops_num:
     t_init = time.time()
-    if loop_index % flu_step == 0:
+    if if_acq(loop_index, flu_step) == 0:
         for fov_index, fov in enumerate(fovs):
             mm.move_xyz_pfs(fov, step=5)  # move stage xy.
             print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
