@@ -133,7 +133,6 @@ def parse_position(fp):
                 if key['Device']['scalar'] == PFS_KEY:
                     pfs = key['Position_um']['array']
             pos_dic = dict(xy=xy, z=z, pfsoffset=pfs)
-
             poss_list.append(pos_dic)
 
     if file_type == 'xml':

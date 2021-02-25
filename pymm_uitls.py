@@ -4,6 +4,10 @@
  @auther: Pan M. CHU
 """
 
+import os
+import time
+
+
 
 # Own modules
 class colors:
@@ -18,4 +22,18 @@ class colors:
     UNDERLINE = '\033[4m'
 
 
-bcolors = colors
+def test_thread(thread):
+    while True:
+        print(1)
+        if not thread[0]:
+            print('finish')
+            break
+        time.sleep(2)
+    return None
+
+
+def get_filenameindex(fold_name):
+    file_list = os.listdir(fold_name)
+    tiff_file = [int(name.split('.')[0][1:]) for name in file_list if
+                 name.split('.')[-1] == 'tiff' and name.split('.')[0][0] == 't']
+    return max(tiff_file) + 1
