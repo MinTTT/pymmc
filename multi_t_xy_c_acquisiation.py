@@ -4,11 +4,28 @@ import time
 import pymm_device_light_path_cfg as pymm_cfg
 import os
 from pymm_uitls import colors, get_filenameindex
+import _thread as thread
 
 bcolors = colors()
 core = mm.core
 core.set_property('Core', 'TimeoutMs', 40000)
 studio = mm.studio
+
+
+class PymmAcq:
+
+    def __init__(self, device: str):
+        self.device_name = device
+        self.stop = [False]
+
+    def multi_acq_3c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):
+        thread.start_new_thread(multi_acq_3c,
+                                (dir, pos_ps, self.device_name, time_step, flu_step, time_duration, self.stop))
+        return None
+
+    def stop_acq_loop(self):
+        self.stop[0] = True
+        return None
 
 
 def get_exposure(state, device_cfg):
@@ -26,7 +43,8 @@ def if_acq(loop_index, flu_step):
         return 1
 
 
-def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: int, time_duration: list, thread_flag=False) -> None:
+def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: int, time_duration: list,
+                 thread_flag=False) -> None:
     '''
     :param dir: image save dir, str
     :param pos_ps: position file, str
@@ -79,19 +97,22 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
-                                     shutter=device_cfg.SHUTTER_LED, exposure=get_exposure(light_path_state, device_cfg))
+                                     shutter=device_cfg.SHUTTER_LED,
+                                     exposure=get_exposure(light_path_state, device_cfg))
                 else:
                     print('Snap image (red).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
-                                     shutter=device_cfg.SHUTTER_LED, exposure=get_exposure(light_path_state, device_cfg))
+                                     shutter=device_cfg.SHUTTER_LED,
+                                     exposure=get_exposure(light_path_state, device_cfg))
                 # Second Channel
                 if light_path_state == 'green':
                     set_light_path(core, 'g2r')
                     light_path_state = 'red'
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
-                                     shutter=device_cfg.SHUTTER_LED, exposure=get_exposure(light_path_state, device_cfg))
+                                     shutter=device_cfg.SHUTTER_LED,
+                                     exposure=get_exposure(light_path_state, device_cfg))
                     print(f'Snap image (red).\n')
                 else:
                     light_path_state = 'green'
@@ -103,7 +124,8 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
-                                     shutter=device_cfg.SHUTTER_LED, exposure=get_exposure(light_path_state, device_cfg))
+                                     shutter=device_cfg.SHUTTER_LED,
+                                     exposure=get_exposure(light_path_state, device_cfg))
         else:
             # ========start phase 100X acq loop=================#
             if light_path_state == 'green':
@@ -122,9 +144,10 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
 
         # ======================waiting cycle=========
         if thread_flag != False:
-            if not thread_flag[0]:
+            if thread_flag[0]:
                 print('Acquisition loop finish!')
-                break
+                thread_flag[0] = False
+                return None
         t_of_acq = time.time() - t_init
         waiting_t = mm.parse_second(time_step) - t_of_acq
         if waiting_t < 0:
@@ -191,19 +214,22 @@ if __name__ == '__mian__':
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
-                                     shutter=device_cfg.SHUTTER_LED, exposure=get_exposure(light_path_state, device_cfg))
+                                     shutter=device_cfg.SHUTTER_LED,
+                                     exposure=get_exposure(light_path_state, device_cfg))
                 else:
                     print('Snap image (red).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
-                                     shutter=device_cfg.SHUTTER_LED, exposure=get_exposure(light_path_state, device_cfg))
+                                     shutter=device_cfg.SHUTTER_LED,
+                                     exposure=get_exposure(light_path_state, device_cfg))
                 # Second Channel
                 if light_path_state == 'green':
                     set_light_path(core, 'g2r')
                     light_path_state = 'red'
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
-                                     shutter=device_cfg.SHUTTER_LED, exposure=get_exposure(light_path_state, device_cfg))
+                                     shutter=device_cfg.SHUTTER_LED,
+                                     exposure=get_exposure(light_path_state, device_cfg))
                     print(f'Snap image (red).\n')
                 else:
                     light_path_state = 'green'
@@ -215,7 +241,8 @@ if __name__ == '__mian__':
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
-                                     shutter=device_cfg.SHUTTER_LED, exposure=get_exposure(light_path_state, device_cfg))
+                                     shutter=device_cfg.SHUTTER_LED,
+                                     exposure=get_exposure(light_path_state, device_cfg))
         else:
             # ========start phase 100X acq loop=================#
             if light_path_state == 'green':
