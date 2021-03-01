@@ -34,6 +34,7 @@ class MicroscopeParas:
             self.EXPOSURE_GREEN = 50  # 50 ms TiE2
             self.EXPOSURE_PHASE = 20  # ms
             self.EXPOSURE_RED = 200  # ms
+            self.AUTOFOCUS_DEVICE = 'PFS'
         elif self.MICROSCOPE == 'Ti2E_H':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'Spectra'
@@ -43,6 +44,7 @@ class MicroscopeParas:
             self.EXPOSURE_GREEN = 50  # 50 ms TiE2
             self.EXPOSURE_PHASE = 20  # ms
             self.EXPOSURE_RED = 200  # ms
+            self.AUTOFOCUS_DEVICE = 'PFS'
         elif self.MICROSCOPE == 'Ti2E_H_DB':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'Spectra'
@@ -52,6 +54,7 @@ class MicroscopeParas:
             self.EXPOSURE_GREEN = 50  # 50 ms TiE2
             self.EXPOSURE_PHASE = 20  # ms
             self.EXPOSURE_RED = 200  # ms
+            self.AUTOFOCUS_DEVICE = 'PFS'
         elif self.MICROSCOPE == 'Ti2E_LDJ':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'XCite-Exacte'
@@ -62,6 +65,7 @@ class MicroscopeParas:
             self.EXPOSURE_GREEN = 100  # 50 ms TiE2
             self.EXPOSURE_PHASE = 20  # ms
             self.EXPOSURE_RED = 100  # ms
+            self.AUTOFOCUS_DEVICE = 'PFS'
         else:
             print(f'{colors.WARNING}{self.MICROSCOPE}: No such device tag!{colors.ENDC}')
 
@@ -78,7 +82,7 @@ class MicroscopeParas:
             if shift_type == 'init_phase':
                 pass
             if shift_type == "g2r":
-                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 5 pos
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 1)  # set filer in 5 pos
                 core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity', self.RED_EXCITE)  # set xcite lamp intensity 50
                 mm.waiting_device()
             if shift_type == "r2g":
@@ -98,7 +102,7 @@ class MicroscopeParas:
                                       self.GREEN_EXCITE)  # set xcite lamp intensity 50
                 mm.waiting_device()
             if shift_type == 'g2r':
-                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 5 pos
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 1)  # set filer in 5 pos
                 core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity', self.RED_EXCITE)  # set xcite lamp intensity 50
                 mm.waiting_device()
         elif self.MICROSCOPE == 'Ti2E_H':

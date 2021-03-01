@@ -75,34 +75,39 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     device_cfg = pymm_cfg.MicroscopeParas(MICROSCOPE)
     EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
     set_light_path = device_cfg.set_light_path
+    print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
     mm.set_light_path('BF', '100X')
     light_path_state = 'green'
     set_light_path(core, 'init_phase')
     set_light_path(core, 'r2g')
     # TODO：I found the python console initialized and performed this code block first time,
     #  the Ti2E_H has no fluorescent emission light.
+    print(f'{colors.OKGREEN}Start ACQ Loop.{colors.ENDC}')
     loop_index = 0  # default is 0
     while loop_index != loops_num:
         t_init = time.time()
+        mm.autofocus()
         if if_acq(loop_index, flu_step) == 0:
             for fov_index, fov in enumerate(fovs):
+                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                file_name = f't{get_filenameindex(image_dir)}'
                 mm.move_xyz_pfs(fov, step=5)  # move stage xy.
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 # First Channel
                 if light_path_state == 'green':
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
-                    mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
+                    mm.auto_acq_save(image_dir, name=file_name,
                                      shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
-                    mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
+                    mm.auto_acq_save(image_dir, name=file_name,
                                      shutter=device_cfg.SHUTTER_LED,
                                      exposure=get_exposure(light_path_state, device_cfg))
                 else:
                     print('Snap image (red).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
-                    mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
+                    mm.auto_acq_save(image_dir, name=file_name,
                                      shutter=device_cfg.SHUTTER_LED,
                                      exposure=get_exposure(light_path_state, device_cfg))
                 # Second Channel
@@ -110,7 +115,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
                     set_light_path(core, 'g2r')
                     light_path_state = 'red'
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
-                    mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
+                    mm.auto_acq_save(image_dir, name=file_name,
                                      shutter=device_cfg.SHUTTER_LED,
                                      exposure=get_exposure(light_path_state, device_cfg))
                     print(f'Snap image (red).\n')
@@ -119,11 +124,11 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
                     set_light_path(core, 'r2g')
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
-                    mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
+                    mm.auto_acq_save(image_dir, name=file_name,
                                      shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
-                    mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
+                    mm.auto_acq_save(image_dir, name=file_name,
                                      shutter=device_cfg.SHUTTER_LED,
                                      exposure=get_exposure(light_path_state, device_cfg))
         else:
@@ -136,10 +141,12 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
             mm.active_auto_shutter(device_cfg.SHUTTER_LAMP)
             for fov_index, fov in enumerate(fovs):
                 mm.move_xyz_pfs(fov)
+                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                file_name = f't{get_filenameindex(image_dir)}'
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 print('Snap image (phase).\n')
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
-                mm.auto_acq_save(image_dir, name=f't{get_filenameindex(image_dir)}',
+                mm.auto_acq_save(image_dir, name=file_name,
                                  exposure=EXPOSURE_PHASE)
 
         # ======================waiting cycle=========

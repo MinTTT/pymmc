@@ -33,7 +33,11 @@ def test_thread(thread):
 
 
 def get_filenameindex(fold_name):
-    file_list = os.listdir(fold_name)
+    try:
+        file_list = os.listdir(fold_name)
+    except FileNotFoundError:
+        os.makedirs(fold_name)
+        return 0
     tiff_file = [int(name.split('.')[0][1:]) for name in file_list if
                  name.split('.')[-1] == 'tiff' and name.split('.')[0][0] == 't']
     return max(tiff_file) + 1

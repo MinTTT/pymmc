@@ -9,6 +9,7 @@ import tifffile as tiff
 import _thread as thread
 
 from pycromanager import Bridge
+
 bridge = Bridge()
 global core
 core = bridge.get_core()
@@ -204,6 +205,14 @@ def move_xyz_pfs(fov, turnoffz=True, step=3, fov_len=133.1):
         if 'z' in fov:
             core.set_position(fov['z'][0])
     # waiting_device()
+    return None
+
+
+def autofocus():
+    if not core.is_continuous_focus_locked():
+        core.enable_continuous_focus(True)
+        waiting_device()
+        print('Auto Focus Enable!')
     return None
 
 
