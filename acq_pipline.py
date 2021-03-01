@@ -22,6 +22,7 @@ time_duration = [24, 0, 0]
 
 acq_loop = PymmAcq(device=MICROSCOPE)
 val_contr = ValveController(port='com4')
+val_contr.valve_off()
 acq_loop.multi_acq_3c(DIR, POSITION_FILE, time_step, flu_step, time_duration)
 
 # if want to stop acq loop

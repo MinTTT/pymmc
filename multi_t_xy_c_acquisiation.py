@@ -86,12 +86,13 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     loop_index = 0  # default is 0
     while loop_index != loops_num:
         t_init = time.time()
-        mm.autofocus()
+
         if if_acq(loop_index, flu_step) == 0:
             for fov_index, fov in enumerate(fovs):
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 mm.move_xyz_pfs(fov, step=5)  # move stage xy.
+                mm.autofocus()  # check auto focus, is important!
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 # First Channel
                 if light_path_state == 'green':
@@ -150,11 +151,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
                                  exposure=EXPOSURE_PHASE)
 
         # ======================waiting cycle=========
-        if thread_flag != False:
-            if thread_flag[0]:
-                print('Acquisition loop finish!')
-                thread_flag[0] = False
-                return None
+
         t_of_acq = time.time() - t_init
         waiting_t = mm.parse_second(time_step) - t_of_acq
         if waiting_t < 0:
@@ -164,6 +161,11 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
         else:
             print(f'Waiting next loop[{loop_index + 1}].')
             mm.countdown(waiting_t, 1)
+        if thread_flag != False:
+            if thread_flag[0]:
+                print('Acquisition loop finish!')
+                thread_flag[0] = False
+                return None
         loop_index += 1
         # ======================waiting cycle=========
 
