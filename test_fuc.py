@@ -11,6 +11,77 @@ from ctypes import WinDLL, create_string_buffer
 import os
 import sys
 
+def load_sdk(ps):
+    if os.path.exists(ps):
+        return WinDLL(ps)
+    else:
+        raise RuntimeError("DLL could not be loaded.")
+
+
+class PriorScan:
+    def __init__(self, com, dll_path=r"./prior_stage/x64/PriorScientificSDK.dll"):
+        """
+
+        :param com: int, com port number, if COM3, use the value 3
+        :param dll_path: str, default use dll in this project
+        """
+        self.com = com
+        self.dll_ps = dll_path
+        self.SDKPrior = load_sdk(self.dll_ps)
+        self.rx = create_string_buffer(2000)
+        self.rx_decode = None
+        # initialize
+        self.ret = self.SDKPrior.PriorScientificSDK_Initialise()
+        if ret:
+            print(f"Error initialising {self.ret}")
+            sys.exit()
+        else:
+            print(f"Ok initialising {self.ret}")
+        self.ret = self.SDKPrior.PriorScientificSDK_Version(self.rx)
+        print(f'Prior stage api version: {self.rx.value.decode()}')
+        # session
+        self.session_id = self.SDKPrior.PriorScientificSDK_OpenNewSession()
+        if self.session_id < 0:
+            print(f'Error getting session ID {self.session_id}')
+            sys.exit()
+        # connect to device
+        self.ret = self.SDKPrior.PriorScientificSDK_cmd(
+            self.session_id, create_string_buffer(f"controller.connect {self.com}".encode()), self.rx)
+
+    def cmd(self, msg):
+        self.ret = self.SDKPrior.PriorScientificSDK_cmd(
+            self.session_id, create_string_buffer(msg.encode()), self.rx)
+        return self.rx.value.decode()
+
+    def device_busy(self):
+        """
+        get the busy status of the stage
+        :return: 0 idle, 1 X moving, 2 Y moving, 3 both X and Y moving
+        """
+        self.rx_decode = self.cmd("controller.stage.busy.get")
+        return int(self.rx_decode)
+
+    def get_xy_position(self):
+        """
+        Returns the current stage XY position
+        :return: float x, float y
+        """
+        self.rx_decode = self.cmd("controller.stage.position.get")
+        x, y = self.rx_decode.split(',')
+        return float(x), float(y)
+
+    def get_x_position(self):
+        """
+        Returns the current stage X position
+        :return: float x
+        """
+        self.rx_decode = self.com()
+
+
+
+
+
+
 path = r"prior_stage\x64\PriorScientificSDK.dll"
 
 if os.path.exists(path):
