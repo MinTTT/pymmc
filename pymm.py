@@ -158,13 +158,19 @@ def parse_position(fp):
     return poss_list
 
 
-def waiting_device():
+def waiting_device(device=None):
     """
     waiting for micro-scope done all commands.
+    device:str, device name, if None, waiting all device
     :return: None
     """
-    while core.system_busy():
-        time.sleep(0.00001)
+    if device is not None:
+        while core.device_busy(device):
+            time.sleep(0.00001)
+        return None
+    else:
+        while core.system_busy():
+            time.sleep(0.00001)
     return None
 
 
