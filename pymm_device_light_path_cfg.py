@@ -15,9 +15,14 @@
 # # […]
 import pymm as mm
 from pymm_uitls import colors
+import time
+
 colors = colors()
+
 # global core
-# core = mm.core
+mmcore = mm.core
+
+
 # Own modules
 
 
@@ -36,6 +41,7 @@ class MicroscopeParas:
             self.EXPOSURE_RED = 200  # ms
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
+            self.Z_DEVICE = 'ZDrive'
         elif self.MICROSCOPE == 'TiE':
             self.SHUTTER_LAMP = 'Arduino-Shutter'
             self.INIT_LAMP = 'TIDiaLamp'
@@ -45,9 +51,11 @@ class MicroscopeParas:
             self.GREEN_EXCITE = 15
             self.RED_EXCITE = 50
             self.EXPOSURE_GREEN = 50  # 50 ms TiE2
-            self.EXPOSURE_PHASE = 20  # ms
+            self.EXPOSURE_PHASE = 40  # ms
             self.EXPOSURE_RED = 200  # ms
             self.AUTOFOCUS_DEVICE = 'TIPFSStatus'
+            self.AUTOFOCUS_OFFSET = 'TIPFSOffset'
+            self.Z_DEVICE = 'TIZDrive'
             self.XY_DEVICE = 'XYStage'
         elif self.MICROSCOPE == 'Ti2E_H':
             self.SHUTTER_LAMP = 'DiaLamp'
@@ -60,6 +68,7 @@ class MicroscopeParas:
             self.EXPOSURE_RED = 200  # ms
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
+            self.Z_DEVICE = 'ZDrive'
         elif self.MICROSCOPE == 'Ti2E_H_DB':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'Spectra'
@@ -71,6 +80,7 @@ class MicroscopeParas:
             self.EXPOSURE_RED = 200  # ms
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
+            self.Z_DEVICE = 'ZDrive'
         elif self.MICROSCOPE == 'Ti2E_LDJ':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'XCite-Exacte'
@@ -83,8 +93,37 @@ class MicroscopeParas:
             self.EXPOSURE_RED = 100  # ms
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
+            self.Z_DEVICE = 'ZDrive'
         else:
             print(f'{colors.WARNING}{self.MICROSCOPE}: No such device tag!{colors.ENDC}')
+
+    def auto_focus(self, z: float = None, pfs: float = None):
+        if self.MICROSCOPE == 'TiE':
+            z = 8735
+            z_init = z - 50
+            z_top = 8810
+            z_bottom = z_init
+            psf_val = 128.7
+            mmcore.set_auto_focus_offset(psf_val)
+            while not mmcore.is_continuous_focus_locked():
+                mmcore.set_position(self.Z_DEVICE, z_init)
+                delta_z = mmcore.get_position(self.Z_DEVICE) - z_init
+                if delta_z > 5:
+                    z_init = mmcore.get_position(self.Z_DEVICE) + 0.1
+                # elif -10 > delta_z:
+                #     z_init = mmcore.get_position(self.Z_DEVICE)
+                else:
+                    z_init += 8
+                while not mmcore.is_continuous_focus_enabled():
+                    time.sleep(2.5)
+                    mmcore.enable_continuous_focus(True)
+
+                # while mmcore.device_busy(self.Z_DEVICE):
+                #     time.sleep(0.001)
+                if z_init > z_top:
+                    z_init = z - 100
+                if z_init < z_bottom:
+                    z_init = z_bottom
 
     def set_light_path(self, core_mmc, shift_type):
         """
@@ -167,3 +206,9 @@ class MicroscopeParas:
                 core_mmc.set_property(self.SHUTTER_LED, 'Cyan_Enable', 0)
                 mm.waiting_device()
         return None
+
+
+if __name__ == 'main':
+    # %%
+    dev = MicroscopeParas('TiE')
+    dev.auto_focus()

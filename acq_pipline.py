@@ -14,10 +14,10 @@ from valve.pymm_valve import ValveController
 #%%
 MICROSCOPE = 'TiE'  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
 DIR = r'./cfg_folder/test'
-POSITION_FILE = r'./cfg_folder/multipoints.xml'
+POSITION_FILE = r'./cfg_folder/PositionList.pos'
 
 time_step = [0, 0, 30]  # [hr, min, s]
-flu_step = 1  # very 4 phase loops acq if 0, don't acq a flu channel
+flu_step = 0  # very 4 phase loops acq if 0, don't acq a flu channel
 time_duration = [24, 0, 0]
 
 acq_loop = PymmAcq(device=MICROSCOPE)

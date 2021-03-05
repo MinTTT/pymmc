@@ -59,10 +59,11 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     POSITION_FILE = pos_ps
     MICROSCOPE = device  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
     # -----------------------------------------------------------------------------------
-
+    device_cfg = pymm_cfg.MicroscopeParas(MICROSCOPE)
     # %%
     # ==========get multiple positions============
-    fovs = mm.parse_position(POSITION_FILE)
+    fovs = mm.parse_position(POSITION_FILE,
+                             device=[device_cfg.XY_DEVICE, device_cfg.Z_DEVICE, device_cfg.AUTOFOCUS_OFFSET])
     # ==========set loop parameters===============
     time_step = time_step  # [hr, min, s]
     flu_step = flu_step  # very 4 phase loops acq
@@ -72,7 +73,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
         f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
     # %% loop body
-    device_cfg = pymm_cfg.MicroscopeParas(MICROSCOPE)
+
     EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
     set_light_path = device_cfg.set_light_path
     print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')

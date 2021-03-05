@@ -16,7 +16,8 @@ core = bridge.get_core()
 
 studio = bridge.get_studio()
 
-#%%
+
+# %%
 def get_current_time():
     """
     get current time.
@@ -105,7 +106,7 @@ def set_light_path(grop, preset, shutter=None):
     return None
 
 
-def parse_position(fp):
+def parse_position(fp, device=None):
     """
     Parse the multiple positions in file. now, this function support files exported
     from micro-manager and Nikon NS.
@@ -118,11 +119,13 @@ def parse_position(fp):
     if file_type == 'pos':
         with open(fp, 'r') as jfile:
             poss = json.load(jfile)
+
         poss = poss['map']['StagePositions']['array']
         pos_num = len(poss)
-        XY_DEVICE = poss[0]['DefaultXYStage']['scalar']
-        Z_DEVICE = poss[0]['DefaultZStage']['scalar']
-        PFS_KEY = 'PFSOffset'
+
+        XY_DEVICE = device[0]  # poss[0]['DefaultXYStage']['scalar']
+        Z_DEVICE = device[1]  # poss[0]['DefaultZStage']['scalar']
+        PFS_KEY = device[2]  # 'PFSOffset'
 
         for pos_index in range(pos_num):
             pos = poss[pos_index]['DevicePositions']['array']
@@ -204,8 +207,8 @@ def move_xyz_pfs(fov, turnoffz=True, step=6, fov_len=133.3, XY_DEVICE=False):
         for i in range(len(x_space) - 1):
             core.set_xy_position(XY_DEVICE, x_space[i + 1], y_space[i + 1])
         # core.wait_for_device(XY_DEVICE)
-        while core.device_busy(XY_DEVICE):
-            time.sleep(0.00001)
+            while core.device_busy(XY_DEVICE):
+                time.sleep(0.00001)
             # waiting_device()
 
     if turnoffz:
@@ -214,7 +217,7 @@ def move_xyz_pfs(fov, turnoffz=True, step=6, fov_len=133.3, XY_DEVICE=False):
     else:
         if 'z' in fov:
             core.set_position(fov['z'][0])
-    # waiting_device()
+        waiting_device()
     return None
 
 
