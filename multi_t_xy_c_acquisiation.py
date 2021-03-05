@@ -76,7 +76,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
     set_light_path = device_cfg.set_light_path
     print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
-    mm.set_light_path('BF', '100X')
+    mm.set_light_path('BF', '100X', shutter=device_cfg.SHUTTER_LAMP)
     light_path_state = 'green'
     set_light_path(core, 'init_phase')
     set_light_path(core, 'r2g')
@@ -91,7 +91,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
             for fov_index, fov in enumerate(fovs):
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
-                mm.move_xyz_pfs(fov, step=5)  # move stage xy.
+                mm.move_xyz_pfs(fov, step=6, XY_DEVICE=device_cfg.XY_DEVICE)  # move stage xy.
                 mm.autofocus()  # check auto focus, is important!
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 # First Channel

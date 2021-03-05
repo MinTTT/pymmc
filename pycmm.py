@@ -13,7 +13,7 @@ import sys
 
 import numpy as np  # Or any other
 
-MM_DIR = r'C:\Program Files\Micro-Manager-2.0gamma'
+MM_DIR = r'G:\CP_ZJW\Micro-Manager-2.0gamma'
 CFG_DIR = r'./cfg_folder'
 sys.path.insert(0, MM_DIR)
 

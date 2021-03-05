@@ -6,12 +6,12 @@
 
 # Created by Diego Alonso Alvarez on the 12th July 2020
 # Copyright (c) 2020 Imperial College London
-
+#%%
 from ctypes import WinDLL, create_string_buffer
 import os
 import sys
 
-path = r"D:\OneDrive - Business\Research\Protocol\Microscope\prior\PriorSDK-1.3.1\PriorSDK 1.3.1\x64\PriorScientificSDK.dll"
+path = r"prior_stage\x64\PriorScientificSDK.dll"
 
 if os.path.exists(path):
     SDKPrior = WinDLL(path)
@@ -32,10 +32,10 @@ def cmd(msg):
     else:
         print(f"OK {rx.value.decode()}")
 
-    input("Press ENTER to continue...")
+    # input("Press ENTER to continue...")
     return ret, rx.value.decode()
 
-
+#%%
 ret = SDKPrior.PriorScientificSDK_Initialise()
 if ret:
     print(f"Error initialising {ret}")
@@ -43,7 +43,7 @@ if ret:
 else:
     print(f"Ok initialising {ret}")
 
-
+#%%
 ret = SDKPrior.PriorScientificSDK_Version(rx)
 print(f"dll version api ret={ret}, version={rx.value.decode()}")
 
@@ -53,7 +53,7 @@ if sessionID < 0:
     print(f"Error getting sessionID {ret}")
 else:
     print(f"SessionID = {sessionID}")
-
+#%%
 
 ret = SDKPrior.PriorScientificSDK_cmd(
     sessionID, create_string_buffer(b"dll.apitest 33 goodresponse"), rx
@@ -69,10 +69,11 @@ print(f"api response {ret}, rx = {rx.value.decode()}")
 input("Press ENTER to continue...")
 
 
+#%%
 if realhw:
     print("Connecting...")
     # substitute 3 with your com port Id
-    cmd("controller.connect 3")
+    cmd("controller.connect 6")
 
     # test an illegal command
     cmd("controller.stage.position.getx")

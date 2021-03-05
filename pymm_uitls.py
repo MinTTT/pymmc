@@ -40,4 +40,6 @@ def get_filenameindex(fold_name):
         return 0
     tiff_file = [int(name.split('.')[0][1:]) for name in file_list if
                  name.split('.')[-1] == 'tiff' and name.split('.')[0][0] == 't']
+    if len(tiff_file) == 0:
+        return 0
     return max(tiff_file) + 1

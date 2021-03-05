@@ -4,3 +4,5 @@ test_data
 *.pyc
 .idea/misc.xml
 .idea/pymmc.iml
+./cfg_folder/test
+*.tiff
