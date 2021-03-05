@@ -14,7 +14,7 @@
           },
           "DefaultZStage": {
             "type": "STRING",
-            "scalar": "ZDrive"
+            "scalar": "TIPFSOffset"
           },
           "DevicePositions": {
             "type": "PROPERTY_MAP",
@@ -22,24 +22,24 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "ZDrive"
+                  "scalar": "TIZDrive"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    3007.4900000000002
+                    8703.800129696727
                   ]
                 }
               },
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "PFSOffset"
+                  "scalar": "TIPFSOffset"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    6667.0
+                    128.7
                   ]
                 }
               },
@@ -51,8 +51,8 @@
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    -1289.5,
-                    1845.3000000000002
+                    18830.0,
+                    3181.0
                   ]
                 }
               }
@@ -82,7 +82,7 @@
           },
           "DefaultZStage": {
             "type": "STRING",
-            "scalar": "ZDrive"
+            "scalar": "TIPFSOffset"
           },
           "DevicePositions": {
             "type": "PROPERTY_MAP",
@@ -90,24 +90,24 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "ZDrive"
+                  "scalar": "TIZDrive"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    3007.67
+                    8703.950129698962
                   ]
                 }
               },
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "PFSOffset"
+                  "scalar": "TIPFSOffset"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    6667.0
+                    128.7
                   ]
                 }
               },
@@ -119,8 +119,8 @@
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    -1590.1000000000001,
-                    1845.3000000000002
+                    18697.0,
+                    3181.0
                   ]
                 }
               }
@@ -150,7 +150,7 @@
           },
           "DefaultZStage": {
             "type": "STRING",
-            "scalar": "ZDrive"
+            "scalar": "TIPFSOffset"
           },
           "DevicePositions": {
             "type": "PROPERTY_MAP",
@@ -158,24 +158,24 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "ZDrive"
+                  "scalar": "TIZDrive"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    3007.69
+                    8704.12512970157
                   ]
                 }
               },
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "PFSOffset"
+                  "scalar": "TIPFSOffset"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    6667.0
+                    128.7
                   ]
                 }
               },
@@ -187,8 +187,8 @@
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    -1690.1000000000001,
-                    1845.3000000000002
+                    18564.0,
+                    3181.0
                   ]
                 }
               }
@@ -218,7 +218,7 @@
           },
           "DefaultZStage": {
             "type": "STRING",
-            "scalar": "ZDrive"
+            "scalar": "TIPFSOffset"
           },
           "DevicePositions": {
             "type": "PROPERTY_MAP",
@@ -226,24 +226,24 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "ZDrive"
+                  "scalar": "TIZDrive"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    3007.7400000000002
+                    8704.375129705295
                   ]
                 }
               },
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "PFSOffset"
+                  "scalar": "TIPFSOffset"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    6667.0
+                    142.0
                   ]
                 }
               },
@@ -255,8 +255,8 @@
                 "Position_um": {
                   "type": "DOUBLE",
                   "array": [
-                    -1790.1000000000001,
-                    1845.3000000000002
+                    18431.0,
+                    3181.0
                   ]
                 }
               }
@@ -273,6 +273,346 @@
           "Label": {
             "type": "STRING",
             "scalar": "Pos3"
+          },
+          "Properties": {
+            "type": "PROPERTY_MAP",
+            "scalar": {}
+          }
+        },
+        {
+          "DefaultXYStage": {
+            "type": "STRING",
+            "scalar": "XYStage"
+          },
+          "DefaultZStage": {
+            "type": "STRING",
+            "scalar": "TIPFSOffset"
+          },
+          "DevicePositions": {
+            "type": "PROPERTY_MAP",
+            "array": [
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIZDrive"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    8705.000129714608
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIPFSOffset"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    134.3
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "XYStage"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    18431.0,
+                    3314.0
+                  ]
+                }
+              }
+            ]
+          },
+          "GridCol": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "GridRow": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "Label": {
+            "type": "STRING",
+            "scalar": "Pos4"
+          },
+          "Properties": {
+            "type": "PROPERTY_MAP",
+            "scalar": {}
+          }
+        },
+        {
+          "DefaultXYStage": {
+            "type": "STRING",
+            "scalar": "XYStage"
+          },
+          "DefaultZStage": {
+            "type": "STRING",
+            "scalar": "TIPFSOffset"
+          },
+          "DevicePositions": {
+            "type": "PROPERTY_MAP",
+            "array": [
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIZDrive"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    8704.675129709765
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIPFSOffset"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    134.3
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "XYStage"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    18564.0,
+                    3314.0
+                  ]
+                }
+              }
+            ]
+          },
+          "GridCol": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "GridRow": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "Label": {
+            "type": "STRING",
+            "scalar": "Pos5"
+          },
+          "Properties": {
+            "type": "PROPERTY_MAP",
+            "scalar": {}
+          }
+        },
+        {
+          "DefaultXYStage": {
+            "type": "STRING",
+            "scalar": "XYStage"
+          },
+          "DefaultZStage": {
+            "type": "STRING",
+            "scalar": "TIPFSOffset"
+          },
+          "DevicePositions": {
+            "type": "PROPERTY_MAP",
+            "array": [
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIZDrive"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    8703.750129695982
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIPFSOffset"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    119.35
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "XYStage"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    18697.0,
+                    3314.0
+                  ]
+                }
+              }
+            ]
+          },
+          "GridCol": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "GridRow": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "Label": {
+            "type": "STRING",
+            "scalar": "Pos6"
+          },
+          "Properties": {
+            "type": "PROPERTY_MAP",
+            "scalar": {}
+          }
+        },
+        {
+          "DefaultXYStage": {
+            "type": "STRING",
+            "scalar": "XYStage"
+          },
+          "DefaultZStage": {
+            "type": "STRING",
+            "scalar": "TIPFSOffset"
+          },
+          "DevicePositions": {
+            "type": "PROPERTY_MAP",
+            "array": [
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIZDrive"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    8704.100129701197
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIPFSOffset"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    119.35
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "XYStage"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    18830.0,
+                    3314.0
+                  ]
+                }
+              }
+            ]
+          },
+          "GridCol": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "GridRow": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "Label": {
+            "type": "STRING",
+            "scalar": "Pos7"
+          },
+          "Properties": {
+            "type": "PROPERTY_MAP",
+            "scalar": {}
+          }
+        },
+        {
+          "DefaultXYStage": {
+            "type": "STRING",
+            "scalar": "XYStage"
+          },
+          "DefaultZStage": {
+            "type": "STRING",
+            "scalar": "TIPFSOffset"
+          },
+          "DevicePositions": {
+            "type": "PROPERTY_MAP",
+            "array": [
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIZDrive"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    8704.175129702315
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "TIPFSOffset"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    131.4
+                  ]
+                }
+              },
+              {
+                "Device": {
+                  "type": "STRING",
+                  "scalar": "XYStage"
+                },
+                "Position_um": {
+                  "type": "DOUBLE",
+                  "array": [
+                    18966.0,
+                    3314.0
+                  ]
+                }
+              }
+            ]
+          },
+          "GridCol": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "GridRow": {
+            "type": "INTEGER",
+            "scalar": 0
+          },
+          "Label": {
+            "type": "STRING",
+            "scalar": "Pos8"
           },
           "Properties": {
             "type": "PROPERTY_MAP",

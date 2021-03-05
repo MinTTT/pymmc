@@ -69,6 +69,8 @@ print(f"api response {ret}, rx = {rx.value.decode()}")
 input("Press ENTER to continue...")
 
 
+
+
 #%%
 if realhw:
     print("Connecting...")
