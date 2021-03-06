@@ -65,6 +65,7 @@ class PriorScan:
     def device_busy(self):
         """
         get the busy status of the stage
+
         :return: 0 idle, 1 X moving, 2 Y moving, 3 both X and Y moving
         """
         self.rx_decode = self.cmd("controller.stage.busy.get")
@@ -89,12 +90,11 @@ class PriorScan:
 
 
 # %%
-stage = PriorScan(com=6)
-
-# %%
 if __name__ == '__mian__':
 
-    path = r"prior_stage\x64\PriorScientificSDK.dll"
+    stage = PriorScan(com=6)
+
+    path = r"x64/PriorScientificSDK.dll"
 
     if os.path.exists(path):
         SDKPrior = WinDLL(path)
