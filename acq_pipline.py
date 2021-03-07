@@ -4,12 +4,9 @@
 """
 
 # Built-in/Generic Imports
-import os
-import sys
 # Own modules
 from multi_t_xy_c_acquisiation import PymmAcq
-from valve.pymm_valve import ValveController
-
+from device.valve.pymm_valve import ValveController
 
 #%%
 MICROSCOPE = 'TiE'  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ

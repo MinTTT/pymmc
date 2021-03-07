@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
     stage = PriorScan(com=6)
 
-    path = r"x64/PriorScientificSDK.dll"
+    path = r"../prior_stage/x64/PriorScientificSDK.dll"
 
     if os.path.exists(path):
         SDKPrior = WinDLL(path)
