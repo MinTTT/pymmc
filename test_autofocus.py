@@ -1,8 +1,12 @@
-rom
-hw.ledmotorcontrol
-import driver
+# Carries out an autofocus algorithm from the textbook
+#  Microscope Image Processing by Qiang Wu (2008)
+# The implementation below is from section 16.3.3 (DWT is unstested and commented out)
+# 'Multiresolution Search for In-Focus Position'
+
+
+from hw.ledmotorcontrol import driver
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 # import dwt
 import requests
 import ssl
@@ -10,6 +14,82 @@ import cv2
 import time
 
 score_history = []
+
+
+def fibonacci_generator(n):
+    fib2 = 1
+    fib1 = 1
+    fib = 2
+    fiblist = [fib2, fib1, fib]
+
+    while fib < n:
+        fib, fib1, fib2 = fib1 + fib, fib, fib1
+        fiblist.append(fib)
+
+    return fiblist
+
+
+def fibsearch_max(range: list, eta: float, y) -> float:
+    """
+    search the maximum in focus range.
+
+    :param range: z position range list;
+    :param eta: resolution float;
+    :param y: y is the function get the image focus quality;
+    :return: maximum of z position;
+
+    Examples
+    --------
+    >>> f = lambda x: -(x - 8) * (x - 10)
+    >>> max_x = fibsearch_max([0, 100], 10e-8, f)
+    >>> max_x
+    8.999999973566027
+    """
+
+    a, b = range
+    fibn = (b - a) / eta
+    fiblist = fibonacci_generator(fibn)
+
+    fibindex = len(fiblist) - 1
+    fib2, fib1, fib = fiblist[fibindex - 2], fiblist[fibindex - 1], fiblist[fibindex]
+    x1, x2 = a + fib2 / fib * (b - a), b - fib2 / fib * (b - a)
+    y1 = y(x1)
+    y2 = y(x1)
+
+    while fibindex >= 2:
+        fibindex -= 1
+        fib2, fib1, fib = fiblist[fibindex - 2], fiblist[fibindex - 1], fiblist[fibindex]
+        if y1 < y2:
+            a = x1
+            x1 = x2
+            y1 = y2
+            x2 = b - fib2 / fib * (b - a)
+            y2 = y(x2)
+        else:
+            b = x2
+            x2 = x1
+            x1 = a + fib2 / fib * (b - a)
+            y2 = y1
+            y1 = y(x1)
+
+    if y1 > y2:
+        return x1
+    else:
+        return x2
+
+
+def tenengrad_score(im):
+    """
+    Using Sobel to filter image
+    :param im:
+    :return: tenengrad score
+    """
+    sobelx = cv2.Sobel(im, cv2.CV_64F, 1, 0, ksize=5)
+    sobely = cv2.Sobel(im, cv2.CV_64F, 0, 1, ksize=5)
+    s_sqr = sobelx**2 + sobely**2
+    return np.sum(s_sqr)
+
+
 
 
 def low_res_score(IMAGE):
@@ -72,7 +152,7 @@ def low_res_score(IMAGE):
         Y = np.zeros((r, t.size))
         # Loop for each term in h.
         for i in range(m):
-            Y = Y + h[i] * X[:, xe[t + i]];
+            Y = Y + h[i] * X[:, xe[t + i]]
 
         return Y
 
@@ -103,7 +183,7 @@ def low_res_score(IMAGE):
         Y = np.zeros((r, t.size))
         # Loop for each term in h.
         for i in range(m):
-            Y = Y + h[i] * X[:, xe[t + i]];
+            Y = Y + h[i] * X[:, xe[t + i]]
 
         return Y
 
@@ -128,6 +208,9 @@ def low_res_score(IMAGE):
         return score
 
     return focus_score(nleveldwt(IMAGE))
+
+#%%
+im = np.empty((2048, 2048)).astype(np.uint16)
 
 
 def test_function(x):
@@ -162,12 +245,12 @@ def gaussian_fitting(z, f):
         where z1, z2 , z3 are points where the autofocus functions 
         values f1, f2, f3 are measured """
 
-    z1 = z[0];
-    z2 = z[1];
-    z3 = z[2];
-    f1 = f[0];
-    f2 = f[1];
-    f3 = f[2];
+    z1 = z[0]
+    z2 = z[1]
+    z3 = z[2]
+    f1 = f[0]
+    f2 = f[1]
+    f3 = f[2]
 
     B = (np.log(f2) - np.log(f1)) / (np.log(f3) - np.log(f2))
 
@@ -184,12 +267,12 @@ def parabola_fitting(z, f):
         where z1, z2 , z3 are points where the autofocus functions 
         values f1, f2, f3 are measured """
 
-    z1 = z[0];
-    z2 = z[1];
-    z3 = z[2];
-    f1 = f[0];
-    f2 = f[1];
-    f3 = f[2];
+    z1 = z[0]
+    z2 = z[1]
+    z3 = z[2]
+    f1 = f[0]
+    f2 = f[1]
+    f3 = f[2]
 
     E = (f2 - f1) / (f3 - f2)
 
@@ -276,7 +359,8 @@ def old_fibonacci_search(interval, f):
 
 
 def fibonacci_search(interval, f):
-    """ Carry out the fibonacci search method according* to the paper:
+    """
+    Carry out the fibonacci search method according* to the paper:
         'Autofocusing for tissue microscopy' by T.T.E.Yeo et al
 
         (a,b,x) = fibonacci_search(interval, f)
@@ -285,7 +369,7 @@ def fibonacci_search(interval, f):
 
 
         * The paper made two mistakes, the evaluations should be if (y1 > y2) not the other way round 
-        """
+    """
 
     # ################### Functions #######################
 
@@ -612,7 +696,7 @@ def untested_hill_climbing(f, step_size=500):
     score_history.append(f2)
     iterations = 0
 
-    while (1):
+    while True:
         # print(f1,f2)
         if (f2 > f1):
             f0 = f1
@@ -638,9 +722,6 @@ def untested_hill_climbing(f, step_size=500):
         elif (iterations <= 2):
             return hill_climbing(f, -step_size)
 
-
-
-
         else:
             print('Finised hill climbing')
             return ((z2 - 2 * step_size - 2, z2 - step_size, z2), (f0, f1, f2))
@@ -657,7 +738,7 @@ def old_test_autofocus():
     z2 = 500
     print('Evaluating f2')
     f2 = m.move_motor(z2, 5).eval_score()
-    while (True):
+    while True:
         if f2 < f1:
             f2 = m.move_motor(200, 5).eval_score()
             z2 += 200
@@ -711,7 +792,7 @@ def test_autofocus(timeout=90):
     naive_autofocus(m)
 
     try:
-        return score_history
+        # return score_history
         # Find small interval containing focus position
         z, f = hill_climbing(m)  # uses the raw variance score
         # z,f = untested_hill_climbing(m) # using DWT low resolution images, should have less noise!
@@ -754,7 +835,7 @@ def test_autofocus(timeout=90):
     except Exception:
         print("timeout")
 
-    return (score_history)
+    return score_history
 
 
 if __name__ == '__main__':

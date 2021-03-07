@@ -31,8 +31,9 @@ class PriorScan:
         # initialize
         self.ret = self.SDKPrior.PriorScientificSDK_Initialise()
         if self.ret:
-            print(f"Error initialising {self.ret}")
-            sys.exit()
+            # print(f"Error initialising {self.ret}")
+            # sys.exit()
+            raise RuntimeError(f"Error initialising {self.ret}")
         else:
             print(f"Ok initialising {self.ret}")
         self.ret = self.SDKPrior.PriorScientificSDK_Version(self.rx)
@@ -40,15 +41,19 @@ class PriorScan:
         # session
         self.session_id = self.SDKPrior.PriorScientificSDK_OpenNewSession()
         if self.session_id < 0:
-            print(f'Error getting session ID {self.session_id}')
-            sys.exit()
+            # print(f'Error getting session ID {self.session_id}')
+            # sys.exit()
+            raise RuntimeError(f'Error getting session ID {self.session_id}')
         # connect to device
         self.ret = self.SDKPrior.PriorScientificSDK_cmd(
             self.session_id, create_string_buffer(f"controller.connect {self.com}".encode()), self.rx)
-
+        if self.ret < 0:
+            raise RuntimeError(f'Error connecting COM{self.com}')
+        # get step per micro
         self.ret = self.SDKPrior.PriorScientificSDK_cmd(
             self.session_id, create_string_buffer("controller.stage.steps-per-micron.get".encode()), self.rx)
         self.spermicro = int(self.rx.value.decode())
+        # set user step per step
         self.ss = 1
         self.ret = self.SDKPrior.PriorScientificSDK_cmd(
             self.session_id, create_string_buffer(f"controller.stage.ss.set {self.ss}".encode()), self.rx)
@@ -58,27 +63,26 @@ class PriorScan:
             self.session_id, create_string_buffer(msg.encode()), self.rx)
         return self.rx.value.decode()
 
-    def steppermicro(self):
-        self.rx_decode = self.cmd('controller.stage.steps-per-micron.get')
-        self.spermicro = int(self.rx_decode)
+    # def steppermicro(self):
+    #     self.rx_decode = self.cmd('controller.stage.steps-per-micron.get')
+    #     self.spermicro = int(self.rx_decode)
 
-    def device_busy(self):
+    def device_busy(self) -> int:
         """
         get the busy status of the stage
-
         :return: 0 idle, 1 X moving, 2 Y moving, 3 both X and Y moving
         """
         self.rx_decode = self.cmd("controller.stage.busy.get")
         return int(self.rx_decode)
 
-    def get_xy_position(self):
+    def get_xy_position(self) -> (float, float):
         """
         Returns the current stage XY position
-        :return: float x, float y
+        :return: float x um, float y um
         """
         self.rx_decode = self.cmd("controller.stage.position.get")
         x, y = self.rx_decode.split(',')
-        return float(x)/self.spermicro, float(y)/self.spermicro
+        return float(x) / self.spermicro, float(y) / self.spermicro
 
     def set_xy_position(self, x: float, y: float):
         xs, ys = int(self.spermicro * x), int(self.spermicro * y)
@@ -90,7 +94,7 @@ class PriorScan:
 
 
 # %%
-if __name__ == '__mian__':
+if __name__ == '__main__':
 
     stage = PriorScan(com=6)
 
