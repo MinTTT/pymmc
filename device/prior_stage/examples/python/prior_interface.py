@@ -5,8 +5,9 @@ from ctypes import WinDLL, create_string_buffer
 import os
 import sys
 
-path = "PriorScientificSDK.dll"
 
+os.chdir(r'D:\python_code\pymmc\device\prior_stage\x64/')
+path = "PriorScientificSDK.dll"
 if os.path.exists(path):
     SDKPrior = WinDLL(path)
 else:

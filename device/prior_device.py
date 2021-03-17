@@ -4,7 +4,7 @@
  @author: Pan M. CHU
 """
 
-from ctypes import WinDLL, create_string_buffer, c_wchar_p, c_int, POINTER, c_wchar
+from ctypes import WinDLL, create_string_buffer, c_wchar_p, c_int, POINTER, c_wchar, c_char, c_char_p
 
 import os
 import sys
@@ -18,7 +18,7 @@ def load_sdk(ps):
 
 
 class PriorScan(object):
-    def __init__(self, com, dll_path=r"./prior_stage/x64/PriorScientificSDK.dll"):
+    def __init__(self, com, dll_path=r"./device/prior_stage/x64/PriorScientificSDK.dll"):
         """
 
         :param com: int, com port number, if COM3, use the value 3
@@ -29,6 +29,10 @@ class PriorScan(object):
         self.SDKPrior = load_sdk(self.dll_ps)
         self.rx = create_string_buffer(5000)
         self.rx_decode = None
+        self._cmd = self.SDKPrior.PriorScientificSDK_cmd
+        self._cmd.argtypes = (c_int, POINTER(c_char), POINTER(c_char))
+        self._cmd.restype = c_int
+
         # initialize
         self.ret = self.SDKPrior.PriorScientificSDK_Initialise()
         if self.ret:
@@ -60,8 +64,7 @@ class PriorScan(object):
             self.session_id, create_string_buffer(f"controller.stage.ss.set {self.ss}".encode()), self.rx)
 
     def cmd(self, msg):
-        self.ret = self.SDKPrior.PriorScientificSDK_cmd(
-            self.session_id, create_string_buffer(msg.encode()), self.rx)
+        self.ret = self._cmd(self.session_id, create_string_buffer(msg.encode()), self.rx)
         return self.rx.value.decode()
 
     # def steppermicro(self):
@@ -98,9 +101,8 @@ class PriorScan(object):
 if __name__ == '__main__':
 
     stage = PriorScan(com=6)
-
-    path = r"./prior_stage/x64/PriorScientificSDK.dll"
-
+    os.chdir(r'D:\python_code\pymmc\device\prior_stage\x64/')
+    path = "PriorScientificSDK.dll"
     if os.path.exists(path):
         SDKPrior = WinDLL(path)
     else:
@@ -110,7 +112,7 @@ if __name__ == '__main__':
     realhw = False
 
     _cmd = SDKPrior.PriorScientificSDK_cmd
-    _cmd.argtypes = (c_int, POINTER(c_wchar), POINTER(c_wchar))
+    _cmd.argtypes = (c_int, POINTER(c_char), POINTER(c_char))
     _cmd.restype = c_int
 
     def cmd(msg):
