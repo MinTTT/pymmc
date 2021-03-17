@@ -13,7 +13,7 @@ import sys
 
 import numpy as np  # Or any other
 
-MM_DIR = r'G:\CP_ZJW\Micro-Manager-2.0gamma'
+MM_DIR = r'D:\python_code\micro_manager\Micro-Manager-2.0gamma'
 CFG_DIR = r'./cfg_folder'
 sys.path.insert(0, MM_DIR)
 
@@ -24,4 +24,5 @@ import pymmcore
 
 core = pymmcore.CMMCore()
 core.setDeviceAdapterSearchPaths([MM_DIR])
-core.loadSystemConfiguration(os.path.join(CFG_DIR, 'Ti2E_huang.cfg'))
+core.loadSystemConfiguration(os.path.join(CFG_DIR, 'MMConfig_demo.cfg'))
+
