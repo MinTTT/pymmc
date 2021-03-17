@@ -4,7 +4,8 @@
  @author: Pan M. CHU
 """
 
-from ctypes import WinDLL, create_string_buffer
+from ctypes import WinDLL, create_string_buffer, c_wchar_p, c_int, POINTER, c_wchar
+
 import os
 import sys
 
@@ -16,7 +17,7 @@ def load_sdk(ps):
         raise RuntimeError("DLL could not be loaded.")
 
 
-class PriorScan:
+class PriorScan(object):
     def __init__(self, com, dll_path=r"./prior_stage/x64/PriorScientificSDK.dll"):
         """
 
@@ -26,7 +27,7 @@ class PriorScan:
         self.com = com
         self.dll_ps = dll_path
         self.SDKPrior = load_sdk(self.dll_ps)
-        self.rx = create_string_buffer(2000)
+        self.rx = create_string_buffer(5000)
         self.rx_decode = None
         # initialize
         self.ret = self.SDKPrior.PriorScientificSDK_Initialise()
@@ -98,22 +99,26 @@ if __name__ == '__main__':
 
     stage = PriorScan(com=6)
 
-    path = r"../prior_stage/x64/PriorScientificSDK.dll"
+    path = r"./prior_stage/x64/PriorScientificSDK.dll"
 
     if os.path.exists(path):
         SDKPrior = WinDLL(path)
     else:
         raise RuntimeError("DLL could not be loaded.")
 
-    rx = create_string_buffer(20)
+    rx = create_string_buffer(50000)
     realhw = False
 
+    _cmd = SDKPrior.PriorScientificSDK_cmd
+    _cmd.argtypes = (c_int, POINTER(c_wchar), POINTER(c_wchar))
+    _cmd.restype = c_int
 
     def cmd(msg):
-        print(msg)
-        ret = SDKPrior.PriorScientificSDK_cmd(
-            sessionID, create_string_buffer(msg.encode()), rx
-        )
+        # print(msg)
+        # ret = SDKPrior.PriorScientificSDK_cmd(
+        #     sessionID, create_string_buffer(msg.encode()), rx
+        # )
+        ret = _cmd(sessionID, create_string_buffer(msg.encode()), rx)
         if ret:
             print(f"Api error {ret}")
         else:
