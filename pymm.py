@@ -1,5 +1,5 @@
 # %%
-import json
+
 import os
 import time
 
@@ -106,60 +106,6 @@ def set_light_path(grop, preset, shutter=None):
     return None
 
 
-def parse_position(fp, device=None):
-    """
-    Parse the multiple positions in file. now, this function support files exported
-    from micro-manager and Nikon NS.
-    :param fp: str, file path
-    :return: list, a list containing all positions. each position is a dictionary,
-    {xy:[float, float], z:[float], pfsoffset:[float]}
-    """
-    poss_list = []
-    file_type = fp.split('.')[-1]
-    if file_type == 'pos':
-        with open(fp, 'r') as jfile:
-            poss = json.load(jfile)
-
-        poss = poss['map']['StagePositions']['array']
-        pos_num = len(poss)
-
-        XY_DEVICE = device[0]  # poss[0]['DefaultXYStage']['scalar']
-        Z_DEVICE = device[1]  # poss[0]['DefaultZStage']['scalar']
-        PFS_KEY = device[2]  # 'PFSOffset'
-
-        for pos_index in range(pos_num):
-            pos = poss[pos_index]['DevicePositions']['array']
-            for key in pos:
-                if key['Device']['scalar'] == Z_DEVICE:
-                    z = key['Position_um']['array']
-                if key['Device']['scalar'] == XY_DEVICE:
-                    xy = key['Position_um']['array']
-                if key['Device']['scalar'] == PFS_KEY:
-                    pfs = key['Position_um']['array']
-            pos_dic = dict(xy=xy, z=z, pfsoffset=pfs)
-            poss_list.append(pos_dic)
-
-    if file_type == 'xml':
-        import xml.etree.ElementTree as ET
-        poss = ET.parse(fp)
-        elemt = poss.getroot()
-        for pos in elemt[0]:
-            if pos.attrib['runtype'] == 'NDSetupMultipointListItem':
-                for e in pos:
-                    # print(e.tag, e.attrib)
-                    if e.tag == 'dXPosition':
-                        xy = [float(e.attrib['value'])]
-                    if e.tag == 'dYPosition':
-                        xy.append(float(e.attrib['value']))
-                    if e.tag == 'dZPosition':
-                        z = [float(e.attrib['value'])]
-                    if e.tag == 'dPFSOffset':
-                        pfs = [float(e.attrib['value'])]
-                pos_dic = dict(xy=xy, z=z, pfsoffset=pfs)
-                poss_list.append(pos_dic)
-    print(f'Get {len(poss_list)} positions.\n')
-    return poss_list
-
 
 def waiting_device(device=None):
     """
@@ -176,15 +122,6 @@ def waiting_device(device=None):
             time.sleep(0.00001)
     return None
 
-
-def parse_second(time_list):
-    """
-    Transform a time list [h, min, s] into seconds.
-    :param time_list: list. a list containing [h, min, s]
-    :return: float. seconds
-    """
-    weight = [60 * 60, 60, 1]
-    return sum([x * y for x, y in zip(time_list, weight)])
 
 
 def move_xyz_pfs(fov, turnoffz=True, step=6, fov_len=133.3, XY_DEVICE=False):
@@ -229,24 +166,6 @@ def autofocus():
     return None
 
 
-def countdown(t, step=1, msg='sleeping'):
-    """
-    a countdown timer print waiting time in second.
-    :param t: time lasting for sleeping
-    :param step: the time step between the refreshment of screen.
-    :param msg:
-    :return: None
-    """
-    CRED = '\033[91m'
-    CGRE = '\033[92m'
-    CEND = '\033[0m'
-    while t > 0:
-        mins, secs = divmod(t, 60)
-        print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
-        time.sleep(step)
-        t -= step
-    print(CGRE + 'Start the next loop.' + CEND)
-    return None
 
 
 # # %%
@@ -291,4 +210,4 @@ def countdown(t, step=1, msg='sleeping'):
 # save_image(im, dir=DIR, name='test', meta=tags)
 # %%
 if __name__ == '__main__':
-    countdown(10)
+    pass

@@ -42,6 +42,7 @@ class MicroscopeParas:
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
             self.Z_DEVICE = 'ZDrive'
+            self.mmcore = mmcore
         elif self.MICROSCOPE == 'TiE':
             self.SHUTTER_LAMP = 'Arduino-Shutter'
             self.INIT_LAMP = 'TIDiaLamp'
@@ -57,6 +58,7 @@ class MicroscopeParas:
             self.AUTOFOCUS_OFFSET = 'TIPFSOffset'
             self.Z_DEVICE = 'TIZDrive'
             self.XY_DEVICE = 'XYStage'
+            self.mmcore = mmcore
         elif self.MICROSCOPE == 'Ti2E_H':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'Spectra'
@@ -69,6 +71,7 @@ class MicroscopeParas:
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
             self.Z_DEVICE = 'ZDrive'
+            self.mmcore = mmcore
         elif self.MICROSCOPE == 'Ti2E_H_DB':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'Spectra'
@@ -81,6 +84,7 @@ class MicroscopeParas:
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
             self.Z_DEVICE = 'ZDrive'
+            self.mmcore = mmcore
         elif self.MICROSCOPE == 'Ti2E_LDJ':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'XCite-Exacte'
@@ -94,8 +98,16 @@ class MicroscopeParas:
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
             self.Z_DEVICE = 'ZDrive'
+            self.mmcore = mmcore
         else:
             print(f'{colors.WARNING}{self.MICROSCOPE}: No such device tag!{colors.ENDC}')
+        # initial func
+        self.set_light_path = mm.set_light_path
+        self.move_xyz_pfs = mm.move_xyz_pfs
+        self.autofocus = mm.autofocus
+        self.auto_acq_save = mm.auto_acq_save
+        self.active_auto_shutter = mm.active_auto_shutter()
+
 
     def auto_focus(self, z: float = None, pfs: float = None):
         if self.MICROSCOPE == 'TiE':
@@ -104,19 +116,19 @@ class MicroscopeParas:
             z_top = 8810
             z_bottom = z_init
             psf_val = 128.7
-            mmcore.set_auto_focus_offset(psf_val)
-            while not mmcore.is_continuous_focus_locked():
-                mmcore.set_position(self.Z_DEVICE, z_init)
-                delta_z = mmcore.get_position(self.Z_DEVICE) - z_init
+            self.mmcore.set_auto_focus_offset(psf_val)
+            while not self.mmcore.is_continuous_focus_locked():
+                self.mmcore.set_position(self.Z_DEVICE, z_init)
+                delta_z = self.mmcore.get_position(self.Z_DEVICE) - z_init
                 if delta_z > 5:
-                    z_init = mmcore.get_position(self.Z_DEVICE) + 0.1
+                    z_init = self.mmcore.get_position(self.Z_DEVICE) + 0.1
                 # elif -10 > delta_z:
-                #     z_init = mmcore.get_position(self.Z_DEVICE)
+                #     z_init = self.mmcore.get_position(self.Z_DEVICE)
                 else:
                     z_init += 8
-                while not mmcore.is_continuous_focus_enabled():
+                while not self.mmcore.is_continuous_focus_enabled():
                     time.sleep(2.5)
-                    mmcore.enable_continuous_focus(True)
+                    self.mmcore.enable_continuous_focus(True)
 
                 # while mmcore.device_busy(self.Z_DEVICE):
                 #     time.sleep(0.001)

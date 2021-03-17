@@ -4,7 +4,7 @@
  @author: Pan M. CHU
 """
 
-from ctypes import WinDLL, create_string_buffer, c_wchar_p, c_int, POINTER, c_wchar, c_char, c_char_p
+from ctypes import WinDLL, create_string_buffer, c_int, POINTER, c_char
 
 import os
 import sys
