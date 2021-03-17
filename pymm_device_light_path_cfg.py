@@ -102,12 +102,23 @@ class MicroscopeParas:
         else:
             print(f'{colors.WARNING}{self.MICROSCOPE}: No such device tag!{colors.ENDC}')
         # initial func
+        self.set_light_path = None
+        self.move_xyz_pfs = None
+        self.autofocus = None
+        self.auto_acq_save = None
+        self.active_auto_shutter = None
+        self.init_func()
+
+    def init_func(self):
+        """
+        initialize function, determine call MMCORE or DLL directly
+        :return:
+        """
         self.set_light_path = mm.set_light_path
         self.move_xyz_pfs = mm.move_xyz_pfs
         self.autofocus = mm.autofocus
         self.auto_acq_save = mm.auto_acq_save
-        self.active_auto_shutter = mm.active_auto_shutter()
-
+        self.active_auto_shutter = mm.active_auto_shutter
 
     def auto_focus(self, z: float = None, pfs: float = None):
         if self.MICROSCOPE == 'TiE':
