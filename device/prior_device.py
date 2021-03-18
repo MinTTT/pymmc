@@ -18,7 +18,7 @@ def load_sdk(ps):
 
 
 class PriorScan(object):
-    def __init__(self, com, dll_path=r"./device/prior_stage/x64/PriorScientificSDK.dll"):
+    def __init__(self, com=6, dll_path=r"./device/prior_stage/x64/PriorScientificSDK.dll"):
         """
 
         :param com: int, com port number, if COM3, use the value 3
@@ -99,6 +99,10 @@ class PriorScan(object):
 
 # %%
 if __name__ == '__main__':
+
+    #%%
+    conncet = PriorScan(com=6)
+    #%%
 
     stage = PriorScan(com=6)
     os.chdir(r'D:\python_code\pymmc\device\prior_stage\x64/')

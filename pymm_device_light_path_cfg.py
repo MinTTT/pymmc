@@ -16,7 +16,7 @@
 import pymm as mm
 from pymm_uitls import colors
 import time
-
+import numpy as np
 colors = colors()
 
 # global core
@@ -58,6 +58,22 @@ class MicroscopeParas:
             self.AUTOFOCUS_OFFSET = 'TIPFSOffset'
             self.Z_DEVICE = 'TIZDrive'
             self.XY_DEVICE = 'XYStage'
+            self.mmcore = mmcore
+        elif self.MICROSCOPE == 'TiE_prior':
+            self.SHUTTER_LAMP = 'Arduino-Shutter'
+            self.INIT_LAMP = 'TIDiaLamp'
+            self.SHUTTER_LED = 'XCite-Exacte'
+            self.FILTER_TURRET = 'TIFilterBlock1'
+            self.FLU_EXCITE = 'XCite-Exacte'
+            self.GREEN_EXCITE = 15
+            self.RED_EXCITE = 50
+            self.EXPOSURE_GREEN = 50  # 50 ms TiE2
+            self.EXPOSURE_PHASE = 40  # ms
+            self.EXPOSURE_RED = 200  # ms
+            self.AUTOFOCUS_DEVICE = 'TIPFSStatus'
+            self.AUTOFOCUS_OFFSET = 'TIPFSOffset'
+            self.Z_DEVICE = 'TIZDrive'
+            self.XY_DEVICE = 'prior_xy'
             self.mmcore = mmcore
         elif self.MICROSCOPE == 'Ti2E_H':
             self.SHUTTER_LAMP = 'DiaLamp'
@@ -119,6 +135,42 @@ class MicroscopeParas:
         self.autofocus = mm.autofocus
         self.auto_acq_save = mm.auto_acq_save
         self.active_auto_shutter = mm.active_auto_shutter
+        
+        if self.XY_DEVICE == 'prior_xy':
+            from device.prior_device import PriorScan
+            xy_connect = PriorScan()
+
+            def move_xyz_pfs(fov, turnoffz=True, step=6, fov_len=133.3, XY_DEVICE=False, core=self.mmcore):
+                """
+                Move stage xy and z position.
+                :param fov:
+                :param turnoffz: bool, if ture, microscope will keep the pfs working and skipping moving the z device.
+                :return: None
+                """
+                x_f, y_f = xy_connect.get_xy_position()
+                x_t, y_t = fov['xy'][0], fov['xy'][1]
+                dit = np.sqrt((x_t - x_f) ** 2 + (y_f - y_t) ** 2)
+                block_size = step * fov_len
+                num_block = int(dit // block_size + 2)
+                x_space = np.linspace(x_f, x_t, num=num_block)
+                y_space = np.linspace(y_f, y_t, num=num_block)
+                for i in range(len(x_space) - 1):
+                    xy_connect.set_xy_position(x_space[i + 1], y_space[i + 1])
+                    # core.wait_for_device(XY_DEVICE)
+                    while xy_connect.device_busy():
+                        time.sleep(0.00001)
+                    # waiting_device()
+
+                if turnoffz:
+                    if 'pfsoffset' in fov:
+                        core.set_auto_focus_offset(fov['pfsoffset'][0])
+                else:
+                    if 'z' in fov:
+                        core.set_position(fov['z'][0])
+                    mm.waiting_device()
+                return None
+
+            self.move_xyz_pfs = move_xyz_pfs
 
     def auto_focus(self, z: float = None, pfs: float = None):
         if self.MICROSCOPE == 'TiE':
@@ -148,7 +200,7 @@ class MicroscopeParas:
                 if z_init < z_bottom:
                     z_init = z_bottom
 
-    def set_light_path(self, core_mmc, shift_type):
+    def set_device_state(self, core_mmc, shift_type):
         """
         This function is used to set light from green to red channel.
         For Ti2E, two devices shall be changed their states. 1. FilterTurret, filter states
@@ -172,7 +224,7 @@ class MicroscopeParas:
                 core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity',
                                       self.GREEN_EXCITE)  # set xcite lamp intensity 2
                 mm.waiting_device()
-        elif self.MICROSCOPE == 'TiE':
+        elif self.MICROSCOPE == 'TiE' or self.MICROSCOPE == 'TiE_prior':
             if shift_type == 'init_phase':
                 core_mmc.set_property(self.INIT_LAMP, 'State', 1)
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 2)

@@ -74,19 +74,18 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     # %% loop body
 
     EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
-    set_light_path = device_cfg.set_light_path
+    set_device_state = device_cfg.set_device_state
     print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
     device_cfg.set_light_path('BF', '100X', shutter=device_cfg.SHUTTER_LAMP)
     light_path_state = 'green'
-    set_light_path(device_cfg.mmcore, 'init_phase')
-    set_light_path(device_cfg.mmcore, 'r2g')
+    set_device_state(device_cfg.mmcore, 'init_phase')
+    set_device_state(device_cfg.mmcore, 'r2g')
     # TODO：I found the python console initialized and performed this code block first time,
     #  the Ti2E_H has no fluorescent emission light.
     print(f'{colors.OKGREEN}Start ACQ Loop.{colors.ENDC}')
     loop_index = 0  # default is 0
     while loop_index != loops_num:
         t_init = time.time()
-
         if if_acq(loop_index, flu_step) == 0:
             for fov_index, fov in enumerate(fovs):
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
@@ -113,7 +112,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
                                      exposure=get_exposure(light_path_state, device_cfg))
                 # Second Channel
                 if light_path_state == 'green':
-                    set_light_path(device_cfg.mmcore, 'g2r')
+                    set_device_state(device_cfg.mmcore, 'g2r')
                     light_path_state = 'red'
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
@@ -122,7 +121,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
                     print(f'Snap image (red).\n')
                 else:
                     light_path_state = 'green'
-                    set_light_path(device_cfg.mmcore, 'r2g')
+                    set_device_state(device_cfg.mmcore, 'r2g')
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
@@ -137,13 +136,11 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
             if light_path_state == 'green':
                 pass
             else:
-                set_light_path(device_cfg.mmcore, 'r2g')
+                set_device_state(device_cfg.mmcore, 'r2g')
                 light_path_state = 'green'
             device_cfg.active_auto_shutter(device_cfg.SHUTTER_LAMP)
             for fov_index, fov in enumerate(fovs):
-                device_cfg.move_xyz_pfs(
-
-                )
+                device_cfg.move_xyz_pfs(fov, step=6, XY_DEVICE=device_cfg.XY_DEVICE)
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
@@ -156,6 +153,13 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
 
         t_of_acq = time.time() - t_init
         waiting_t = parse_second(time_step) - t_of_acq
+
+        if thread_flag != False:
+            if thread_flag[0]:
+                print('Acquisition loop finish!')
+                thread_flag[0] = False
+                return None
+
         if waiting_t < 0:
             print(f'{bcolors.WARNING}Waring: Acquisition loop {t_of_acq} s '
                   f' is longer than default time step ({-int(waiting_t)} s)! '
