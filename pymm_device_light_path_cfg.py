@@ -157,7 +157,7 @@ class MicroscopeParas:
             from device.prior_device import PriorScan
             xy_connect = PriorScan()
 
-            def move_xyz_pfs(fov, turnoffz=True, step=6, fov_len=133.3, XY_DEVICE=False, core=self.mmcore):
+            def move_xyz_pfs(fov, turnoffz=True, step=6, fov_len=133.3, core=self.mmcore):
                 """
                 Move stage xy and z position.
                 :param fov:
@@ -173,10 +173,8 @@ class MicroscopeParas:
                 y_space = np.linspace(y_f, y_t, num=num_block)
                 for i in range(len(x_space) - 1):
                     xy_connect.set_xy_position(x_space[i + 1], y_space[i + 1])
-                    # core.wait_for_device(XY_DEVICE)
                     while xy_connect.device_busy():
                         time.sleep(0.00001)
-                    # waiting_device()
 
                 if turnoffz:
                     if 'pfsoffset' in fov:

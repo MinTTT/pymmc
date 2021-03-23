@@ -38,23 +38,24 @@ class PriorScan(object):
         if self.ret:
             # print(f"Error initialising {self.ret}")
             # sys.exit()
-            raise RuntimeError(f"Error initialising {self.ret}")
+            raise RuntimeError(f"[Prior SDK]: Error initialising {self.ret}")
         else:
-            print(f"Ok initialising {self.ret}")
+            print(f"[Prior SDK]: Ok initialising {self.ret}")
         self.ret = self.SDKPrior.PriorScientificSDK_Version(self.rx)
-        print(f'Prior stage api version: {self.rx.value.decode()}')
+        print(f'[Prior SDK]: api version: {self.rx.value.decode()}')
         # session
         self.session_id = self.SDKPrior.PriorScientificSDK_OpenNewSession()
         if self.session_id < 0:
             # print(f'Error getting session ID {self.session_id}')
             # sys.exit()
-            raise RuntimeError(f'Error getting session ID {self.session_id}')
+            raise RuntimeError(f'[Prior SDK]: Error getting session ID {self.session_id}')
         # connect to device
         self.ret = self.SDKPrior.PriorScientificSDK_cmd(
             self.session_id, create_string_buffer(f"controller.connect {self.com}".encode()), self.rx)
         if self.ret < 0:
-            raise RuntimeError(f'Error connecting COM{self.com}')
-        # get step per micro
+            raise RuntimeError(f'[Prior SDK]: Error connecting COM{self.com}')
+
+        # XY Stage get step per micro
         self.ret = self.SDKPrior.PriorScientificSDK_cmd(
             self.session_id, create_string_buffer("controller.stage.steps-per-micron.get".encode()), self.rx)
         self.spermicro = int(self.rx.value.decode())
