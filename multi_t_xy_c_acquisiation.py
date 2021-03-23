@@ -221,7 +221,9 @@ def multi_acq_4c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
     device_cfg.set_light_path('BF', '100X', shutter=device_cfg.SHUTTER_LAMP)
     light_path_state = 'green'
+    print(f'{colors.OKGREEN}Initial Phase Setup.{colors.ENDC}')
     set_device_state(device_cfg.mmcore, 'init_phase')
+    print(f'{colors.OKGREEN}Initial First Channel.{colors.ENDC}')
     set_device_state(device_cfg.mmcore, '3t1')
     # TODO：I found the python console initialized and performed this code block first time,
     #  the Ti2E_H has no fluorescent emission light.
@@ -238,60 +240,53 @@ def multi_acq_4c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 # First Channel
                 if light_path_state == 'green':
-                    pass
+                    print('Snap image (phase).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
+                    print('Snap image (CFP).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'CFP')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=device_cfg.EXPOSURE_BLUE)
+                    set_device_state(device_cfg.mmcore, '1t2')
+                    print('Snap image (YFP).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'YFP')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=device_cfg.EXPOSURE_YELLOW)
+                    set_device_state(device_cfg.mmcore, '2t3')
+                    print('Snap image (RED).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'RED')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=device_cfg.EXPOSURE_RED)
+                    light_path_state = 'red'
                 else:
-                    set_device_state(device_cfg.mmcore, '3t1')
-                print('Snap image (phase).\n')
-                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
-                device_cfg.auto_acq_save(image_dir, name=file_name,
-                                 shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
-                print('Snap image (CFP).\n')
-                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'CFP')
-                device_cfg.auto_acq_save(image_dir, name=file_name,
-                                 shutter=device_cfg.SHUTTER_LED,
-                                 exposure=device_cfg.EXPOSURE_BLUE)
-                set_device_state(device_cfg.mmcore, '1t2')
-                print('Snap image (YFP).\n')
-                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'YFP')
-                device_cfg.auto_acq_save(image_dir, name=file_name,
-                                 shutter=device_cfg.SHUTTER_LED,
-                                 exposure=device_cfg.EXPOSURE_YELLOW)
-                set_device_state(device_cfg.mmcore, '2t3')
-                print('Snap image (RED).\n')
-                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'RED')
-                device_cfg.auto_acq_save(image_dir, name=file_name,
-                                 shutter=device_cfg.SHUTTER_LED,
-                                 exposure=device_cfg.EXPOSURE_RED)
-                light_path_state = 'red'
+                    print('Snap image (RED).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'RED')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=device_cfg.EXPOSURE_RED)
+                    set_device_state(device_cfg.mmcore, '3t2')
+                    print('Snap image (YFP).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'YFP')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=device_cfg.EXPOSURE_YELLOW)
+                    set_device_state(device_cfg.mmcore, '2t1')
+                    print('Snap image (CFP).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'CFP')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=device_cfg.EXPOSURE_BLUE)
+                    print('Snap image (phase).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
+                    light_path_state = 'green'
 
 
-                # else:
-                #     print('Snap image (red).\n')
-                #     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
-                #     device_cfg.auto_acq_save(image_dir, name=file_name,
-                #                      shutter=device_cfg.SHUTTER_LED,
-                #                      exposure=get_exposure(light_path_state, device_cfg))
-                # Second Channel
-                # if light_path_state == 'green':
-                #     set_device_state(device_cfg.mmcore, 'g2r')
-                #     light_path_state = 'red'
-                #     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
-                #     device_cfg.auto_acq_save(image_dir, name=file_name,
-                #                      shutter=device_cfg.SHUTTER_LED,
-                #                      exposure=get_exposure(light_path_state, device_cfg))
-                #     print(f'Snap image (red).\n')
-                # else:
-                #     light_path_state = 'green'
-                #     set_device_state(device_cfg.mmcore, 'r2g')
-                #     print('Snap image (phase).\n')
-                #     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
-                #     device_cfg.auto_acq_save(image_dir, name=file_name,
-                #                      shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
-                #     print('Snap image (green).\n')
-                #     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
-                #     device_cfg.auto_acq_save(image_dir, name=file_name,
-                #                      shutter=device_cfg.SHUTTER_LED,
-                #                      exposure=get_exposure(light_path_state, device_cfg))
         else:
             # ========start phase 100X acq loop=================#
             if light_path_state == 'green':
