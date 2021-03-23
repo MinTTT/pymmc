@@ -92,18 +92,20 @@ class MicroscopeParas:
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'Spectra'
             self.FILTER_TURRET = 'LudlWheel'
+            self.TURRET = 'FilterTurret1'
             self.GREEN_EXCITE = 15
-            self.RED_EXCITE = 50
-            self.BLUE_EXCITE = 15
-            self.EXPOSURE_GREEN = 50  # 50 ms TiE2
+            self.YELLOW_EXCITE = 10
+            self.RED_EXCITE = 15
+            self.BLUE_EXCITE = 10
+            self.EXPOSURE_GREEN = 100  # 50 ms TiE2
             self.EXPOSURE_PHASE = 20  # ms
-            self.EXPOSURE_RED = 200  # ms
-            self.EXPOSURE_BLUE = 20
-            self.EXPOSURE_YELLOW = 20
-            self.YELLOW_EXCITE = 15
+            self.EXPOSURE_RED = 50  # ms
+            self.EXPOSURE_BLUE = 50
+            self.EXPOSURE_YELLOW = 50
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
             self.Z_DEVICE = 'ZDrive'
+            self.AUTOFOCUS_OFFSET = 'PFSOffset'
             self.mmcore = mmcore
         elif self.MICROSCOPE == 'Ti2E_H_DB':
             self.SHUTTER_LAMP = 'DiaLamp'
@@ -131,6 +133,7 @@ class MicroscopeParas:
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
             self.Z_DEVICE = 'ZDrive'
+            self.AUTOFOCUS_OFFSET = 'PFSOffset'
             self.mmcore = mmcore
         else:
             print(f'{colors.WARNING}{self.MICROSCOPE}: No such device tag!{colors.ENDC}')
@@ -152,7 +155,7 @@ class MicroscopeParas:
         self.autofocus = mm.autofocus
         self.auto_acq_save = mm.auto_acq_save
         self.active_auto_shutter = mm.active_auto_shutter
-        
+
         if self.XY_DEVICE == 'prior_xy':
             from device.prior_device import PriorScan
             xy_connect = PriorScan()
@@ -298,31 +301,42 @@ class MicroscopeParas:
                 mm.waiting_device()
         elif self.MICROSCOPE == 'Ti2E_H_4C':
             if shift_type == 'init_phase':
-                core_mmc.set_property(self.FILTER_TURRET, 'State', 3)
+                core_mmc.set_property(self.TURRET, 'State', 3)
                 core_mmc.set_property(self.SHUTTER_LED, 'Green_Enable', 0)
                 core_mmc.set_property(self.SHUTTER_LED, 'Blue_Enable', 0)
                 core_mmc.set_property(self.SHUTTER_LED, 'Teal_Enable', 0)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 2)
                 mm.waiting_device()
             if shift_type == '3t1':
                 core_mmc.set_property(self.SHUTTER_LED, 'Green_Enable', 0)
                 core_mmc.set_property(self.SHUTTER_LED, 'Blue_Level', self.BLUE_EXCITE)
                 core_mmc.set_property(self.SHUTTER_LED, 'Blue_Enable', 1)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 2)
                 mm.waiting_device()
             if shift_type == '1t2':
                 core_mmc.set_property(self.SHUTTER_LED, 'Blue_Enable', 0)
                 core_mmc.set_property(self.SHUTTER_LED, 'Teal_Level', self.YELLOW_EXCITE)
                 core_mmc.set_property(self.SHUTTER_LED, 'Teal_Enable', 1)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 8)
                 mm.waiting_device()
             if shift_type == '2t3':
                 core_mmc.set_property(self.SHUTTER_LED, 'Teal_Enable', 0)
                 core_mmc.set_property(self.SHUTTER_LED, 'Green_Level', self.RED_EXCITE)
                 core_mmc.set_property(self.SHUTTER_LED, 'Green_Enable', 1)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 7)
                 mm.waiting_device()
-            # if shift_type == 'g2r':
-            #     core_mmc.set_property(self.SHUTTER_LED, 'Green_Level', self.RED_EXCITE)
-            #     core_mmc.set_property(self.SHUTTER_LED, 'Green_Enable', 1)
-            #     core_mmc.set_property(self.SHUTTER_LED, 'Cyan_Enable', 0)
-            #     mm.waiting_device()
+            if shift_type == '3t2':
+                core_mmc.set_property(self.SHUTTER_LED, 'Teal_Enable', 1)
+                core_mmc.set_property(self.SHUTTER_LED, 'Green_Level', self.YELLOW_EXCITE)
+                core_mmc.set_property(self.SHUTTER_LED, 'Green_Enable', 0)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 8)
+            if shift_type == '2t1':
+                core_mmc.set_property(self.SHUTTER_LED, 'Blue_Enable', 1)
+                core_mmc.set_property(self.SHUTTER_LED, 'Teal_Level', self.BLUE_EXCITE)
+                core_mmc.set_property(self.SHUTTER_LED, 'Teal_Enable', 0)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 2)
+                mm.waiting_device()
+
         return None
 
 
