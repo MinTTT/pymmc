@@ -4,7 +4,8 @@
  @author: Pan M. CHU
 """
 
-from ctypes import WinDLL, create_string_buffer
+from ctypes import WinDLL, create_string_buffer, c_int, POINTER, c_char
+
 import os
 import sys
 
@@ -16,8 +17,8 @@ def load_sdk(ps):
         raise RuntimeError("DLL could not be loaded.")
 
 
-class PriorScan:
-    def __init__(self, com, dll_path=r"./prior_stage/x64/PriorScientificSDK.dll"):
+class PriorScan(object):
+    def __init__(self, com=6, dll_path=r"./device/prior_stage/x64/PriorScientificSDK.dll"):
         """
 
         :param com: int, com port number, if COM3, use the value 3
@@ -26,30 +27,35 @@ class PriorScan:
         self.com = com
         self.dll_ps = dll_path
         self.SDKPrior = load_sdk(self.dll_ps)
-        self.rx = create_string_buffer(2000)
+        self.rx = create_string_buffer(5000)
         self.rx_decode = None
+        self._cmd = self.SDKPrior.PriorScientificSDK_cmd
+        self._cmd.argtypes = (c_int, POINTER(c_char), POINTER(c_char))
+        self._cmd.restype = c_int
+
         # initialize
         self.ret = self.SDKPrior.PriorScientificSDK_Initialise()
         if self.ret:
             # print(f"Error initialising {self.ret}")
             # sys.exit()
-            raise RuntimeError(f"Error initialising {self.ret}")
+            raise RuntimeError(f"[Prior SDK]: Error initialising {self.ret}")
         else:
-            print(f"Ok initialising {self.ret}")
+            print(f"[Prior SDK]: Ok initialising {self.ret}")
         self.ret = self.SDKPrior.PriorScientificSDK_Version(self.rx)
-        print(f'Prior stage api version: {self.rx.value.decode()}')
+        print(f'[Prior SDK]: api version: {self.rx.value.decode()}')
         # session
         self.session_id = self.SDKPrior.PriorScientificSDK_OpenNewSession()
         if self.session_id < 0:
             # print(f'Error getting session ID {self.session_id}')
             # sys.exit()
-            raise RuntimeError(f'Error getting session ID {self.session_id}')
+            raise RuntimeError(f'[Prior SDK]: Error getting session ID {self.session_id}')
         # connect to device
         self.ret = self.SDKPrior.PriorScientificSDK_cmd(
             self.session_id, create_string_buffer(f"controller.connect {self.com}".encode()), self.rx)
         if self.ret < 0:
-            raise RuntimeError(f'Error connecting COM{self.com}')
-        # get step per micro
+            raise RuntimeError(f'[Prior SDK]: Error connecting COM{self.com}')
+
+        # XY Stage get step per micro
         self.ret = self.SDKPrior.PriorScientificSDK_cmd(
             self.session_id, create_string_buffer("controller.stage.steps-per-micron.get".encode()), self.rx)
         self.spermicro = int(self.rx.value.decode())
@@ -59,8 +65,7 @@ class PriorScan:
             self.session_id, create_string_buffer(f"controller.stage.ss.set {self.ss}".encode()), self.rx)
 
     def cmd(self, msg):
-        self.ret = self.SDKPrior.PriorScientificSDK_cmd(
-            self.session_id, create_string_buffer(msg.encode()), self.rx)
+        self.ret = self._cmd(self.session_id, create_string_buffer(msg.encode()), self.rx)
         return self.rx.value.decode()
 
     # def steppermicro(self):
@@ -96,24 +101,31 @@ class PriorScan:
 # %%
 if __name__ == '__main__':
 
+    #%%
+    conncet = PriorScan(com=6)
+    #%%
+
     stage = PriorScan(com=6)
-
-    path = r"../prior_stage/x64/PriorScientificSDK.dll"
-
+    os.chdir(r'D:\python_code\pymmc\device\prior_stage\x64/')
+    path = "PriorScientificSDK.dll"
     if os.path.exists(path):
         SDKPrior = WinDLL(path)
     else:
         raise RuntimeError("DLL could not be loaded.")
 
-    rx = create_string_buffer(20)
+    rx = create_string_buffer(50000)
     realhw = False
 
+    _cmd = SDKPrior.PriorScientificSDK_cmd
+    _cmd.argtypes = (c_int, POINTER(c_char), POINTER(c_char))
+    _cmd.restype = c_int
 
     def cmd(msg):
-        print(msg)
-        ret = SDKPrior.PriorScientificSDK_cmd(
-            sessionID, create_string_buffer(msg.encode()), rx
-        )
+        # print(msg)
+        # ret = SDKPrior.PriorScientificSDK_cmd(
+        #     sessionID, create_string_buffer(msg.encode()), rx
+        # )
+        ret = _cmd(sessionID, create_string_buffer(msg.encode()), rx)
         if ret:
             print(f"Api error {ret}")
         else:

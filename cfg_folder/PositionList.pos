@@ -8,9 +8,9 @@
       "type": "PROPERTY_MAP",
       "array": [
         {
-          "DefaultXYStage": {
+          "DefaultXYState": {
             "type": "STRING",
-            "scalar": "XYStage"
+            "scalar": "prior_xy"
           },
           "DefaultZStage": {
             "type": "STRING",
@@ -46,7 +46,7 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "XYStage"
+                  "scalar": "prior_xy"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
@@ -76,9 +76,9 @@
           }
         },
         {
-          "DefaultXYStage": {
+          "Defaultprior_xy": {
             "type": "STRING",
-            "scalar": "XYStage"
+            "scalar": "prior_xy"
           },
           "DefaultZStage": {
             "type": "STRING",
@@ -114,7 +114,7 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "XYStage"
+                  "scalar": "prior_xy"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
@@ -144,9 +144,9 @@
           }
         },
         {
-          "DefaultXYStage": {
+          "Defaultprior_xy": {
             "type": "STRING",
-            "scalar": "XYStage"
+            "scalar": "prior_xy"
           },
           "DefaultZStage": {
             "type": "STRING",
@@ -182,7 +182,7 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "XYStage"
+                  "scalar": "prior_xy"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
@@ -212,9 +212,9 @@
           }
         },
         {
-          "DefaultXYStage": {
+          "Defaultprior_xy": {
             "type": "STRING",
-            "scalar": "XYStage"
+            "scalar": "prior_xy"
           },
           "DefaultZStage": {
             "type": "STRING",
@@ -250,7 +250,7 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "XYStage"
+                  "scalar": "prior_xy"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
@@ -280,9 +280,9 @@
           }
         },
         {
-          "DefaultXYStage": {
+          "Defaultprior_xy": {
             "type": "STRING",
-            "scalar": "XYStage"
+            "scalar": "prior_xy"
           },
           "DefaultZStage": {
             "type": "STRING",
@@ -318,7 +318,7 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "XYStage"
+                  "scalar": "prior_xy"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
@@ -348,9 +348,9 @@
           }
         },
         {
-          "DefaultXYStage": {
+          "Defaultprior_xy": {
             "type": "STRING",
-            "scalar": "XYStage"
+            "scalar": "prior_xy"
           },
           "DefaultZStage": {
             "type": "STRING",
@@ -386,7 +386,7 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "XYStage"
+                  "scalar": "prior_xy"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
@@ -416,9 +416,9 @@
           }
         },
         {
-          "DefaultXYStage": {
+          "Defaultprior_xy": {
             "type": "STRING",
-            "scalar": "XYStage"
+            "scalar": "prior_xy"
           },
           "DefaultZStage": {
             "type": "STRING",
@@ -454,7 +454,7 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "XYStage"
+                  "scalar": "prior_xy"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
@@ -484,9 +484,9 @@
           }
         },
         {
-          "DefaultXYStage": {
+          "Defaultprior_xy": {
             "type": "STRING",
-            "scalar": "XYStage"
+            "scalar": "prior_xy"
           },
           "DefaultZStage": {
             "type": "STRING",
@@ -522,7 +522,7 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "XYStage"
+                  "scalar": "prior_xy"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
@@ -552,9 +552,9 @@
           }
         },
         {
-          "DefaultXYStage": {
+          "Defaultprior_xy": {
             "type": "STRING",
-            "scalar": "XYStage"
+            "scalar": "prior_xy"
           },
           "DefaultZStage": {
             "type": "STRING",
@@ -590,7 +590,7 @@
               {
                 "Device": {
                   "type": "STRING",
-                  "scalar": "XYStage"
+                  "scalar": "prior_xy"
                 },
                 "Position_um": {
                   "type": "DOUBLE",
