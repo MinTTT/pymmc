@@ -92,8 +92,10 @@ class MicroscopeParas:
             self.EXPOSURE_PHASE = 20  # ms
             self.EXPOSURE_RED = 100  # ms
             self.AUTOFOCUS_DEVICE = 'PFS'
+            self.AUTOFOCUS_OFFSET = 'PFSOffset'
             self.XY_DEVICE = 'XYStage'
             self.Z_DEVICE = 'ZDrive'
+
         else:
             print(f'{colors.WARNING}{self.MICROSCOPE}: No such device tag!{colors.ENDC}')
 

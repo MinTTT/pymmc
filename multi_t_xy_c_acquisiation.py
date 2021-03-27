@@ -142,9 +142,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
                 light_path_state = 'green'
             mm.active_auto_shutter(device_cfg.SHUTTER_LAMP)
             for fov_index, fov in enumerate(fovs):
-                mm.move_xyz_pfs(
-
-                )
+                mm.move_xyz_pfs(fov, step=6, XY_DEVICE=device_cfg.XY_DEVICE)  # move stage xy.
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
