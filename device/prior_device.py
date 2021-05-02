@@ -20,7 +20,6 @@ def load_sdk(ps):
 class PriorScan(object):
     def __init__(self, com=6, dll_path=r"./device/prior_stage/x64/PriorScientificSDK.dll"):
         """
-
         :param com: int, com port number, if COM3, use the value 3
         :param dll_path: str, default use dll in this project
         """
@@ -32,12 +31,16 @@ class PriorScan(object):
         self._cmd = self.SDKPrior.PriorScientificSDK_cmd
         self._cmd.argtypes = (c_int, POINTER(c_char), POINTER(c_char))
         self._cmd.restype = c_int
-
         # initialize
+        self.ret = None
+        self.session_id = None
+        self.spermicro = None
+        self.ss = 1  # step per step, default is 1
+        self.initialize()
+
+    def initialize(self):
         self.ret = self.SDKPrior.PriorScientificSDK_Initialise()
         if self.ret:
-            # print(f"Error initialising {self.ret}")
-            # sys.exit()
             raise RuntimeError(f"[Prior SDK]: Error initialising {self.ret}")
         else:
             print(f"[Prior SDK]: Ok initialising {self.ret}")
@@ -49,23 +52,26 @@ class PriorScan(object):
             # print(f'Error getting session ID {self.session_id}')
             # sys.exit()
             raise RuntimeError(f'[Prior SDK]: Error getting session ID {self.session_id}')
-        # connect to device
         self.ret = self.SDKPrior.PriorScientificSDK_cmd(
             self.session_id, create_string_buffer(f"controller.connect {self.com}".encode()), self.rx)
         if self.ret < 0:
             raise RuntimeError(f'[Prior SDK]: Error connecting COM{self.com}')
 
         # XY Stage get step per micro
-        self.ret = self.SDKPrior.PriorScientificSDK_cmd(
-            self.session_id, create_string_buffer("controller.stage.steps-per-micron.get".encode()), self.rx)
-        self.spermicro = int(self.rx.value.decode())
+        # self.ret = self.SDKPrior.PriorScientificSDK_cmd(
+        #     self.session_id, create_string_buffer("controller.stage.steps-per-micron.get".encode()), self.rx)
+        self.ret = self.cmd("controller.stage.steps-per-micron.get")
+        self.spermicro = int(self.decode_rx())
         # set user step per step
-        self.ss = 1
-        self.ret = self.SDKPrior.PriorScientificSDK_cmd(
-            self.session_id, create_string_buffer(f"controller.stage.ss.set {self.ss}".encode()), self.rx)
+        # self.ret = self.SDKPrior.PriorScientificSDK_cmd(
+        #     self.session_id, create_string_buffer(f"controller.stage.ss.set {self.ss}".encode()), self.rx)
+        self.ret = self.cmd(f"controller.stage.ss.set {self.ss}")
 
     def cmd(self, msg):
         self.ret = self._cmd(self.session_id, create_string_buffer(msg.encode()), self.rx)
+        return self.rx.value.decode()
+
+    def decode_rx(self):
         return self.rx.value.decode()
 
     # def steppermicro(self):

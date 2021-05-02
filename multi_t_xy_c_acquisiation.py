@@ -81,7 +81,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
     set_device_state = device_cfg.set_device_state
     print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
-    device_cfg.set_light_path('BF', '100X', shutter=device_cfg.SHUTTER_LAMP)
+    device_cfg.set_light_path('BF', '100X')
     light_path_state = 'green'
     set_device_state(device_cfg.mmcore, 'init_phase')
     set_device_state(device_cfg.mmcore, 'r2g')

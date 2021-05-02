@@ -27,6 +27,18 @@ def get_current_time():
     return formatted_time
 
 
+def mm_set_camer_roi(roi: list, camera: int = 0) -> None:
+    """
+
+    :param roi: list, [x, y, Xsize, Ysize]; x	coordinate of the top left corner; y	coordinate of the top left corner; xSize	number of horizontal pixels; ySize	number of horizontal pixels;
+    :param camera: int 0 , if set to 0, use current camera
+    :return: None
+    """
+    if camera == 0:
+        core.set_ROI(roi)
+    return None
+
+
 def snap_image(**kwargs):
     """
     get current image in fov
