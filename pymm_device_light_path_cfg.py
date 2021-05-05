@@ -27,7 +27,7 @@ mmcore = mm.core
 
 
 class MicroscopeParas:
-    def __init__(self, MICROSCOPE):
+    def __init__(self, MICROSCOPE, CAM_ROI=None):
         self.MICROSCOPE = MICROSCOPE
         if self.MICROSCOPE == 'Ti2E':
             self.SHUTTER_LAMP = 'DiaLamp'
@@ -36,12 +36,13 @@ class MicroscopeParas:
             self.FLU_EXCITE = 'XCite-Exacte'
             self.GREEN_EXCITE = 15
             self.RED_EXCITE = 50
-            self.EXPOSURE_GREEN = 50  # 50 ms TiE2
+            self.EXPOSURE_GREEN = 100  # 50 ms TiE2
             self.EXPOSURE_PHASE = 20  # ms
             self.EXPOSURE_RED = 200  # ms
             self.AUTOFOCUS_DEVICE = 'PFS'
             self.XY_DEVICE = 'XYStage'
             self.Z_DEVICE = 'ZDrive'
+            self.AUTOFOCUS_OFFSET = 'PFSOffset'
             self.mmcore = mmcore
         elif self.MICROSCOPE == 'TiE':
             self.SHUTTER_LAMP = 'Arduino-Shutter'
@@ -138,11 +139,13 @@ class MicroscopeParas:
         else:
             print(f'{colors.WARNING}{self.MICROSCOPE}: No such device tag!{colors.ENDC}')
         # initial func
+        self.CAM_ROI = CAM_ROI
         self.set_light_path = None
         self.move_xyz_pfs = None
         self.autofocus = None
         self.auto_acq_save = None
         self.active_auto_shutter = None
+        self.set_ROI = None
         self.init_func()
 
     def init_func(self):
@@ -155,6 +158,7 @@ class MicroscopeParas:
         self.autofocus = mm.autofocus
         self.auto_acq_save = mm.auto_acq_save
         self.active_auto_shutter = mm.active_auto_shutter
+        self.set_ROI = mm.mm_set_camer_roi
 
         if self.XY_DEVICE == 'prior_xy':
             from device.prior_device import PriorScan
@@ -218,7 +222,7 @@ class MicroscopeParas:
                 if z_init < z_bottom:
                     z_init = z_bottom
 
-    def set_device_state(self, core_mmc, shift_type):
+    def set_device_state(self, core_mmc=None, shift_type=None):
         """
         This function is used to set light from green to red channel.
         For Ti2E, two devices shall be changed their states. 1. FilterTurret, filter states
@@ -227,9 +231,14 @@ class MicroscopeParas:
         :param micro_device: str, which device? 'Ti2E' or 'Ti2E_H'.
         :return: None
         """
+        if core_mmc == None:
+            core_mmc = self.mmcore
+
         if self.MICROSCOPE == 'Ti2E':
             if shift_type == 'init_phase':
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 2)  # set filer in 5 pos
+                if self.CAM_ROI is not None:
+                    self.set_ROI(self.CAM_ROI)
                 mm.waiting_device()
             if shift_type == "g2r":
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 1)  # set filer in 5 pos
@@ -244,6 +253,8 @@ class MicroscopeParas:
                 mm.waiting_device()
         elif self.MICROSCOPE == 'TiE' or self.MICROSCOPE == 'TiE_prior':
             if shift_type == 'init_phase':
+                if self.CAM_ROI is not None:
+                    self.set_ROI(self.CAM_ROI)
                 core_mmc.set_property(self.INIT_LAMP, 'State', 1)
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 2)
                 mm.waiting_device()
@@ -258,6 +269,8 @@ class MicroscopeParas:
                 mm.waiting_device()
         elif self.MICROSCOPE == 'Ti2E_LDJ':
             if shift_type == 'init_phase':
+                if self.CAM_ROI is not None:
+                    self.set_ROI(self.CAM_ROI)
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 3)
                 mm.waiting_device()
             if shift_type == 'r2g':
@@ -271,7 +284,8 @@ class MicroscopeParas:
                 mm.waiting_device()
         elif self.MICROSCOPE == 'Ti2E_H':
             if shift_type == 'init_phase':
-                pass
+                if self.CAM_ROI is not None:
+                    self.set_ROI(self.CAM_ROI)
             if shift_type == "r2g":
                 core_mmc.set_property(self.SHUTTER_LED, 'Cyan_Level', self.GREEN_EXCITE)
                 core_mmc.set_property(self.SHUTTER_LED, 'Cyan_Enable', 1)
@@ -286,7 +300,8 @@ class MicroscopeParas:
                 mm.waiting_device()
         elif self.MICROSCOPE == 'Ti2E_H':
             if shift_type == 'init_phase':
-                pass
+                if self.CAM_ROI is not None:
+                    self.set_ROI(self.CAM_ROI)
             if shift_type == "r2g":
                 core_mmc.set_property(self.SHUTTER_LED, 'Cyan_Level', self.GREEN_EXCITE)
                 core_mmc.set_property(self.SHUTTER_LED, 'Cyan_Enable', 1)
@@ -301,6 +316,8 @@ class MicroscopeParas:
                 mm.waiting_device()
         elif self.MICROSCOPE == 'Ti2E_H_4C':
             if shift_type == 'init_phase':
+                if self.CAM_ROI is not None:
+                    self.set_ROI(self.CAM_ROI)
                 core_mmc.set_property(self.TURRET, 'State', 3)
                 core_mmc.set_property(self.SHUTTER_LED, 'Green_Enable', 0)
                 core_mmc.set_property(self.SHUTTER_LED, 'Blue_Enable', 0)
@@ -336,7 +353,6 @@ class MicroscopeParas:
                 core_mmc.set_property(self.SHUTTER_LED, 'Teal_Enable', 0)
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 2)
                 mm.waiting_device()
-
         return None
 
 
