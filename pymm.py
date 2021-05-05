@@ -27,6 +27,18 @@ def get_current_time():
     return formatted_time
 
 
+def mm_set_camer_roi(roi: list, camera: int = 0) -> None:
+    """
+
+    :param roi: list, [x, y, Xsize, Ysize]; x	coordinate of the top left corner; y	coordinate of the top left corner; xSize	number of horizontal pixels; ySize	number of horizontal pixels;
+    :param camera: int 0 , if set to 0, use current camera
+    :return: None
+    """
+    if camera == 0:
+        core.set_roi(*roi)
+    return None
+
+
 def snap_image(**kwargs):
     """
     get current image in fov
@@ -106,7 +118,6 @@ def set_light_path(grop, preset, shutter=None):
     return None
 
 
-
 def waiting_device(device=None):
     """
     waiting for micro-scope done all commands.
@@ -120,6 +131,12 @@ def waiting_device(device=None):
     else:
         while core.system_busy():
             time.sleep(0.00001)
+    return None
+
+
+def waiting_autofocus():
+    while not core.is_continuous_focus_locked():
+        time.sleep(0.00001)
     return None
 
 
@@ -151,6 +168,7 @@ def move_xyz_pfs(fov, turnoffz=True, step=6, fov_len=133.3, XY_DEVICE=False):
     if turnoffz:
         if 'pfsoffset' in fov:
             core.set_auto_focus_offset(fov['pfsoffset'][0])
+            waiting_autofocus()
     else:
         if 'z' in fov:
             core.set_position(fov['z'][0])

@@ -16,15 +16,21 @@ class PymmAcq:
     def __init__(self, device: str):
         self.device_name = device
         self.stop = [False]
+        self.device_cfg = None
+
+        self.initialize_device()
+
+    def initialize_device(self):
+        self.device_cfg = pymm_cfg.MicroscopeParas(self.device_name)
 
     def multi_acq_3c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):
         thread.start_new_thread(multi_acq_3c,
-                                (dir, pos_ps, self.device_name, time_step, flu_step, time_duration, self.stop))
+                                (dir, pos_ps, self.device_cfg, time_step, flu_step, time_duration, self.stop))
         return None
 
     def multi_acq_4c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):
         thread.start_new_thread(multi_acq_4c,
-                                (dir, pos_ps, self.device_name, time_step, flu_step, time_duration, self.stop))
+                                (dir, pos_ps, self.device_cfg, time_step, flu_step, time_duration, self.stop))
         return None
 
     def stop_acq_loop(self):
@@ -47,12 +53,12 @@ def if_acq(loop_index, flu_step):
         return 1
 
 
-def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: int, time_duration: list,
+def multi_acq_3c(dir: str, pos_ps: str, device: object, time_step: list, flu_step: int, time_duration: list,
                  thread_flag=False) -> None:
     '''
     :param dir: image save dir, str
     :param pos_ps: position file, str
-    :param device: device tag, str
+    :param device: device cfg, obj
     :param time_step: list [h, min, s]
     :param flu_step: int
     :param time_duration: list [h, min, s]
@@ -61,9 +67,9 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     '''
     DIR = dir
     POSITION_FILE = pos_ps
-    MICROSCOPE = device  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
+      # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
     # -----------------------------------------------------------------------------------
-    device_cfg = pymm_cfg.MicroscopeParas(MICROSCOPE)
+    device_cfg = device
     # %%
     # ==========get multiple positions============
     fovs = parse_position(POSITION_FILE,
@@ -81,7 +87,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
     set_device_state = device_cfg.set_device_state
     print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
-    device_cfg.set_light_path('BF', '100X', shutter=device_cfg.SHUTTER_LAMP)
+    device_cfg.set_light_path('BF', '100X')
     light_path_state = 'green'
     set_device_state(device_cfg.mmcore, 'init_phase')
     set_device_state(device_cfg.mmcore, 'r2g')
@@ -92,11 +98,12 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     while loop_index != loops_num:
         t_init = time.time()
         if if_acq(loop_index, flu_step) == 0:
+            device_cfg.autofocus()  # check auto focus, is important!
             for fov_index, fov in enumerate(fovs):
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 device_cfg.move_xyz_pfs(fov, step=6, XY_DEVICE=device_cfg.XY_DEVICE)  # move stage xy.
-                device_cfg.autofocus()  # check auto focus, is important!
+                time.sleep(0.1)
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 # First Channel
                 if light_path_state == 'green':
@@ -146,6 +153,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
             device_cfg.active_auto_shutter(device_cfg.SHUTTER_LAMP)
             for fov_index, fov in enumerate(fovs):
                 device_cfg.move_xyz_pfs(fov, step=6, XY_DEVICE=device_cfg.XY_DEVICE)
+                time.sleep(0.1)
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
@@ -185,12 +193,12 @@ def multi_acq_3c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
 
 
 
-def multi_acq_4c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: int, time_duration: list,
+def multi_acq_4c(dir: str, pos_ps: str, device: object, time_step: list, flu_step: int, time_duration: list,
                  thread_flag=False) -> None:
     '''
     :param dir: image save dir, str
     :param pos_ps: position file, str
-    :param device: device tag, str
+    :param device: device cfg, object
     :param time_step: list [h, min, s]
     :param flu_step: int
     :param time_duration: list [h, min, s]
@@ -199,9 +207,9 @@ def multi_acq_4c(dir: str, pos_ps: str, device: str, time_step: list, flu_step: 
     '''
     DIR = dir
     POSITION_FILE = pos_ps
-    MICROSCOPE = device  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
+     # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
     # -----------------------------------------------------------------------------------
-    device_cfg = pymm_cfg.MicroscopeParas(MICROSCOPE)
+    device_cfg = device
     # %%
     # ==========get multiple positions============
     fovs = parse_position(POSITION_FILE,
