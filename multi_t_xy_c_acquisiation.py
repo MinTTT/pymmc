@@ -98,12 +98,11 @@ def multi_acq_3c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
     while loop_index != loops_num:
         t_init = time.time()
         if if_acq(loop_index, flu_step) == 0:
-
             for fov_index, fov in enumerate(fovs):
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 device_cfg.move_xyz_pfs(fov, step=6, XY_DEVICE=device_cfg.XY_DEVICE)  # move stage xy.
-                device_cfg.autofocus()  # check auto focus, is important!
+                time.sleep(0.1)
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 # First Channel
                 if light_path_state == 'green':
