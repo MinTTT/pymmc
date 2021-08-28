@@ -263,14 +263,20 @@ namespace SL160_LoaderDemo
                         MessageBox.Show("There was a problem initialising the loader (" + err.ToString() + ")", "Error",
                                                            MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
-                    }; 
-                    
+                    };
+
+                    lstHelp.Items.Add("Loader initialising - done");
+                    lstHelp.Items.Add("Stage initialising - please wait...");
+   
                     if ((err = InitStage()) != Prior.PRIOR_OK)
                     {
                         MessageBox.Show("There was a problem initialising the stage (" + err.ToString() + ")", "Error",
                                                            MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     };
+                    lstHelp.Items.Add("Stage initialising - done");
+                    lstHelp.Refresh();
+                    Thread.Sleep(1000);
 
                     /* check whether setup is required */
                     if (StatusBitIsSet(Prior.SL160_LOADER_NOTSETUP))
@@ -312,18 +318,32 @@ namespace SL160_LoaderDemo
                                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
-                    lstHelp.Items.Add("Waiting for STM positioning to complete...");
+                    lstHelp.Items.Add("Waiting for STM/STAGE positioning to complete...");
                     lstHelp.Refresh();
-                    /* move STM out to 200mm, so tray can be fitted by user, 
-                    */
-                    AxisMoveTo(Prior.SL160_STM, mmToCounts(Prior.SL160_STM, 200));
-                    WaitAxisNotBusy(Prior.SL160_STM);
 
-                    btnAction.Text = "Load Tray";
-                    lstHelp.Items.Clear();
-                    lstHelp.Items.Add(" ");
-                    lstHelp.Items.Add("Fit tray to STM and then click 'Load Tray' to continue");
-                    btnAction.Enabled = true;
+                       /* move stage to somewhere nearby the correct loading position */
+                    if ((err = priorSDK.Cmd(sessionID, "controller.stage.goto-position 105000 75800", ref userRx)) == Prior.PRIOR_OK)
+                    {
+                        /* move STM out to 200mm, so tray can be fitted by user, 
+                        */
+                        AxisMoveTo(Prior.SL160_STM, mmToCounts(Prior.SL160_STM, 200));
+                        WaitAxisNotBusy(Prior.SL160_STM);
+
+                        /* also wait for parallel stage move to complete */
+                        WaitUntilStageIdle();
+
+                        btnAction.Text = "Load Tray";
+                        lstHelp.Items.Clear();
+                        lstHelp.Items.Add(" ");
+                        lstHelp.Items.Add("Fit tray to STM and then click 'Load Tray' to continue");
+
+
+                    }
+                    else
+                        MessageBox.Show("Error moving stage (" + err.ToString() + ")", "Error",
+                                                         MessageBoxButtons.OK, MessageBoxIcon.Error);
+          
+                        btnAction.Enabled = true;
 
                     state = ScreenState.LoadTray;
                    
@@ -333,30 +353,21 @@ namespace SL160_LoaderDemo
                 case ScreenState.LoadTray:
                 {
                     lstHelp.Items.Clear();
-                    lstHelp.Items.Add("Wait for STM and stage to re-position...");
+                    lstHelp.Items.Add("Wait for STM to re-position...");
                     lstHelp.Refresh();
                     btnAction.Enabled = false;
 
                     /* move STM back to 80mm,  */
                     AxisMoveTo(Prior.SL160_STM, mmToCounts(Prior.SL160_STM, 80));
                     WaitAxisNotBusy(Prior.SL160_STM);
+                   
+                    btnAction.Text = "Load Hotels";
+                    lstHelp.Items.Clear();
+                    lstHelp.Items.Add(" ");
+                    lstHelp.Items.Add("Fit hotel 1 and click 'Load Hotels' to continue");
 
-                    /* move stage to somewhere nearby the correct loading position */
-                    if ((err = priorSDK.Cmd(sessionID, "controller.stage.goto-position 105000 75800", ref userRx)) == Prior.PRIOR_OK)
-                    {
-                        WaitUntilStageIdle();
-
-                        btnAction.Text = "Load Hotels";
-                        lstHelp.Items.Clear();
-                        lstHelp.Items.Add(" ");
-                        lstHelp.Items.Add("Fit hotel 1 and click 'Load Hotels' to continue");
-
-                        state = ScreenState.LoadHotels;
-                    }
-                    else
-                        MessageBox.Show("Error moving stage (" + err.ToString() + ")", "Error",
-                                                         MessageBoxButtons.OK, MessageBoxIcon.Error);
-
+                    state = ScreenState.LoadHotels;
+                  
                     btnAction.Enabled = true;
                     break;
                 }

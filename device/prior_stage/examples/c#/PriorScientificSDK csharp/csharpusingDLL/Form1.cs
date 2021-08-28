@@ -1,4 +1,27 @@
-﻿using System;
+﻿/*
+Copyright (c) 2021 Prior Scientific Instruments LTD
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -94,7 +117,7 @@ namespace csharpusingDLL
             /* set orientation of stage +x+y = stage left and stage forward 
              * this gives us a co-ordinate/movement system that when viewed through objectives gives positions
              * as you would see on graph paper. Just a personal preference, you can set host direction as you wish
-             * default is 1 1. +ve incrementing positions moves stage physically right and forwards 
+             * default is 1 1. +ve incrementing positions moves stage physically left and forwards 
              */
             err = priorSDK.Cmd(sessionID, "controller.stage.hostdirection.set -1 1", ref userRx);
 

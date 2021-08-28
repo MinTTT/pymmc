@@ -24,5 +24,5 @@ import pymmcore
 
 core = pymmcore.CMMCore()
 core.setDeviceAdapterSearchPaths([MM_DIR])
-core.loadSystemConfiguration(os.path.join(CFG_DIR, 'MMConfig_demo.cfg'))
+core.loadSystemConfiguration(os.path.join(CFG_DIR, 'iSynBio_MMConfig_TI_no_xystage'))
 

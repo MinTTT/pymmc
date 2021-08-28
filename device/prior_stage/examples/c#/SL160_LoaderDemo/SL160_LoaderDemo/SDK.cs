@@ -38,9 +38,6 @@ namespace SL160_LoaderDemo
         }
 
 
-        StringBuilder tx = new StringBuilder();
-        StringBuilder rx = new StringBuilder();
-
         public int GetVersion(StringBuilder version)
         {
             return PriorScientificSDK_Version(version);
@@ -65,8 +62,10 @@ namespace SL160_LoaderDemo
         {
             int ret;
 
-            tx.Clear();
-            rx.Clear();
+
+            StringBuilder tx = new StringBuilder();
+            StringBuilder rx = new StringBuilder();
+
             tx.Append(usertx);
             ret = PriorScientificSDK_cmd(session,tx,rx);
 

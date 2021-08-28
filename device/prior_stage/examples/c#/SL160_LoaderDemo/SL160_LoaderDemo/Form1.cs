@@ -6,12 +6,13 @@
  * @copyright   Copyright (c) 2020- Prior Scientific Instruments Ltd. All rights reserved
  *
  *
- * The project is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
  * 
  * HISTORY
  * 
+ * 1.8      5/7/21      reverse joystick X default direction
+ * 1.7      14/5/21     fixed bug in SDK class. tx/rx stringbuilders should not be static. Causes threading issues. 
+ * 1.6      5/3/21      position the stage close to the load/unload target such that the clamp automatically
+ *                      opens when user is prompted to insert tray during production calibration
  * 1.5      5/1/21      Added a simple stage raster example during soak
  *                      reworked calibration to use Load/unload hotels dll api calls.
  * 1.4      4/1/21      move STM out a further 10mm when user inserts tray during calibration
@@ -227,6 +228,7 @@ namespace SL160_LoaderDemo
             */
             priorSDK.Cmd(sessionID, "controller.stage.hostdirection.set -1 1", ref userRx, false);
 
+            priorSDK.Cmd(sessionID, "controller.stage.joystickdirection.set -1 1", ref userRx, false);
 
             /* grab some initial status from the loader */
             PollStatus();

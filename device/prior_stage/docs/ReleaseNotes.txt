@@ -1,7 +1,33 @@
 
 version		date		change log
 
-1.3.1		1/2/21		save serial number to stage eeprom for SL160 and WASLV2
+1.5.0		14/7/21		AddingAPI for:
+					OEM current settings
+					OEM encoder resolution 
+					OEM VDR control
+					Needs PS3 v1.13
+
+1.4.2		14/5/21		fixed small timing window in command parsing that potentially 
+				could result in wrong command being executed.
+
+1.4.1		9/4/21		minor mods to WASLV2 for setting hotel fitted state
+				added get properties for stage host/joy direction
+				added shutter.state.get 
+				fixed bug in shutter.close
+
+1.4.0		5/3/21		Adding API for:
+					stage/z encoder/servo 
+					stage/z move-relative
+					stage correction and skew 
+					drive current (all axes) 
+					stage SetReference
+					Zplane
+					z joystick on/off
+					Theta rotary device
+					Wafer shuttle
+					Nosepiece
+							
+1.3.1		1/2/21		save serial number to stage eeprom for SL160 and WASLV2. Requires PS3 1.12 controller firmware
 
 1.3.0		28/1/21		adding backlash for stage/Z
  

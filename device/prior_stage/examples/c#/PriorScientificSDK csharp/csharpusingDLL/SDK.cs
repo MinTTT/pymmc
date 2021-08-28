@@ -38,8 +38,6 @@ namespace csharpusingDLL
         }
 
 
-        StringBuilder tx = new StringBuilder();
-        StringBuilder rx = new StringBuilder();
 
         public int GetVersion(StringBuilder version)
         {
@@ -65,8 +63,9 @@ namespace csharpusingDLL
         {
             int ret;
 
-            tx.Clear();
-            rx.Clear();
+            StringBuilder tx = new StringBuilder();
+            StringBuilder rx = new StringBuilder();
+
             tx.Append(usertx);
             ret = PriorScientificSDK_cmd(session,tx,rx);
 

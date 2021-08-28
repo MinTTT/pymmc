@@ -1,10 +1,11 @@
 /**
  * @file    PriorScientificSDK.h
  * @author	Rob Wicker  (rwicker@prior.com)
- * @date    19/7/2018
+ * @date    5/3/21
  * @brief   This file contains a public API for Prior Scientific SDK
- * @copyright   Copyright (c) 2018- Prior Scientific Instruments Ltd. All rights reserved
+ * @copyright   Copyright (c) 2021 Prior Scientific Instruments Ltd. All rights reserved
  */
+
 
 #ifndef _DLL_PRIORSCIENTIFICSDK_H_
 #define _DLL_PRIORSCIENTIFICSDK_H_
@@ -118,7 +119,7 @@ public:
 	 }
 
 	/**
-     * @brief OpenSession
+     * @brief open a new session
      */
 	int OpenSession()
 	{
@@ -126,7 +127,7 @@ public:
 	}
 
 	/**
-     * @brief OpenSession
+     * @brief close an existing session
      */
 	int CloseSession(int sessionID)
 	{
