@@ -3,10 +3,12 @@
 import time
 import pymm_device_light_path_cfg as pymm_cfg
 import os
-from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse_position
+from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse_position, NDRecorder
 import _thread as thread
+from typing import Optional
 
 bcolors = colors()
+
 
 # studio = mm.studio
 
@@ -16,12 +18,39 @@ class PymmAcq:
     def __init__(self, device: str):
         self.device_name = device
         self.stop = [False]
-        self.device_cfg = None
-
+        self.device_cfg = None  # type: pymm_cfg.MicroscopeParas
+        self.nd_recorder = NDRecorder()
         self.initialize_device()
+        self._current_position = None  # type: int
 
     def initialize_device(self):
         self.device_cfg = pymm_cfg.MicroscopeParas(self.device_name)
+
+    def record_current_position(self):
+        self.nd_recorder.add_position(self.device_cfg.get_position_dict())
+        self._current_position = self.nd_recorder.position_number - 1
+
+    def update_current_position(self):
+        self.nd_recorder.update_position(self._current_position, self.device_cfg.get_position_dict())
+
+    def go_to_position(self, index):
+        pos = self.nd_recorder.position[index]
+        self.device_cfg.move_xyz_pfs(pos)
+        self._current_position = self.nd_recorder.position.index(pos)
+
+    def go_to_next_position(self):
+        if self._current_position + 1 >= self.nd_recorder.position_number:
+            print("Here is the last position.")
+            return None
+        self._current_position += 1
+        self.go_to_position(self._current_position)
+
+    def go_to_previous_position(self):
+        if self._current_position <= 0:
+            print("Here is the first position.")
+            return None
+        self._current_position -= 1
+        self.go_to_position(self._current_position)
 
     def multi_acq_3c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):
         thread.start_new_thread(multi_acq_3c,
@@ -53,7 +82,8 @@ def if_acq(loop_index, flu_step):
         return 1
 
 
-def multi_acq_3c(dir: str, pos_ps: str, device: object, time_step: list, flu_step: int, time_duration: list,
+def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_step: int,
+                 time_duration: list,
                  thread_flag=False) -> None:
     '''
     :param dir: image save dir, str
@@ -67,13 +97,15 @@ def multi_acq_3c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
     '''
     DIR = dir
     POSITION_FILE = pos_ps
-      # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
+    # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
     # -----------------------------------------------------------------------------------
-    device_cfg = device
+    device_cfg = device.device_cfg
     # %%
     # ==========get multiple positions============
+
     fovs = parse_position(POSITION_FILE,
-                             device=[device_cfg.XY_DEVICE, device_cfg.Z_DEVICE, device_cfg.AUTOFOCUS_OFFSET])
+                          device=[device_cfg.XY_DEVICE, device_cfg.Z_DEVICE, device_cfg.AUTOFOCUS_OFFSET])
+    fovs = device.nd_recorder
     # ==========set loop parameters===============
     time_step = time_step  # [hr, min, s]
     flu_step = flu_step  # very 4 phase loops acq
@@ -110,18 +142,18 @@ def multi_acq_3c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
                     device_cfg.autofocus()  # check auto focus, is important!
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                     shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
+                                             shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                     shutter=device_cfg.SHUTTER_LED,
-                                     exposure=get_exposure(light_path_state, device_cfg))
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=get_exposure(light_path_state, device_cfg))
                 else:
                     print('Snap image (red).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                     shutter=device_cfg.SHUTTER_LED,
-                                     exposure=get_exposure(light_path_state, device_cfg))
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=get_exposure(light_path_state, device_cfg))
                 # Second Channel
                 if light_path_state == 'green':
                     set_device_state(device_cfg.mmcore, 'g2r')
@@ -129,8 +161,8 @@ def multi_acq_3c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
                     light_path_state = 'red'
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                     shutter=device_cfg.SHUTTER_LED,
-                                     exposure=get_exposure(light_path_state, device_cfg))
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=get_exposure(light_path_state, device_cfg))
                     print(f'Snap image (red).\n')
                 else:
                     light_path_state = 'green'
@@ -139,12 +171,12 @@ def multi_acq_3c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                     shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
+                                             shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                     shutter=device_cfg.SHUTTER_LED,
-                                     exposure=get_exposure(light_path_state, device_cfg))
+                                             shutter=device_cfg.SHUTTER_LED,
+                                             exposure=get_exposure(light_path_state, device_cfg))
         else:
             # ========start phase 100X acq loop=================#
             if light_path_state == 'green':
@@ -163,7 +195,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
                 print('Snap image (phase).\n')
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 device_cfg.auto_acq_save(image_dir, name=file_name,
-                                 exposure=EXPOSURE_PHASE)
+                                         exposure=EXPOSURE_PHASE)
 
         # ======================waiting cycle=========
 
@@ -195,7 +227,6 @@ def multi_acq_3c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
     return None
 
 
-
 def multi_acq_4c(dir: str, pos_ps: str, device: object, time_step: list, flu_step: int, time_duration: list,
                  thread_flag=False) -> None:
     '''
@@ -210,13 +241,13 @@ def multi_acq_4c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
     '''
     DIR = dir
     POSITION_FILE = pos_ps
-     # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
+    # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
     # -----------------------------------------------------------------------------------
     device_cfg = device
     # %%
     # ==========get multiple positions============
     fovs = parse_position(POSITION_FILE,
-                             device=[device_cfg.XY_DEVICE, device_cfg.Z_DEVICE, device_cfg.AUTOFOCUS_OFFSET])
+                          device=[device_cfg.XY_DEVICE, device_cfg.Z_DEVICE, device_cfg.AUTOFOCUS_OFFSET])
     # ==========set loop parameters===============
     time_step = time_step  # [hr, min, s]
     flu_step = flu_step  # very 4 phase loops acq
@@ -314,7 +345,7 @@ def multi_acq_4c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
                 print('Snap image (phase).\n')
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 device_cfg.auto_acq_save(image_dir, name=file_name,
-                                 exposure=EXPOSURE_PHASE)
+                                         exposure=EXPOSURE_PHASE)
 
         # ======================waiting cycle=========
 

@@ -22,6 +22,53 @@ class colors:
     UNDERLINE = '\033[4m'
 
 
+# %%
+
+class NDRecorder:
+    def __init__(self, positions: list = []):
+        self._positions = positions  # type: list
+        self._pos_num = None
+
+    def __iter__(self):
+        self.__currt_i = 0
+        self.__iterlen = self._positions.__len__()
+        return self
+
+    def __next__(self):
+        if self.__currt_i >= self.__iterlen:
+            raise StopIteration
+        self.__currt_i += 1
+        return self._positions[self.__currt_i - 1]
+
+    @property
+    def position_number(self):
+        self._pos_num = self._positions.__len__()
+        return self._pos_num
+
+    @property
+    def position(self) -> list:
+        return self._positions
+
+    @position.setter
+    def position(self, pos):
+        self.add_position(pos)
+
+    def add_position(self, pos):
+        self._positions.append(pos)
+
+    def update_position(self, index, pos):
+        self._positions[index] = pos
+
+    def del_position(self, index):
+        del self._positions[index]
+
+
+
+# ndr = NDRecorder(list(range(4)))
+# for i in ndr:
+#     print(i)
+# %%
+
 def get_filenameindex(fold_name):
     try:
         file_list = os.listdir(fold_name)

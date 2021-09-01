@@ -17,6 +17,8 @@ import pymm as mm
 from pymm_uitls import colors
 import time
 import numpy as np
+from device.prior_device import PriorScan
+from typing import Optional
 colors = colors()
 
 # global core
@@ -46,7 +48,7 @@ class MicroscopeParas:
             self.mmcore = mmcore
         elif self.MICROSCOPE == 'TiE':
             self.SHUTTER_LAMP = 'Arduino-Shutter'
-            self.INIT_LAMP = 'TIDiaLamp'
+            self.INIT_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'XCite-Exacte'
             self.FILTER_TURRET = 'TIFilterBlock1'
             self.FLU_EXCITE = 'XCite-Exacte'
@@ -55,27 +57,28 @@ class MicroscopeParas:
             self.EXPOSURE_GREEN = 50  # 50 ms TiE2
             self.EXPOSURE_PHASE = 40  # ms
             self.EXPOSURE_RED = 200  # ms
-            self.AUTOFOCUS_DEVICE = 'TIPFSStatus'
-            self.AUTOFOCUS_OFFSET = 'TIPFSOffset'
-            self.Z_DEVICE = 'TIZDrive'
+            self.AUTOFOCUS_DEVICE = 'PFSStatus'
+            self.AUTOFOCUS_OFFSET = 'PFSOffset'
+            self.Z_DEVICE = 'ZDrive'
             self.XY_DEVICE = 'XYStage'
             self.mmcore = mmcore
         elif self.MICROSCOPE == 'TiE_prior':
             self.SHUTTER_LAMP = 'Arduino-Shutter'
-            self.INIT_LAMP = 'TIDiaLamp'
+            self.INIT_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'XCite-Exacte'
-            self.FILTER_TURRET = 'TIFilterBlock1'
+            self.FILTER_TURRET = 'FilterBlock1'
             self.FLU_EXCITE = 'XCite-Exacte'
             self.GREEN_EXCITE = 15
             self.RED_EXCITE = 50
             self.EXPOSURE_GREEN = 50  # 50 ms TiE2
             self.EXPOSURE_PHASE = 40  # ms
             self.EXPOSURE_RED = 200  # ms
-            self.AUTOFOCUS_DEVICE = 'TIPFSStatus'
-            self.AUTOFOCUS_OFFSET = 'TIPFSOffset'
-            self.Z_DEVICE = 'TIZDrive'
+            self.AUTOFOCUS_DEVICE = 'PFSStatus'
+            self.AUTOFOCUS_OFFSET = 'PFSOffset'
+            self.Z_DEVICE = 'ZDrive'
             self.XY_DEVICE = 'prior_xy'
             self.mmcore = mmcore
+            self.prior_core = None  # type: Optional[PriorScan]
         elif self.MICROSCOPE == 'Ti2E_H':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'Spectra'
@@ -161,8 +164,8 @@ class MicroscopeParas:
         self.set_ROI = mm.mm_set_camer_roi
 
         if self.XY_DEVICE == 'prior_xy':
-            from device.prior_device import PriorScan
-            xy_connect = PriorScan()
+
+            self.prior_core = PriorScan()
 
             def move_xyz_pfs(fov, turnoffz=True, step=6, fov_len=133.3, core=self.mmcore):
                 """
@@ -171,7 +174,7 @@ class MicroscopeParas:
                 :param turnoffz: bool, if ture, microscope will keep the pfs working and skipping moving the z device.
                 :return: None
                 """
-                x_f, y_f = xy_connect.get_xy_position()
+                x_f, y_f = self.prior_core.get_xy_position()
                 x_t, y_t = fov['xy'][0], fov['xy'][1]
                 dit = np.sqrt((x_t - x_f) ** 2 + (y_f - y_t) ** 2)
                 block_size = step * fov_len
@@ -179,29 +182,49 @@ class MicroscopeParas:
                 x_space = np.linspace(x_f, x_t, num=num_block)
                 y_space = np.linspace(y_f, y_t, num=num_block)
                 for i in range(len(x_space) - 1):
-                    xy_connect.set_xy_position(x_space[i + 1], y_space[i + 1])
-                    while xy_connect.device_busy():
+                    self.prior_core.set_xy_position(x_space[i + 1], y_space[i + 1])
+                    while self.prior_core.device_busy():
                         time.sleep(0.00001)
-
                 if turnoffz:
                     if 'pfsoffset' in fov:
-                        core.set_auto_focus_offset(fov['pfsoffset'][0])
+                        core.set_position(self.AUTOFOCUS_OFFSET, fov['pfsoffset'][0])
                 else:
                     if 'z' in fov:
-                        core.set_position(fov['z'][0])
+                        core.set_position(self.Z_DEVICE, fov['z'][0])
                     mm.waiting_device()
                 return None
 
             self.move_xyz_pfs = move_xyz_pfs
 
+    def get_position_dict(self, device: Optional[str] = None) -> dict:
+        """
+        get current position
+        :param device: None or string, if device not given, return all devices' positions
+        :return: a dict containing positions
+        """
+        pos = {}
+        if device == None:
+            device_dict = dict(xy=self.XY_DEVICE, z=self.Z_DEVICE, pfsofset=self.AUTOFOCUS_OFFSET)  # type: dict
+            for key, dev in device_dict.items():
+                if dev == 'prior_xy':
+                    pos[key] = self.prior_core.get_xy_position()
+                else:
+                    value = self.mmcore.get_position(dev)
+                    if isinstance(value, float) or isinstance(value, int):
+                        pos[key] = [value]
+                    else:
+                        pos[key] = value
+        return pos
+
+
     def auto_focus(self, z: float = None, pfs: float = None):
-        if self.MICROSCOPE == 'TiE':
-            z = 8735
+        if self.MICROSCOPE in ['TiE', 'TiE_prior']:
+            z = 3262
             z_init = z - 50
-            z_top = 8810
+            z_top = 4000
             z_bottom = z_init
             psf_val = 128.7
-            self.mmcore.set_auto_focus_offset(psf_val)
+            self.mmcore.set_position(self.AUTOFOCUS_OFFSET, psf_val)
             while not self.mmcore.is_continuous_focus_locked():
                 self.mmcore.set_position(self.Z_DEVICE, z_init)
                 delta_z = self.mmcore.get_position(self.Z_DEVICE) - z_init
@@ -211,9 +234,9 @@ class MicroscopeParas:
                 #     z_init = self.mmcore.get_position(self.Z_DEVICE)
                 else:
                     z_init += 8
-                while not self.mmcore.is_continuous_focus_enabled():
-                    time.sleep(2.5)
-                    self.mmcore.enable_continuous_focus(True)
+                # while not self.mmcore.is_continuous_focus_enabled():
+                #     time.sleep(0.1)
+                #     self.mmcore.enable_continuous_focus(True)
 
                 # while mmcore.device_busy(self.Z_DEVICE):
                 #     time.sleep(0.001)
@@ -251,7 +274,7 @@ class MicroscopeParas:
                 core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity',
                                       self.GREEN_EXCITE)  # set xcite lamp intensity 2
                 mm.waiting_device()
-        elif self.MICROSCOPE == 'TiE' or self.MICROSCOPE == 'TiE_prior':
+        elif self.MICROSCOPE == 'TiE':
             if shift_type == 'init_phase':
                 if self.CAM_ROI is not None:
                     self.set_ROI(self.CAM_ROI)
@@ -267,6 +290,28 @@ class MicroscopeParas:
                 core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity',
                                       self.GREEN_EXCITE)  # set xcite lamp intensity 2
                 mm.waiting_device()
+        elif self.MICROSCOPE == 'TiE_prior':
+            if shift_type == 'init_phase':
+                if self.CAM_ROI is not None:
+                    self.set_ROI(self.CAM_ROI)
+                core_mmc.set_property(self.INIT_LAMP, 'State', 1)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)
+                self.prior_core.set_shutter_state(1)
+                self.prior_core.set_filter_position(3)
+                mm.waiting_device()
+            if shift_type == "g2r":
+                core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity', self.RED_EXCITE)  # set xcite lamp intensity 50
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 3 pos
+                self.prior_core.set_filter_position(4)
+                mm.waiting_device()
+                self.prior_core.waiting_device()
+            if shift_type == "r2g":
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 2 pos
+                core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity',
+                                      self.GREEN_EXCITE)  # set xcite lamp intensity 2
+                self.prior_core.set_filter_position(3)
+                mm.waiting_device()
+                self.prior_core.waiting_device()
         elif self.MICROSCOPE == 'Ti2E_LDJ':
             if shift_type == 'init_phase':
                 if self.CAM_ROI is not None:

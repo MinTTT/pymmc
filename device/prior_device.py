@@ -8,6 +8,7 @@ from ctypes import WinDLL, create_string_buffer, c_int, POINTER, c_char
 
 import os
 import sys
+import time
 
 
 def load_sdk(ps):
@@ -36,6 +37,7 @@ class PriorScan(object):
         self.session_id = None
         self.spermicro = None
         self.ss = 1  # step per step, default is 1
+        self.device_list = ['xystage', 'filter']
         self.initialize()
 
     def initialize(self):
@@ -86,7 +88,24 @@ class PriorScan(object):
         """
         if device == 'xystage':
             self.rx_decode = self.cmd("controller.stage.busy.get")
+        if device == 'filter':
+            self.rx_decode = self.cmd("controller.filter.busy.get")
         return int(self.rx_decode)
+
+    def waiting_device(self, device: str = None):
+        if device is None:
+            states_list = [True] * len(self.device_list)
+            while states_list:
+                for dev in self.device_list:
+                    if self.device_busy(dev) == 0:
+                        _ = states_list.pop()
+                time.sleep(0.0001)
+        else:
+            states_list = [True]
+            while states_list:
+                if self.device_busy(device) == 0:
+                    _ = states_list.pop()
+                time.sleep(0.0001)
 
     def get_xy_position(self) -> (float, float):
         """
@@ -138,7 +157,7 @@ class PriorScan(object):
 
         filter_device_dict = {}
         for filter_index in range(1, 7):
-            filter_device_dict.update({filter_index:self.cmd(f"controller.filter.fitted.get {filter_index}") == '1'})
+            filter_device_dict.update({filter_index: self.cmd(f"controller.filter.fitted.get {filter_index}") == '1'})
         if set_default:
             for filter_index, state in filter_device_dict.items():
                 if state is True:
