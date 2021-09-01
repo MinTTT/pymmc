@@ -19,6 +19,7 @@ import time
 import numpy as np
 from device.prior_device import PriorScan
 from typing import Optional
+
 colors = colors()
 
 # global core
@@ -216,7 +217,6 @@ class MicroscopeParas:
                         pos[key] = value
         return pos
 
-
     def auto_focus(self, z: float = None, pfs: float = None):
         if self.MICROSCOPE in ['TiE', 'TiE_prior']:
             z = 3262
@@ -244,6 +244,18 @@ class MicroscopeParas:
                     z_init = z - 100
                 if z_init < z_bottom:
                     z_init = z_bottom
+
+    def check_auto_focus(self):
+        """
+        make sure that the pfs is locked
+
+        :return:
+        """
+        while not self.mmcore.is_continuous_focus_locked():
+            while not self.mmcore.is_continuous_focus_enabled():
+                time.sleep(0.001)
+                self.mmcore.enable_continuous_focus(True)
+        return None
 
     def set_device_state(self, core_mmc=None, shift_type=None):
         """

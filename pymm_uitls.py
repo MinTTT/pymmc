@@ -46,8 +46,16 @@ class NDRecorder:
         return self._pos_num
 
     @property
-    def position(self) -> list:
+    def positions(self):
         return self._positions
+
+    @property
+    def position(self):
+        return self._positions[-1]
+
+    @positions.setter
+    def positions(self, pos: list):
+        self._positions = pos
 
     @position.setter
     def position(self, pos):

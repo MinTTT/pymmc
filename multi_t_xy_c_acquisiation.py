@@ -34,9 +34,9 @@ class PymmAcq:
         self.nd_recorder.update_position(self._current_position, self.device_cfg.get_position_dict())
 
     def go_to_position(self, index):
-        pos = self.nd_recorder.position[index]
+        pos = self.nd_recorder.positions[index]
         self.device_cfg.move_xyz_pfs(pos)
-        self._current_position = self.nd_recorder.position.index(pos)
+        self._current_position = self.nd_recorder.positions.index(pos)
 
     def go_to_next_position(self):
         if self._current_position + 1 >= self.nd_recorder.position_number:
@@ -111,8 +111,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
     flu_step = flu_step  # very 4 phase loops acq
     time_duration = time_duration
     loops_num = parse_second(time_duration) // parse_second(time_step)
-    print(
-        f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
+    print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
     # %% loop body
 
@@ -139,7 +138,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 # First Channel
                 if light_path_state == 'green':
                     print('Snap image (phase).\n')
-                    device_cfg.autofocus()  # check auto focus, is important!
+                    device_cfg.check_auto_focus()  # check auto focus, is important!
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
@@ -157,7 +156,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 # Second Channel
                 if light_path_state == 'green':
                     set_device_state(device_cfg.mmcore, 'g2r')
-                    device_cfg.autofocus()  # check auto focus, is important!
+                    device_cfg.check_auto_focus()  # check auto focus, is important!
                     light_path_state = 'red'
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
@@ -167,7 +166,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 else:
                     light_path_state = 'green'
                     set_device_state(device_cfg.mmcore, 'r2g')
-                    device_cfg.autofocus()  # check auto focus, is important!
+                    device_cfg.check_auto_focus()  # check auto focus, is important!
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
@@ -183,12 +182,12 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 pass
             else:
                 set_device_state(device_cfg.mmcore, 'r2g')
-                device_cfg.autofocus()  # check auto focus, is important!
+                device_cfg.check_auto_focus()  # check auto focus, is important!
                 light_path_state = 'green'
             device_cfg.active_auto_shutter(device_cfg.SHUTTER_LAMP)
             for fov_index, fov in enumerate(fovs):
                 device_cfg.move_xyz_pfs(fov, step=6, XY_DEVICE=device_cfg.XY_DEVICE)
-                device_cfg.autofocus()  # check auto focus, is important!
+                device_cfg.check_auto_focus()  # check auto focus, is important!
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
@@ -278,7 +277,7 @@ def multi_acq_4c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 device_cfg.move_xyz_pfs(fov, step=6, XY_DEVICE=device_cfg.XY_DEVICE)  # move stage xy.
-                device_cfg.autofocus()  # check auto focus, is important!
+                device_cfg.check_auto_focus()  # check auto focus, is important!
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 # First Channel
                 if light_path_state == 'green':
