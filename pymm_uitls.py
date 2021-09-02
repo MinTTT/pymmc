@@ -7,7 +7,7 @@
 import os
 import time
 import json
-
+from joblib import dump, load
 
 # Own modules
 class colors:
@@ -69,6 +69,17 @@ class NDRecorder:
 
     def del_position(self, index):
         del self._positions[index]
+
+    def export_pos(self, file_ps):
+        try:
+            os.makedirs(file_ps)
+        except FileExistsError:
+            pass
+        dump(self.__dict__, os.path.join(file_ps, 'pos.jl'))
+
+    def import_pos(self, file_ps):
+        data_dic = load(file_ps)
+        self.__dict__.update(data_dic)
 
 
 

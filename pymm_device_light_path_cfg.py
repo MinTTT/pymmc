@@ -205,10 +205,10 @@ class MicroscopeParas:
         """
         pos = {}
         if device == None:
-            device_dict = dict(xy=self.XY_DEVICE, z=self.Z_DEVICE, pfsofset=self.AUTOFOCUS_OFFSET)  # type: dict
+            device_dict = dict(xy=self.XY_DEVICE, z=self.Z_DEVICE, pfsoffset=self.AUTOFOCUS_OFFSET)  # type: dict
             for key, dev in device_dict.items():
                 if dev == 'prior_xy':
-                    pos[key] = self.prior_core.get_xy_position()
+                    pos[key] = list(self.prior_core.get_xy_position())
                 else:
                     value = self.mmcore.get_position(dev)
                     if isinstance(value, float) or isinstance(value, int):
@@ -245,7 +245,7 @@ class MicroscopeParas:
                 if z_init < z_bottom:
                     z_init = z_bottom
 
-    def check_auto_focus(self):
+    def check_auto_focus(self, lag=0.1):
         """
         make sure that the pfs is locked
 
@@ -253,8 +253,8 @@ class MicroscopeParas:
         """
         while not self.mmcore.is_continuous_focus_locked():
             while not self.mmcore.is_continuous_focus_enabled():
-                time.sleep(0.001)
                 self.mmcore.enable_continuous_focus(True)
+                time.sleep(lag)
         return None
 
     def set_device_state(self, core_mmc=None, shift_type=None):
@@ -311,6 +311,7 @@ class MicroscopeParas:
                 self.prior_core.set_shutter_state(1)
                 self.prior_core.set_filter_position(3)
                 mm.waiting_device()
+                self.prior_core.waiting_device()
             if shift_type == "g2r":
                 core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity', self.RED_EXCITE)  # set xcite lamp intensity 50
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 3 pos

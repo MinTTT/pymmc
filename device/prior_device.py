@@ -99,13 +99,13 @@ class PriorScan(object):
                 for dev in self.device_list:
                     if self.device_busy(dev) == 0:
                         _ = states_list.pop()
-                time.sleep(0.0001)
+                time.sleep(0.1)
         else:
             states_list = [True]
             while states_list:
                 if self.device_busy(device) == 0:
                     _ = states_list.pop()
-                time.sleep(0.0001)
+                time.sleep(0.1)
 
     def get_xy_position(self) -> (float, float):
         """
