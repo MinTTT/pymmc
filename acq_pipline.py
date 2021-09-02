@@ -24,8 +24,8 @@ acq_loop.nd_recorder.import_pos(r'F:\zjw\20210902\pos.jl')
 
 
 #%%
-time_step = [0, 3, 0]  # [hr, min, s]
-flu_step = 4  # very 4 phase loops acq if 0, don't acq a flu channel
+time_step = [0, 15, 0]  # [hr, min, s]
+flu_step = 2  # very 4 phase loops acq if 0, don't acq a flu channel
 time_duration = [72, 0, 0]
 
 acq_loop.multi_acq_3c(DIR, POSITION_FILE, time_step, flu_step, time_duration)
