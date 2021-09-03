@@ -174,7 +174,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 # First Channel
                 if light_path_state == 'green':
                     print('Snap image (phase).\n')
-                    device_cfg.check_auto_focus(0.15)  # check auto focus, is important!
+                    device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
@@ -186,7 +186,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 else:
                     print('Snap image (red).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
-                    device_cfg.check_auto_focus(0.15)
+                    device_cfg.check_auto_focus(0.2)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              shutter=device_cfg.SHUTTER_LED,
                                              exposure=get_exposure(light_path_state, device_cfg))
@@ -194,7 +194,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 if light_path_state == 'green':
                     light_path_state = 'red'
                     set_device_state(device_cfg.mmcore, 'g2r')
-                    device_cfg.check_auto_focus(0.15)  # check auto focus, is important!
+                    device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
 
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
@@ -204,7 +204,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 else:
                     light_path_state = 'green'
                     set_device_state(device_cfg.mmcore, 'r2g')
-                    device_cfg.check_auto_focus(0.15)  # check auto focus, is important!
+                    device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
