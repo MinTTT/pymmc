@@ -27,8 +27,10 @@ class PymmAcq:
         self.device_cfg = pymm_cfg.MicroscopeParas(self.device_name)
 
     def record_current_position(self):
+        pos = self.device_cfg.get_position_dict()
         self.nd_recorder.add_position(self.device_cfg.get_position_dict())
         self._current_position = self.nd_recorder.position_number - 1
+        return pos
 
     def update_current_position(self):
         self.nd_recorder.update_position(self._current_position, self.device_cfg.get_position_dict())
