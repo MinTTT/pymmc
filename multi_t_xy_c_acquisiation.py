@@ -9,6 +9,7 @@ import _thread as thread
 from typing import Optional
 from PySide6.QtWidgets import QApplication
 from pymmc_UI.ND_pad_main_py import NDRecorderUI
+
 bcolors = colors()
 
 
@@ -95,7 +96,8 @@ class PymmAcq:
         self._current_position -= 1
         self.go_to_position(self._current_position)
 
-    def multi_acq_3c(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None, time_duration: list = None):
+    def multi_acq_3c(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
+                     time_duration: list = None):
         thread.start_new_thread(multi_acq_3c,
                                 (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
         return None
@@ -118,7 +120,9 @@ class PymmAcq:
             ui = NDRecorderUI(obj)
             ui.show()
             app.exec()
-        thread.start_new_thread(open_in_subprocess, args=(self, ))
+
+        thread.start_new_thread(open_in_subprocess, args=(self,))
+
 
 def get_exposure(state, device_cfg):
     if state == 'green':
@@ -166,7 +170,8 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
     flu_step = flu_step  # very 4 phase loops acq
     time_duration = time_duration
     loops_num = parse_second(time_duration) // parse_second(time_step)
-    print(f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
+    print(
+        f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
     # %% loop body
 
