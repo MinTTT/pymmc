@@ -9,7 +9,7 @@ import _thread as thread
 from typing import Optional
 from PySide6.QtWidgets import QApplication
 from pymmc_UI.ND_pad_main_py import NDRecorderUI
-
+import threading
 bcolors = colors()
 
 
@@ -121,7 +121,7 @@ class PymmAcq:
             ui.show()
             app.exec()
 
-        thread.start_new_thread(open_in_subprocess, args=(self,))
+        threading.Thread(target=open_in_subprocess, args=(self,)).start()
 
 
 def get_exposure(state, device_cfg):
@@ -182,6 +182,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
     light_path_state = 'green'
     set_device_state(device_cfg.mmcore, 'init_phase')
     set_device_state(device_cfg.mmcore, 'r2g')
+    time.sleep(2.5)
     # TODO：I found the python console initialized and performed this code block first time,
     #  the Ti2E_H has no fluorescent emission light.
     print(f'{colors.OKGREEN}Start ACQ Loop.{colors.ENDC}')
@@ -193,8 +194,8 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 device_cfg.move_xyz_pfs(fov, step=6)  # move stage xy.
-                time.sleep(0.1)
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
+                time.sleep(0.2)
                 # First Channel
                 if light_path_state == 'green':
                     print('Snap image (phase).\n')
@@ -218,8 +219,8 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 if light_path_state == 'green':
                     light_path_state = 'red'
                     set_device_state(device_cfg.mmcore, 'g2r')
-                    device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
-
+                    device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
+                    time.sleep(1)
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              shutter=device_cfg.SHUTTER_LED,
@@ -228,7 +229,8 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 else:
                     light_path_state = 'green'
                     set_device_state(device_cfg.mmcore, 'r2g')
-                    device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
+                    device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
+                    time.sleep(1)  # 1.5 is ok
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
@@ -250,7 +252,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
             device_cfg.active_auto_shutter(device_cfg.SHUTTER_LAMP)
             for fov_index, fov in enumerate(fovs):
                 device_cfg.move_xyz_pfs(fov, step=6)
-                device_cfg.check_auto_focus()  # check auto focus, is important!
+                device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')

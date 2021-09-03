@@ -126,7 +126,7 @@ class NDRecorderUI(QMainWindow):
         self.ui.move_right.clicked.connect(partial(self.move_xy, 'right'))
         self.ui.move_left.clicked.connect(partial(self.move_xy, 'left'))
 
-        for row, pos in enumerate(self.acq_obj.positions):
+        for row, pos in enumerate(self.acq_obj.nd_recorder.positions):
             self.edit_row(row, pos)
 
     def edit_row(self, row_index: int, pos: dict):
