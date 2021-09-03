@@ -3,10 +3,12 @@
 import time
 import pymm_device_light_path_cfg as pymm_cfg
 import os
+import sys
 from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse_position, NDRecorder
 import _thread as thread
 from typing import Optional
-
+from PySide6.QtWidgets import QApplication
+from pymmc_UI.ND_pad_main_py import NDRecorderUI
 bcolors = colors()
 
 
@@ -20,8 +22,13 @@ class PymmAcq:
         self.stop = [False]
         self.device_cfg = None  # type: pymm_cfg.MicroscopeParas
         self.nd_recorder = NDRecorder()
+
+        self._current_position = None  # type: Optional[int]
         self.initialize_device()
-        self._current_position = None  # type: int
+
+    @property
+    def current_position(self) -> Optional[int]:
+        return self._current_position
 
     def initialize_device(self):
         self.device_cfg = pymm_cfg.MicroscopeParas(self.device_name)
@@ -33,7 +40,9 @@ class PymmAcq:
         return pos
 
     def update_current_position(self):
+        current_pos = self.device_cfg.get_position_dict()
         self.nd_recorder.update_position(self._current_position, self.device_cfg.get_position_dict())
+        return current_pos
 
     def move_right(self, dist=127, convert=False):
         pos = self.device_cfg.get_position_dict()
@@ -100,6 +109,16 @@ class PymmAcq:
         self.stop[0] = True
         return None
 
+    def open_NDUI(self):
+        def open_in_subprocess(obj):
+            if not QApplication.instance():
+                app = QApplication(sys.argv)
+            else:
+                app = QApplication.instance()
+            ui = NDRecorderUI(obj)
+            ui.show()
+            app.exec()
+        thread.start_new_thread(open_in_subprocess, args=(self, ))
 
 def get_exposure(state, device_cfg):
     if state == 'green':
