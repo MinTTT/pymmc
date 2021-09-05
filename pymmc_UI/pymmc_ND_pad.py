@@ -46,8 +46,8 @@ class Ui_MainWindow(object):
         self.ND_table_region.setObjectName(u"ND_table_region")
         self.ND_table_region.setContentsMargins(0, 0, 0, 0)
         self.ND_table = QTableWidget(self.verticalLayoutWidget_2)
-        if (self.ND_table.columnCount() < 4):
-            self.ND_table.setColumnCount(4)
+        if (self.ND_table.columnCount() < 5):
+            self.ND_table.setColumnCount(5)
         __qtablewidgetitem = QTableWidgetItem()
         self.ND_table.setHorizontalHeaderItem(0, __qtablewidgetitem)
         __qtablewidgetitem1 = QTableWidgetItem()
@@ -56,25 +56,10 @@ class Ui_MainWindow(object):
         self.ND_table.setHorizontalHeaderItem(2, __qtablewidgetitem2)
         __qtablewidgetitem3 = QTableWidgetItem()
         self.ND_table.setHorizontalHeaderItem(3, __qtablewidgetitem3)
-        if (self.ND_table.rowCount() < 7):
-            self.ND_table.setRowCount(7)
         __qtablewidgetitem4 = QTableWidgetItem()
-        self.ND_table.setVerticalHeaderItem(0, __qtablewidgetitem4)
-        __qtablewidgetitem5 = QTableWidgetItem()
-        self.ND_table.setVerticalHeaderItem(1, __qtablewidgetitem5)
-        __qtablewidgetitem6 = QTableWidgetItem()
-        self.ND_table.setVerticalHeaderItem(2, __qtablewidgetitem6)
-        __qtablewidgetitem7 = QTableWidgetItem()
-        self.ND_table.setVerticalHeaderItem(3, __qtablewidgetitem7)
-        __qtablewidgetitem8 = QTableWidgetItem()
-        self.ND_table.setVerticalHeaderItem(4, __qtablewidgetitem8)
-        __qtablewidgetitem9 = QTableWidgetItem()
-        self.ND_table.setVerticalHeaderItem(5, __qtablewidgetitem9)
-        __qtablewidgetitem10 = QTableWidgetItem()
-        self.ND_table.setVerticalHeaderItem(6, __qtablewidgetitem10)
-        __qtablewidgetitem11 = QTableWidgetItem()
-        self.ND_table.setItem(1, 0, __qtablewidgetitem11)
+        self.ND_table.setHorizontalHeaderItem(4, __qtablewidgetitem4)
         self.ND_table.setObjectName(u"ND_table")
+        self.ND_table.horizontalHeader().setDefaultSectionSize(80)
 
         self.ND_table_region.addWidget(self.ND_table)
 
@@ -88,6 +73,15 @@ class Ui_MainWindow(object):
         self.checkBox_2.setObjectName(u"checkBox_2")
 
         self.function_region.addWidget(self.checkBox_2)
+
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.function_region.addItem(self.horizontalSpacer)
+
+        self.delete_pos = QPushButton(self.horizontalLayoutWidget)
+        self.delete_pos.setObjectName(u"delete_pos")
+
+        self.function_region.addWidget(self.delete_pos)
 
         self.horizontalLayoutWidget_2 = QWidget(self.centralwidget)
         self.horizontalLayoutWidget_2.setObjectName(u"horizontalLayoutWidget_2")
@@ -176,26 +170,10 @@ class Ui_MainWindow(object):
         ___qtablewidgetitem2.setText(QCoreApplication.translate("MainWindow", u"z_pos", None));
         ___qtablewidgetitem3 = self.ND_table.horizontalHeaderItem(3)
         ___qtablewidgetitem3.setText(QCoreApplication.translate("MainWindow", u"pfs", None));
-        ___qtablewidgetitem4 = self.ND_table.verticalHeaderItem(0)
-        ___qtablewidgetitem4.setText(QCoreApplication.translate("MainWindow", u"1", None));
-        ___qtablewidgetitem5 = self.ND_table.verticalHeaderItem(1)
-        ___qtablewidgetitem5.setText(QCoreApplication.translate("MainWindow", u"2", None));
-        ___qtablewidgetitem6 = self.ND_table.verticalHeaderItem(2)
-        ___qtablewidgetitem6.setText(QCoreApplication.translate("MainWindow", u"3", None));
-        ___qtablewidgetitem7 = self.ND_table.verticalHeaderItem(3)
-        ___qtablewidgetitem7.setText(QCoreApplication.translate("MainWindow", u"4", None));
-        ___qtablewidgetitem8 = self.ND_table.verticalHeaderItem(4)
-        ___qtablewidgetitem8.setText(QCoreApplication.translate("MainWindow", u"5", None));
-        ___qtablewidgetitem9 = self.ND_table.verticalHeaderItem(5)
-        ___qtablewidgetitem9.setText(QCoreApplication.translate("MainWindow", u"6", None));
-        ___qtablewidgetitem10 = self.ND_table.verticalHeaderItem(6)
-        ___qtablewidgetitem10.setText(QCoreApplication.translate("MainWindow", u"7", None));
-
-        __sortingEnabled = self.ND_table.isSortingEnabled()
-        self.ND_table.setSortingEnabled(False)
-        self.ND_table.setSortingEnabled(__sortingEnabled)
-
+        ___qtablewidgetitem4 = self.ND_table.horizontalHeaderItem(4)
+        ___qtablewidgetitem4.setText(QCoreApplication.translate("MainWindow", u"select", None));
         self.checkBox_2.setText(QCoreApplication.translate("MainWindow", u"goto selected", None))
+        self.delete_pos.setText(QCoreApplication.translate("MainWindow", u"Delete", None))
         self.record_position.setText(QCoreApplication.translate("MainWindow", u"Record", None))
         self.update.setText(QCoreApplication.translate("MainWindow", u"Update", None))
         self.move_left.setText(QCoreApplication.translate("MainWindow", u"LEFT", None))

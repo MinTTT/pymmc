@@ -45,6 +45,13 @@ class PymmAcq:
         self.nd_recorder.update_position(self._current_position, self.device_cfg.get_position_dict())
         return current_pos
 
+    def remove_positions(self, pos_index):
+        self.nd_recorder.positions
+
+        for i in sorted(del_index, reverse=True):
+            del self.nd_recorder.positions[i]
+
+
     def move_right(self, dist=127, convert=False):
         pos = self.device_cfg.get_position_dict()
         if convert:
