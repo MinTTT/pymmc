@@ -46,9 +46,7 @@ class PymmAcq:
         return current_pos
 
     def remove_positions(self, pos_index):
-        self.nd_recorder.positions
-
-        for i in sorted(del_index, reverse=True):
+        for i in sorted(pos_index, reverse=True):
             del self.nd_recorder.positions[i]
 
 
@@ -58,7 +56,7 @@ class PymmAcq:
             pos['xy'][0] -= dist
         else:
             pos['xy'][0] += dist
-        self.device_cfg.move_xyz_pfs(pos)
+        self.device_cfg.move_xyz_pfs(pos, step=0)
 
     def move_left(self, dist=127, convert=False):
         pos = self.device_cfg.get_position_dict()
@@ -66,7 +64,7 @@ class PymmAcq:
             pos['xy'][0] += dist
         else:
             pos['xy'][0] -= dist
-        self.device_cfg.move_xyz_pfs(pos)
+        self.device_cfg.move_xyz_pfs(pos, step=0)
 
     def move_up(self, dist=127, convert=False):
         pos = self.device_cfg.get_position_dict()
@@ -74,7 +72,7 @@ class PymmAcq:
             pos['xy'][1] -= dist
         else:
             pos['xy'][1] += dist
-        self.device_cfg.move_xyz_pfs(pos)
+        self.device_cfg.move_xyz_pfs(pos, step=0)
 
     def move_down(self, dist=127, convert=False):
         pos = self.device_cfg.get_position_dict()
@@ -82,11 +80,11 @@ class PymmAcq:
             pos['xy'][1] += dist
         else:
             pos['xy'][1] -= dist
-        self.device_cfg.move_xyz_pfs(pos)
+        self.device_cfg.move_xyz_pfs(pos, step=0)
 
     def go_to_position(self, index):
         pos = self.nd_recorder.positions[index]
-        self.device_cfg.move_xyz_pfs(pos)
+        self.device_cfg.move_xyz_pfs(pos, step=0)
         self._current_position = self.nd_recorder.positions.index(pos)
 
     def go_to_next_position(self):

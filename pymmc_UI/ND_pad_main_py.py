@@ -208,7 +208,7 @@ class NDRecorderUI(QMainWindow):
 
         self.pos_table.clear()
         self.write_table()
-        print(self.acq_obj.positions)
+
 
 
 

@@ -179,13 +179,16 @@ class MicroscopeParas:
                 x_t, y_t = fov['xy'][0], fov['xy'][1]
                 dit = np.sqrt((x_t - x_f) ** 2 + (y_f - y_t) ** 2)
                 block_size = step * fov_len
-                num_block = int(dit // block_size + 2)
+                if step == 0:
+                    num_block = 2
+                else:
+                    num_block = int(dit // block_size + 2)
                 x_space = np.linspace(x_f, x_t, num=num_block)
                 y_space = np.linspace(y_f, y_t, num=num_block)
                 for i in range(len(x_space) - 1):
                     self.prior_core.set_xy_position(x_space[i + 1], y_space[i + 1])
                     while self.prior_core.device_busy():
-                        time.sleep(0.00001)
+                        time.sleep(0.0001)
                 if turnoffz:
                     if 'pfsoffset' in fov:
                         core.set_position(self.AUTOFOCUS_OFFSET, fov['pfsoffset'][0])
