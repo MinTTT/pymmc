@@ -183,7 +183,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
     EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
     set_device_state = device_cfg.set_device_state
     print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
-    device_cfg.set_light_path('BF', '100X')
+    # device_cfg.set_light_path('BF', '100X')
     light_path_state = 'green'
     set_device_state(device_cfg.mmcore, 'init_phase')
     set_device_state(device_cfg.mmcore, 'r2g')
@@ -200,11 +200,11 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 file_name = f't{get_filenameindex(image_dir)}'
                 device_cfg.move_xyz_pfs(fov, step=6)  # move stage xy.
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
-                time.sleep(0.2)
+                time.sleep(0.5)
                 # First Channel
                 if light_path_state == 'green':
                     print('Snap image (phase).\n')
-                    device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
+                    device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
@@ -225,7 +225,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                     light_path_state = 'red'
                     set_device_state(device_cfg.mmcore, 'g2r')
                     device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
-                    time.sleep(1)
+                    time.sleep(0.2)
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              shutter=device_cfg.SHUTTER_LED,
@@ -235,7 +235,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                     light_path_state = 'green'
                     set_device_state(device_cfg.mmcore, 'r2g')
                     device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
-                    time.sleep(1)  # 1.5 is ok
+                    time.sleep(0.2)  # 1.5 is ok
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
@@ -330,7 +330,7 @@ def multi_acq_4c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
     EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
     set_device_state = device_cfg.set_device_state
     print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
-    device_cfg.set_light_path('BF', '100X', shutter=device_cfg.SHUTTER_LAMP)
+    # device_cfg.set_light_path('BF', '100X', shutter=device_cfg.SHUTTER_LAMP)
     light_path_state = 'green'
     print(f'{colors.OKGREEN}Initial Phase Setup.{colors.ENDC}')
     set_device_state(device_cfg.mmcore, 'init_phase')

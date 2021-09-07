@@ -70,9 +70,9 @@ class MicroscopeParas:
             self.FILTER_TURRET = 'FilterBlock1'
             self.FLU_EXCITE = 'XCite-Exacte'
             self.GREEN_EXCITE = 15
-            self.RED_EXCITE = 50
+            self.RED_EXCITE = 100  # 50 for 100X cfg, 100 for 60X cfg
             self.EXPOSURE_GREEN = 50  # 50 ms TiE2
-            self.EXPOSURE_PHASE = 40  # ms
+            self.EXPOSURE_PHASE = 30  # 30 ms for 60X
             self.EXPOSURE_RED = 200  # ms
             self.AUTOFOCUS_DEVICE = 'PFSStatus'
             self.AUTOFOCUS_OFFSET = 'PFSOffset'
