@@ -45,13 +45,11 @@ val_contr = ValveController(port='com9')
 
 val_contr.valve_off()  # close valve
 val_contr.valve_on()  # open valve
-# device_cfg.mmcore.start_continuous_sequence_acquisition(10)
-# device_cfg.mmcore.stop_sequence_acquisition()
-# import numpy as np
-# from tqdm import tqdm
-# from joblib import Parallel, delayed
-#
-# vedio = np.random.random((device_cfg.mmcore.get_remaining_image_count(), 2048, 2048))
+
+# %%
+
+
+
 # tags = [None] * len(vedio)
 #
 #
@@ -62,11 +60,11 @@ val_contr.valve_on()  # open valve
 #
 #
 # _ = Parallel(n_jobs=1, require='sharedmem')(delayed(parall_output)(i) for i in tqdm(range(len(vedio))))
-# # for i in tqdm(range(len(vedio))):
-# #     tagged_image = device_cfg.mmcore.pop_next_tagged_image()
-# #     vedio[:, ...] = np.reshape(tagged_image.pix, [tagged_image.tags["Height"], tagged_image.tags["Width"]])
-# #     tags[i] = tagged_image.tags
-# vedio = vedio.astype(np.uint16)
-# import pymm
-#
-# pymm.save_image(vedio, r'./cfg_folder/test', 'vedio', meta={'tag_data': tags})
+
+# for i in tqdm(range(len(vedio))):
+#     tagged_image = device_cfg.mmcore.pop_next_tagged_image()
+#     vedio[:, ...] = np.reshape(tagged_image.pix, [tagged_image.tags["Height"], tagged_image.tags["Width"]])
+#     tags[i] = tagged_image.tags
+
+
+

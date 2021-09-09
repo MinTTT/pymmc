@@ -10,10 +10,20 @@ from typing import Optional
 from PySide6.QtWidgets import QApplication
 from pymmc_UI.ND_pad_main_py import NDRecorderUI
 import threading
+import numpy as np
+import tifffile as tiff
+from tqdm import tqdm
+
 bcolors = colors()
 
 
 # studio = mm.studio
+
+def save_tyx(image_ps, image):
+    print(f'[{image_ps}] -> Writing.')
+    tiff.imwrite(file=image_ps, data=image, metadata={'axes': 'TYX'}, imagej=True, returnoffset=True)
+    print(f'[{image_ps}] -> Success.')
+    return None
 
 
 class PymmAcq:
@@ -48,7 +58,6 @@ class PymmAcq:
     def remove_positions(self, pos_index):
         for i in sorted(pos_index, reverse=True):
             del self.nd_recorder.positions[i]
-
 
     def move_right(self, dist=127, convert=False):
         pos = self.device_cfg.get_position_dict()
@@ -127,6 +136,98 @@ class PymmAcq:
             app.exec()
 
         threading.Thread(target=open_in_subprocess, args=(self,)).start()
+
+    def sequence_acq(self, duration_time: float, step: float, exposure: float = None, save_dir: str = None):
+        """
+
+        :param duration_time: duration time, how long will acquisition lasting. unit: ms
+        :param step: time interval. unit: ms
+        :param exposure: exposure time. unit: ms
+        :param save_dir: sequence images save dir. if None, return numpy array (t, y, x)
+        :return: None or ndarray
+        """
+
+        depth_dict = {16: np.uint16, 8: np.uint8, 12: np.uint16}
+        if exposure is not None:
+            self.device_cfg.mmcore.set_exposure(exposure)
+        frame_num = round(duration_time / step)
+        width, height = self.device_cfg.mmcore.get_image_width(), self.device_cfg.mmcore.get_image_height()
+        depth = self.device_cfg.mmcore.get_image_bit_depth()
+        # create
+        vedio = np.empty((frame_num, height, width), dtype=depth_dict[depth])
+        print('start acq!')
+        if self.device_cfg.mmcore.is_sequence_running():
+            self.device_cfg.mmcore.stop_sequence_acquisition()
+        self.device_cfg.mmcore.clear_circular_buffer()
+        self.device_cfg.mmcore.prepare_sequence_acquisition(self.device_cfg.mmcore.get_camera_device())
+        self.device_cfg.mmcore.start_sequence_acquisition(frame_num, step, False)
+
+        for i in tqdm(range(frame_num)):
+            while self.device_cfg.mmcore.get_remaining_image_count() == 0:
+                time.sleep(0.0001)
+            if self.device_cfg.mmcore.get_remaining_image_count() > 0:
+                vedio[i] = self.device_cfg.mmcore.pop_next_image().reshape(height, width)
+        self.device_cfg.mmcore.stop_sequence_acquisition()
+
+        if save_dir is None:
+            return vedio
+        else:
+            _ = thread.start_new_thread(save_tyx, (save_dir, vedio,))
+            return None
+
+    def continuous_acq(self, duration_time: float, step: float, save_dir: str = None):
+        """
+        :param duration_time: duration time, how long will acquisition lasting. unit: ms
+        :param step: time interval. unit: ms
+        :param save_dir: sequence images save dir. if None, return numpy array (t, y, x)
+        :return: None or ndarray
+        """
+
+        depth_dict = {16: np.uint16, 8: np.uint8, 12: np.uint16}
+
+        frame_num = int(duration_time / step)
+        self.device_cfg.mmcore.set_exposure(step)
+        self.device_cfg.mmcore.set_property(self.device_cfg.mmcore.get_camera_device(), 'FrameRate', duration_time/step)
+        width, height = self.device_cfg.mmcore.get_image_width(), self.device_cfg.mmcore.get_image_height()
+        depth = self.device_cfg.mmcore.get_image_bit_depth()
+        # create
+        vedio = np.empty((round(frame_num * 1.01), height, width), dtype=depth_dict[depth])
+        if self.device_cfg.mmcore.is_sequence_running():
+            self.device_cfg.mmcore.stop_sequence_acquisition()
+        print('start acq!')
+        self.device_cfg.mmcore.prepare_sequence_acquisition(self.device_cfg.mmcore.get_camera_device())
+        self.device_cfg.mmcore.start_continuous_sequence_acquisition(float(step))
+        time.sleep(2)
+        pbar = tqdm(total=frame_num)
+        self.device_cfg.mmcore.clear_circular_buffer()
+        time_current = time.time()
+        im_count = 0
+
+        while (time.time() - time_current) * 1000 < duration_time:
+            _time_cur = time.time()
+            while self.device_cfg.mmcore.get_remaining_image_count() == 0:
+                time.sleep(0.001)
+            if self.device_cfg.mmcore.get_remaining_image_count() > 0:
+                vedio[im_count] = self.device_cfg.mmcore.pop_next_image().reshape(height, width)
+                im_count += 1
+                pbar.update(1)
+        self.device_cfg.mmcore.stop_sequence_acquisition()
+        while self.device_cfg.mmcore.get_remaining_image_count() != 0:
+            vedio[im_count] = self.device_cfg.mmcore.pop_next_image().reshape(height, width)
+            im_count += 1
+            pbar.update(1)
+
+        pbar.close()
+        frame_rate = self.device_cfg.mmcore.get_property(self.device_cfg.mmcore.get_camera_device(),
+                                                         'FrameRate')
+        print(f'Frame Rate: {frame_rate}')
+        print(f'FPS: {im_count/duration_time * 1000}')
+        vedio = vedio[:im_count, ...]
+        if save_dir is None:
+            return vedio
+        else:
+            _ = thread.start_new_thread(save_tyx, (save_dir, vedio,))
+            return None
 
 
 def get_exposure(state, device_cfg):
