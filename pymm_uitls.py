@@ -105,9 +105,10 @@ def get_filenameindex(fold_name):
     return max(tiff_file) + 1
 
 
-def countdown(t, step=1, msg='sleeping'):
+def countdown(t, step=1, trigger=[False], msg='sleeping'):
     """
     a countdown timer print waiting time in second.
+    :param trigger: list, a global trigger
     :param t: time lasting for sleeping
     :param step: the time step between the refreshment of screen.
     :param msg:
@@ -116,11 +117,19 @@ def countdown(t, step=1, msg='sleeping'):
     CRED = '\033[91m'
     CGRE = '\033[92m'
     CEND = '\033[0m'
-    while t > 0:
-        mins, secs = divmod(t, 60)
+    _current_time = time.time()
+    while time.time() - _current_time < t:
+        mins, secs = divmod(t + _current_time - time.time(), 60)
         print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
         time.sleep(step)
-        t -= step
+        if trigger[0]:
+            print(CGRE + 'Stop Acq.' + CEND)
+            return None
+    # while t > 0:
+    #     mins, secs = divmod(t, 60)
+    #     print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
+    #     time.sleep(step)
+    #     t -= step
     print(CGRE + 'Start the next loop.' + CEND)
     return None
 

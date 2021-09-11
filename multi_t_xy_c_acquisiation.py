@@ -16,12 +16,18 @@ from tqdm import tqdm
 
 bcolors = colors()
 
+saving_lock = thread.allocate_lock()
+
 
 # studio = mm.studio
 
-def save_tyx(image_ps, image):
+def save_tyx(image_ps, image, meta={}):
+    meta.update({'axes': 'TYX'})
+    print(f'[{image_ps}] -> Waiting.')
+    saving_lock.acquire_lock()
     print(f'[{image_ps}] -> Writing.')
-    tiff.imwrite(file=image_ps, data=image, metadata={'axes': 'TYX'}, imagej=True, returnoffset=True)
+    tiff.imwrite(file=image_ps, data=image, metadata=meta, imagej=True, returnoffset=True)
+    saving_lock.release_lock()
     print(f'[{image_ps}] -> Success.')
     return None
 
@@ -121,6 +127,12 @@ class PymmAcq:
                                 (dir, pos_ps, self.device_cfg, time_step, flu_step, time_duration, self.stop))
         return None
 
+    def multi_acq_2c(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
+                     time_duration: list = None):
+        thread.start_new_thread(multi_acq_2c,
+                                (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
+        return None
+
     def stop_acq_loop(self):
         self.stop[0] = True
         return None
@@ -187,7 +199,8 @@ class PymmAcq:
 
         frame_num = int(duration_time / step)
         self.device_cfg.mmcore.set_exposure(step)
-        self.device_cfg.mmcore.set_property(self.device_cfg.mmcore.get_camera_device(), 'FrameRate', duration_time/step)
+        self.device_cfg.mmcore.set_property(self.device_cfg.mmcore.get_camera_device(), 'FrameRate',
+                                            duration_time / step)
         width, height = self.device_cfg.mmcore.get_image_width(), self.device_cfg.mmcore.get_image_height()
         depth = self.device_cfg.mmcore.get_image_bit_depth()
         # create
@@ -221,12 +234,12 @@ class PymmAcq:
         frame_rate = self.device_cfg.mmcore.get_property(self.device_cfg.mmcore.get_camera_device(),
                                                          'FrameRate')
         print(f'Frame Rate: {frame_rate}')
-        print(f'FPS: {im_count/duration_time * 1000}')
+        print(f'FPS: {im_count / duration_time * 1000}')
         vedio = vedio[:im_count, ...]
         if save_dir is None:
             return vedio
         else:
-            _ = thread.start_new_thread(save_tyx, (save_dir, vedio,))
+            _ = thread.start_new_thread(save_tyx, (save_dir, vedio,), {'FPS': im_count / duration_time * 1000})
             return None
 
 
@@ -280,7 +293,6 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
         f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
 
     # %% loop body
-
     EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
     set_device_state = device_cfg.set_device_state
     print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
@@ -536,6 +548,120 @@ def multi_acq_4c(dir: str, pos_ps: str, device: object, time_step: list, flu_ste
             print(f'Waiting next loop[{loop_index + 1}].')
             countdown(waiting_t, 1)
         if thread_flag != False:
+            if thread_flag[0]:
+                print('Acquisition loop finish!')
+                thread_flag[0] = False
+                return None
+        loop_index += 1
+        # ======================waiting cycle=========
+
+    print('finished all loops!')
+    return None
+
+
+def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_step: int,
+                 time_duration: list,
+                 thread_flag=False) -> None:
+    '''
+    :param dir: image save dir, str
+    :param pos_ps: position file, str
+    :param device: device cfg, obj
+    :param time_step: list [h, min, s]
+    :param flu_step: int
+    :param time_duration: list [h, min, s]
+    :param thread_flag: list
+    :return: None
+    '''
+    DIR = dir
+    POSITION_FILE = pos_ps
+    # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
+    # -----------------------------------------------------------------------------------
+    device_cfg = device.device_cfg
+    # %%
+    # ==========get multiple positions============
+    if POSITION_FILE is not None:
+        fovs = parse_position(POSITION_FILE,
+                              device=[device_cfg.XY_DEVICE, device_cfg.Z_DEVICE, device_cfg.AUTOFOCUS_OFFSET])
+        device.nd_recorder.positions = fovs
+    fovs = device.nd_recorder.positions
+
+    # ==========set loop parameters===============
+    time_step = time_step  # [hr, min, s]
+    flu_step = flu_step  # very 4 phase loops acq
+    time_duration = time_duration
+    loops_num = parse_second(time_duration) // parse_second(time_step)
+    print(
+        f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
+
+    # %% loop body
+    EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
+    EXPOSURE_YELLOW = device_cfg.EXPOSURE_YELLOW
+    set_device_state = device_cfg.set_device_state
+    print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
+    # device_cfg.set_light_path('BF', '100X')
+    light_path_state = 'yellow'
+    set_device_state(device_cfg.mmcore, 'init_phase')
+    time.sleep(2.5)
+    # TODO：I found the python console initialized and performed this code block first time,
+    #  the Ti2E_H has no fluorescent emission light.
+    print(f'{colors.OKGREEN}Start ACQ Loop.{colors.ENDC}')
+    loop_index = 0  # default is 0
+    while loop_index != loops_num:
+        t_init = time.time()
+        if if_acq(loop_index, flu_step) == 0:
+            for fov_index, fov in enumerate(fovs):
+                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                file_name = f't{get_filenameindex(image_dir)}'
+                device_cfg.move_xyz_pfs(fov, step=6)  # move stage xy.
+                print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
+                time.sleep(0.5)
+                # First Channel
+                print('Snap image (yellow).\n')
+                image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
+                device_cfg.auto_acq_save(image_dir, name=file_name,
+                                         shutter=device_cfg.SHUTTER_LED,
+                                         exposure=EXPOSURE_YELLOW)
+
+                print('Snap image (phase).\n')
+                device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
+                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                device_cfg.auto_acq_save(image_dir, name=file_name,
+                                         shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
+
+        else:
+            # ========start phase 100X acq loop=================#
+            device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
+
+            device_cfg.active_auto_shutter(device_cfg.SHUTTER_LAMP)
+            for fov_index, fov in enumerate(fovs):
+                device_cfg.move_xyz_pfs(fov, step=6)
+                device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
+                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                file_name = f't{get_filenameindex(image_dir)}'
+                print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
+                print('Snap image (phase).\n')
+                device_cfg.auto_acq_save(image_dir, name=file_name,
+                                         exposure=EXPOSURE_PHASE)
+
+        # ======================waiting cycle=========
+
+        t_of_acq = time.time() - t_init
+        waiting_t = parse_second(time_step) - t_of_acq
+
+        if thread_flag != False:
+            if thread_flag[0]:
+                print('Acquisition loop finish!')
+                thread_flag[0] = False
+                return None
+
+        if waiting_t < 0:
+            print(f'{bcolors.WARNING}Waring: Acquisition loop {t_of_acq} s '
+                  f' is longer than default time step ({-int(waiting_t)} s)! '
+                  f' and the the next step will start immediately.{bcolors.ENDC}')
+        else:
+            print(f'Waiting next loop[{loop_index + 1}].')
+            countdown(waiting_t, 1, thread_flag)
+        if thread_flag:
             if thread_flag[0]:
                 print('Acquisition loop finish!')
                 thread_flag[0] = False

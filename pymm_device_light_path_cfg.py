@@ -80,6 +80,21 @@ class MicroscopeParas:
             self.XY_DEVICE = 'prior_xy'
             self.mmcore = mmcore
             self.prior_core = None  # type: Optional[PriorScan]
+        elif self.MICROSCOPE == 'TiE_prior_DNA_replicate':
+            self.SHUTTER_LAMP = 'Arduino-Shutter'
+            self.INIT_LAMP = 'DiaLamp'
+            self.SHUTTER_LED = 'XCite-Exacte'
+            self.FILTER_TURRET = 'FilterBlock1'
+            self.FLU_EXCITE = 'XCite-Exacte'
+            self.YELLOW_EXCITE = 50
+            self.EXPOSURE_YELLOW = 100
+            self.EXPOSURE_PHASE = 30  # 30 ms for 60X
+            self.AUTOFOCUS_DEVICE = 'PFSStatus'
+            self.AUTOFOCUS_OFFSET = 'PFSOffset'
+            self.Z_DEVICE = 'ZDrive'
+            self.XY_DEVICE = 'prior_xy'
+            self.mmcore = mmcore
+            self.prior_core = None  # type: Optional[PriorScan]
         elif self.MICROSCOPE == 'Ti2E_H':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'Spectra'
@@ -414,6 +429,19 @@ class MicroscopeParas:
                 core_mmc.set_property(self.SHUTTER_LED, 'Teal_Enable', 0)
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 2)
                 mm.waiting_device()
+
+        elif self.MICROSCOPE == 'TiE_prior_DNA_replicate':
+            if shift_type == 'init_phase':
+                if self.CAM_ROI is not None:
+                    self.set_ROI(self.CAM_ROI)
+                core_mmc.set_property(self.INIT_LAMP, 'State', 1)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 4)
+                self.prior_core.set_shutter_state(1)
+                self.prior_core.set_filter_position(1)
+                mm.waiting_device()
+                self.prior_core.waiting_device()
+                core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity',
+                                      self.YELLOW_EXCITE)  # set xcite lamp intensity 50
         return None
 
 

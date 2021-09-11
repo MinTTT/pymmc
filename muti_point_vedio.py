@@ -9,17 +9,17 @@ acq_loop = PymmAcq(device=MICROSCOPE)
 device_cfg = acq_loop.device_cfg
 # device_cfg.set_ROI([0, 710, 2048, 1024])
 # %%
-device_cfg.set_ROI([0, 0, 2048, 2048])
+device_cfg.set_ROI([0, 710, 2048, 1024])
 device_cfg.prior_core.set_filter_speed_acc(100, 100, 1)
 device_cfg.set_light_path('BF', '10X', shutter=device_cfg.SHUTTER_LAMP)
 
 device_cfg.mmcore.set_property(device_cfg.mmcore.get_camera_device(), 'Binning', '1x1')
 device_cfg.set_device_state(shift_type='init_phase')
 
-duration_time = 2 * 1000  # ms
-step = 24.5  # ms
+duration_time = 3 * 1000  # ms
+step = 800/30  # ms
 
-dir = r'./cfg_folder/test/'
+dir = r'F:\\'
 name = 'test'
 
 acq_loop.open_NDUI()
