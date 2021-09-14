@@ -112,8 +112,8 @@ class PriorScan(object):
         Returns the current stage XY position
         :return: float x um, float y um
         """
-        self.rx_decode = self.cmd("controller.stage.position.get")
-        x, y = self.rx_decode.split(',')
+        rx_decode = self.cmd("controller.stage.position.get")
+        x, y = rx_decode.split(',')
         return float(x) / self.spermicro, float(y) / self.spermicro
 
     def set_xy_position(self, x: float, y: float):
@@ -127,8 +127,8 @@ class PriorScan(object):
             self.rx_decode = self.cmd(f"controller.shutter.open {shutter_index}")
 
     def get_shutter_state(self, shutter_index: int = 1):
-        self.rx_decode = self.cmd(f"controller.shutter.state.get {shutter_index}")
-        return self.rx_decode
+        rx_decode = self.cmd(f"controller.shutter.state.get {shutter_index}")
+        return rx_decode
 
     def set_filter_position(self, pos: int, filter_index: int = 1):
         self.rx_decode = self.cmd(f'controller.filter.goto-position {filter_index} {pos}')

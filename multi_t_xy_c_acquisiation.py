@@ -337,7 +337,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 if light_path_state == 'green':
                     light_path_state = 'red'
                     set_device_state(device_cfg.mmcore, 'g2r')
-                    device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
+                    device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
                     time.sleep(0.2)
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
@@ -347,7 +347,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 else:
                     light_path_state = 'green'
                     set_device_state(device_cfg.mmcore, 'r2g')
-                    device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
+                    device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
                     time.sleep(0.2)  # 1.5 is ok
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
@@ -365,7 +365,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
             else:
                 light_path_state = 'green'
                 set_device_state(device_cfg.mmcore, 'r2g')
-                device_cfg.check_auto_focus()  # check auto focus, is important!
+                device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
 
             device_cfg.active_auto_shutter(device_cfg.SHUTTER_LAMP)
             for fov_index, fov in enumerate(fovs):
@@ -396,7 +396,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                   f' and the the next step will start immediately.{bcolors.ENDC}')
         else:
             print(f'Waiting next loop[{loop_index + 1}].')
-            countdown(waiting_t, 1)
+            countdown(waiting_t, 1, thread_flag)
         if thread_flag != False:
             if thread_flag[0]:
                 print('Acquisition loop finish!')
