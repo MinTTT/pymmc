@@ -19,7 +19,8 @@ import numpy as np  # Or any other
 # Own modules
 import PySide6.QtWidgets as QtWidgets
 from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QCheckBox
-from PySide6.QtCore import QFile, Qt
+from PySide6.QtCore import QFile, Qt, QTranslator
+from PySide6.QtGui import QKeySequence, QShortcut, QKeyEvent, QAction
 from pymmc_UI.pymmc_ND_pad import Ui_MainWindow
 from random import random
 from typing import Optional
@@ -144,15 +145,32 @@ class NDRecorderUI(QMainWindow):
         self.ui.move_left.clicked.connect(partial(self.move_xy, 'left'))
         self.ui.delete_pos.clicked.connect(self.del_pos)
 
+        # self.right_move = QShortcut(QKeySequence("Right"), self)
+        # self.right_move.activated.connect(partial(self.move_xy, 'right'))
+        #
+        # self.left_move = QShortcut(QKeySequence("Left"), self)
+        # self.left_move.activated.connect(partial(self.move_xy, 'left'))
+
+        keydict = dict(right=["Right", partial(self.move_xy, 'right')],
+                       left=["Left", partial(self.move_xy, 'left')],
+                       up=['Up', partial(self.move_xy, 'up')],
+                       down=['Down', partial(self.move_xy, 'down')],
+                       record=['Space', self.do_record_pos],
+                       update=["U", self.do_update_pos])
+        self.bound_shortcut(keydict)
+
         self.write_table()
 
+    def bound_shortcut(self, key_dict):
+        for key, val in key_dict.items():
+            self.__dict__[f'{key}_st'] = QShortcut(QKeySequence(val[0]), self)
+            self.__dict__[f'{key}_st'].activated.connect(val[1])
 
     def write_table(self):
         self.pos_table.clear()
         self.pos_table.setRowCount(len(self.positions))
         for row, pos in enumerate(self.positions):
             self.edit_row(row, pos)
-
 
     def edit_row(self, row_index: int, pos: dict):
         row_count = self.pos_table.rowCount()
@@ -174,7 +192,6 @@ class NDRecorderUI(QMainWindow):
         check_box = QTableWidgetItem('select')
         check_box.setCheckState(Qt.Unchecked)
         self.pos_table.setItem(row_index, 4, check_box)
-
 
     def do_record_pos(self):
         pos = self.acq_obj.record_current_position()
@@ -202,14 +219,13 @@ class NDRecorderUI(QMainWindow):
             self.acq_obj.move_down(dist=float(self.ui.down_step.value()))
 
     def del_pos(self):
-        del_index = [i for i in range(self.pos_table.rowCount()) if self.pos_table.item(i, 4).checkState() == Qt.Checked]
+        del_index = [i for i in range(self.pos_table.rowCount()) if
+                     self.pos_table.item(i, 4).checkState() == Qt.Checked]
 
         self.acq_obj.remove_positions(del_index)
 
         self.pos_table.clear()
         self.write_table()
-
-
 
 
 # %%
@@ -225,3 +241,4 @@ if __name__ == "__main__":
     window.show()
     app.exec()
     # sys.exit(app.exec())
+
