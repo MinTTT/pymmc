@@ -614,7 +614,7 @@ def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 file_name = f't{get_filenameindex(image_dir)}'
                 device_cfg.move_xyz_pfs(fov, step=6)  # move stage xy.
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
-                time.sleep(0.5)
+                # time.sleep(0.5)
                 # First Channel
                 print('Snap image (yellow).\n')
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
@@ -623,19 +623,19 @@ def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                                          exposure=EXPOSURE_YELLOW)
 
                 print('Snap image (phase).\n')
-                device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
+                device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 device_cfg.auto_acq_save(image_dir, name=file_name,
                                          shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
 
         else:
             # ========start phase 100X acq loop=================#
-            device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
+            device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
 
             device_cfg.active_auto_shutter(device_cfg.SHUTTER_LAMP)
             for fov_index, fov in enumerate(fovs):
                 device_cfg.move_xyz_pfs(fov, step=6)
-                device_cfg.check_auto_focus(0.2)  # check auto focus, is important!
+                device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')

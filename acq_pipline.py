@@ -10,11 +10,12 @@ from device.valve.pymm_valve import ValveController
 
 # %%
 MICROSCOPE = 'TiE_prior'  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ, TiE_prior, Ti2E_LDJ
-DIR = r'F:\zjw\20210912_NH2_pECJ3_M5_L3'
+DIR = r'I:\Image_Data\moma_data\20210922_NH2_pECJ3_M5_L3'
 # POSITION_FILE = r'H:\Image_Data\moma_data\20210505_pECJ3_M5_L3\multipoints.xml'
 POSITION_FILE = None
 acq_loop = PymmAcq(device=MICROSCOPE)
 device_cfg = acq_loop.device_cfg
+# device_cfg.set_ROI([0, 710, 2048, 1024])
 # device_cfg.set_ROI([0, 710, 2048, 1024])
 # device_cfg.set_ROI([0, 0, 2048, 2048])
 device_cfg.set_ROI([0, 812, 2048, 820])
@@ -24,13 +25,13 @@ device_cfg.set_light_path('BF', '100X', shutter=device_cfg.SHUTTER_LAMP)
 device_cfg.set_device_state(shift_type='init_phase')
 # %%
 # acq_loop.nd_recorder.export_pos(DIR)
-acq_loop.nd_recorder.import_pos(os.path.join(DIR, 'pos.jl'))
+# acq_loop.nd_recorder.import_pos(os.path.join(DIR, 'pos.jl'))
 
 acq_loop.open_NDUI()
 
 # %%
 time_step = [0, 3, 30]  # [hr, min, s]
-flu_step = 4  # very 4 phase loops acq if 0, don't acq a flu channel
+flu_step = 6  # very 4 phase loops acq if 0, don't acq a flu channel
 time_duration = [72, 0, 0]
 
 acq_loop.multi_acq_3c(DIR, POSITION_FILE, time_step, flu_step, time_duration)

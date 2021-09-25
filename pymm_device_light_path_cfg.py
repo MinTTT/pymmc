@@ -69,11 +69,18 @@ class MicroscopeParas:
             self.SHUTTER_LED = 'XCite-Exacte'
             self.FILTER_TURRET = 'FilterBlock1'
             self.FLU_EXCITE = 'XCite-Exacte'
-            self.GREEN_EXCITE = 15
-            self.RED_EXCITE = 50  # 50 for 100X cfg, 100 for 60X cfg
-            self.EXPOSURE_GREEN = 50  # 50 ms TiE2
+            # =================== version 1. ====================
+            # self.GREEN_EXCITE = 15
+            # self.RED_EXCITE = 50  # 50 for 100X cfg, 100 for 60X cfg
+            # self.EXPOSURE_GREEN = 50  # 50 ms TiE2
+            # self.EXPOSURE_PHASE = 30  # 30 ms for 60X
+            # self.EXPOSURE_RED = 50  # ms
+            # =================== version 2. ====================
+            self.GREEN_EXCITE = 8
+            self.RED_EXCITE = 25  # 50 for 100X cfg, 100 for 60X cfg
+            self.EXPOSURE_GREEN = 25  # 50 ms TiE2
             self.EXPOSURE_PHASE = 30  # 30 ms for 60X
-            self.EXPOSURE_RED = 50  # ms
+            self.EXPOSURE_RED = 25  # ms
             self.AUTOFOCUS_DEVICE = 'PFSStatus'
             self.AUTOFOCUS_OFFSET = 'PFSOffset'
             self.Z_DEVICE = 'ZDrive'
