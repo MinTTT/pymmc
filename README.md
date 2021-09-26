@@ -5,7 +5,9 @@ The commands for controlling Nikon microscope relay on package `pycromanager`,
 a package of MMCoreJ wrap of python, and some third-party devices which 
 have a clear documented SDK was designed python interface for efficiency reasons.
 
+
 Third-party devices including:
 * Prior SDK python interface
-* Andor sCMOS CDD camera
+* Andor sCMOS camera
+* Arduino for sync of camera and light source.
 
