@@ -122,6 +122,13 @@ class PymmAcq:
                                 (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
         return None
 
+    def multi_acq_3c_sync_light(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
+                     time_duration: list = None):
+        thread.start_new_thread(multi_acq_3c_sync_light,
+                                (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
+        return None
+
+
     def multi_acq_4c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):
         thread.start_new_thread(multi_acq_4c,
                                 (dir, pos_ps, self.device_cfg, time_step, flu_step, time_duration, self.stop))
@@ -371,6 +378,157 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
             for fov_index, fov in enumerate(fovs):
                 device_cfg.move_xyz_pfs(fov, step=6)
                 device_cfg.check_auto_focus(0.5)  # check auto focus, is important!
+                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                file_name = f't{get_filenameindex(image_dir)}'
+                print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
+                print('Snap image (phase).\n')
+                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                device_cfg.auto_acq_save(image_dir, name=file_name,
+                                         exposure=EXPOSURE_PHASE)
+
+        # ======================waiting cycle=========
+
+        t_of_acq = time.time() - t_init
+        waiting_t = parse_second(time_step) - t_of_acq
+
+        if thread_flag != False:
+            if thread_flag[0]:
+                print('Acquisition loop finish!')
+                thread_flag[0] = False
+                return None
+
+        if waiting_t < 0:
+            print(f'{bcolors.WARNING}Waring: Acquisition loop {t_of_acq} s '
+                  f' is longer than default time step ({-int(waiting_t)} s)! '
+                  f' and the the next step will start immediately.{bcolors.ENDC}')
+        else:
+            print(f'Waiting next loop[{loop_index + 1}].')
+            countdown(waiting_t, 1, thread_flag)
+        if thread_flag != False:
+            if thread_flag[0]:
+                print('Acquisition loop finish!')
+                thread_flag[0] = False
+                return None
+        loop_index += 1
+        # ======================waiting cycle=========
+
+    print('finished all loops!')
+    return None
+
+
+
+def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_step: int,
+                 time_duration: list,
+                 thread_flag=False) -> None:
+    '''
+    :param dir: image save dir, str
+    :param pos_ps: position file, str
+    :param device: device cfg, obj
+    :param time_step: list [h, min, s]
+    :param flu_step: int
+    :param time_duration: list [h, min, s]
+    :param thread_flag: list
+    :return: None
+    '''
+    DIR = dir
+    POSITION_FILE = pos_ps
+    # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
+    # -----------------------------------------------------------------------------------
+    device_cfg = device.device_cfg
+    # %%
+    # ==========get multiple positions============
+    if POSITION_FILE is not None:
+        fovs = parse_position(POSITION_FILE,
+                              device=[device_cfg.XY_DEVICE, device_cfg.Z_DEVICE, device_cfg.AUTOFOCUS_OFFSET])
+        device.nd_recorder.positions = fovs
+    fovs = device.nd_recorder.positions
+
+    # ==========set loop parameters===============
+    time_step = time_step  # [hr, min, s]
+    flu_step = flu_step  # very 4 phase loops acq
+    time_duration = time_duration
+    loops_num = parse_second(time_duration) // parse_second(time_step)
+    print(
+        f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')
+
+    # %% loop body
+    EXPOSURE_PHASE = device_cfg.EXPOSURE_PHASE
+    set_device_state = device_cfg.set_device_state
+    print(f'{colors.OKGREEN}Initial Device Setup.{colors.ENDC}')
+    # device_cfg.set_light_path('BF', '100X')
+    light_path_state = 'green'
+    set_device_state(device_cfg.mmcore, 'init_phase')
+    set_device_state(device_cfg.mmcore, 'r2g')
+    time.sleep(2.5)
+    # TODO：I found the python console initialized and performed this code block first time,
+    #  the Ti2E_H has no fluorescent emission light.
+    print(f'{colors.OKGREEN}Start ACQ Loop.{colors.ENDC}')
+    loop_index = 0  # default is 0
+    while loop_index != loops_num:
+        t_init = time.time()
+        if if_acq(loop_index, flu_step) == 0:
+            for fov_index, fov in enumerate(fovs):
+                image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                file_name = f't{get_filenameindex(image_dir)}'
+                device_cfg.move_xyz_pfs(fov, step=6)  # move stage xy.
+                print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
+                time.sleep(0.1)
+                # First Channel
+                if light_path_state == 'green':
+                    print('Snap image (phase).\n')
+                    device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                    set_device_state(device_cfg.mmcore, 'phase')
+                    device_cfg.auto_acq_save(image_dir, name=file_name, exposure=EXPOSURE_PHASE)
+                    print('Snap image (green).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
+                    set_device_state(device_cfg.mmcore, 'fluorescent')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             exposure=get_exposure(light_path_state, device_cfg))
+                else:
+                    print('Snap image (red).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
+                    device_cfg.check_auto_focus(0.1)
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             exposure=get_exposure(light_path_state, device_cfg))
+                # Second Channel
+                if light_path_state == 'green':
+                    light_path_state = 'red'
+                    set_device_state(device_cfg.mmcore, 'g2r')
+                    device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
+                    time.sleep(0.1)
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             exposure=get_exposure(light_path_state, device_cfg))
+                    print(f'Snap image (red).\n')
+                else:
+                    light_path_state = 'green'
+                    set_device_state(device_cfg.mmcore, 'r2g')
+                    device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
+                    time.sleep(0.1)  # 1.5 is ok
+                    print('Snap image (phase).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                    set_device_state(device_cfg.mmcore, 'phase')
+                    device_cfg.auto_acq_save(image_dir, name=file_name, exposure=EXPOSURE_PHASE)
+                    print('Snap image (green).\n')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
+                    set_device_state(device_cfg.mmcore, 'fluorescent')
+                    device_cfg.auto_acq_save(image_dir, name=file_name,
+                                             exposure=get_exposure(light_path_state, device_cfg))
+        else:
+            # ========start phase 100X acq loop=================#
+            if light_path_state == 'green':
+                pass
+            else:
+                light_path_state = 'green'
+                set_device_state(device_cfg.mmcore, 'r2g')
+                set_device_state(device_cfg.mmcore, 'phase')
+                device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
+
+            set_device_state(device_cfg.mmcore, 'phase')
+            for fov_index, fov in enumerate(fovs):
+                device_cfg.move_xyz_pfs(fov, step=6)
+                device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')

@@ -19,7 +19,7 @@ import time
 import numpy as np
 from device.prior_device import PriorScan
 from typing import Optional
-
+from device.arduino import ARDUINO
 colors = colors()
 
 # global core
@@ -87,6 +87,23 @@ class MicroscopeParas:
             self.XY_DEVICE = 'prior_xy'
             self.mmcore = mmcore
             self.prior_core = None  # type: Optional[PriorScan]
+        elif self.MICROSCOPE == 'TiE_prior_arduino':
+            self.SHUTTER_LAMP = 'Arduino'
+            self.INIT_LAMP = 'DiaLamp'
+            self.FILTER_TURRET = 'FilterBlock1'
+            self.FLU_EXCITE = 'XCite-Exacte'
+            self.GREEN_EXCITE = 8
+            self.RED_EXCITE = 25  # 50 for 100X cfg, 100 for 60X cfg
+            self.EXPOSURE_GREEN = 25  # 50 ms TiE2
+            self.EXPOSURE_PHASE = 30  # 30 ms for 60X
+            self.EXPOSURE_RED = 25  # ms
+            self.AUTOFOCUS_DEVICE = 'PFSStatus'
+            self.AUTOFOCUS_OFFSET = 'PFSOffset'
+            self.Z_DEVICE = 'ZDrive'
+            self.XY_DEVICE = 'prior_xy'
+            self.mmcore = mmcore
+            self.prior_core = None  # type: Optional[PriorScan]
+            self.arduino_core = None  # type: Optional[ARDUINO]
         elif self.MICROSCOPE == 'TiE_prior_DNA_replicate':
             self.SHUTTER_LAMP = 'Arduino-Shutter'
             self.INIT_LAMP = 'DiaLamp'
@@ -222,6 +239,9 @@ class MicroscopeParas:
 
             self.move_xyz_pfs = move_xyz_pfs
 
+        if self.SHUTTER_LAMP == 'Arduino':
+            self.arduino_core = ARDUINO()
+
     def get_position_dict(self, device: Optional[str] = None) -> dict:
         """
         get current position
@@ -350,6 +370,42 @@ class MicroscopeParas:
                 self.prior_core.set_filter_position(3)
                 mm.waiting_device()
                 self.prior_core.waiting_device()
+
+        elif self.MICROSCOPE == 'TiE_prior_arduino':
+            if shift_type == 'init_phase':
+                if self.CAM_ROI is not None:
+                    self.set_ROI(self.CAM_ROI)
+                self.arduino_core.trigger_pattern = 32
+                self.arduino_core.start_blanking_mode()
+                core_mmc.set_property(self.INIT_LAMP, 'State', 1)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)
+                self.prior_core.set_shutter_state(1)
+                self.prior_core.set_filter_position(3)
+                mm.waiting_device()
+                self.prior_core.waiting_device()
+
+            if shift_type == "g2r":
+                self.arduino_core.trigger_pattern = 16
+                core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity', self.RED_EXCITE)  # set xcite lamp intensity 50
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 3 pos
+                self.prior_core.set_filter_position(4)
+                mm.waiting_device()
+                self.prior_core.waiting_device()
+
+            if shift_type == "r2g":
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 2 pos
+                core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity',
+                                      self.GREEN_EXCITE)  # set xcite lamp intensity 2
+                self.prior_core.set_filter_position(3)
+                mm.waiting_device()
+                self.prior_core.waiting_device()
+
+            if shift_type == 'phase':
+                self.arduino_core.trigger_pattern = 32
+            if shift_type == 'fluorescent':
+                self.arduino_core.trigger_pattern = 16
+
+
         elif self.MICROSCOPE == 'Ti2E_LDJ':
             if shift_type == 'init_phase':
                 if self.CAM_ROI is not None:

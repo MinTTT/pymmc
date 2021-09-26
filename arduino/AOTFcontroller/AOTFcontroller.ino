@@ -172,8 +172,10 @@ void loop()
         currentPattern_ = Serial.read();
         // Do not set bits 6 and 7 (not sure if this is needed..)
         currentPattern_ = currentPattern_ & B00111111;
-        if (!blanking_)
-          PORTB = currentPattern_;
+        if (!blanking_){
+        PORTB = currentPattern_;
+        }
+
         Serial.write(byte(1));
       }
       break;
@@ -328,6 +330,7 @@ void loop()
     // Blanks output based on TTL input
     case 20:
       blanking_ = true;
+      PORTB = B00000000;
       Serial.write(byte(20));
       break;
 
@@ -406,7 +409,7 @@ void loop()
   }
 
   // In trigger mode, we will blank even if blanking is not on..
-  if (triggerMode_)
+  if (triggerMode_ && !blanking_)
   {
     boolean tmp = PIND & inPinBit_;
     // triggerState_ indicates whether the blank port have a high state when start trigger mode.
