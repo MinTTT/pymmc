@@ -1,10 +1,6 @@
 import serial
 import struct
-from typing import Union
-COM_PORT = 'com7'
-
-
-
+from typing import Union, Optional
 # values = (8,)
 # # values = (2,)
 # data = struct.pack('!{0}B'.format(len(values)), *values)
@@ -22,7 +18,7 @@ class ARDUINO:
         self.time_out = time_out
         self._trigger_pattern = None
         self.ret = None
-        self._series = None  # type: serial.Serial
+        self._series = None  # type: Optional[serial.Serial]
 
         self.connect()
 

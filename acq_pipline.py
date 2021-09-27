@@ -70,5 +70,26 @@ val_contr.valve_on()  # open valve
 #     vedio[:, ...] = np.reshape(tagged_image.pix, [tagged_image.tags["Height"], tagged_image.tags["Width"]])
 #     tags[i] = tagged_image.tags
 
+#%%
+import time
+mm = acq_loop.device_cfg.mmcore
+mm.clear_circular_buffer()
 
-
+acq_loop.device_cfg.arduino_core.trigger_pattern = 48
+acq_loop.device_cfg.arduino_core.start_blanking_mode()
+if mm.is_sequence_running():
+    mm.stop_sequence_acquisition()
+mm.start_continuous_sequence_acquisition(0)
+for i in range(1000):
+    t1 = time.time()
+    im_num = mm.get_remaining_image_count()
+    t2 = time.time()
+    acq_loop.device_cfg.arduino_core.cmd((3, 1, 1, 0))
+    t3 = time.time()
+    print(t3-t2)
+    while mm.get_remaining_image_count() - im_num == 0:
+        pass
+    im_num += 1
+    print(im_num)
+mm.clear_circular_buffer()
+mm.stop_sequence_acquisition()
