@@ -14,12 +14,14 @@
 # import numpy as np  # Or any other
 # # […]
 import pymm as mm
+from pymm import save_image
 from pymm_uitls import colors
 import time
 import numpy as np
 from device.prior_device import PriorScan
 from typing import Optional
 from device.arduino import ARDUINO
+import _thread as thread
 colors = colors()
 
 # global core
@@ -242,6 +244,9 @@ class MicroscopeParas:
         if self.SHUTTER_LAMP == 'Arduino':
             self.arduino_core = ARDUINO()
 
+        if self.MICROSCOPE in ['TiE_prior_arduino']:
+            self.auto_acq_save = self.auto_acq_save_external
+
     def get_position_dict(self, device: Optional[str] = None) -> dict:
         """
         get current position
@@ -301,6 +306,22 @@ class MicroscopeParas:
                 self.mmcore.enable_continuous_focus(True)
                 time.sleep(lag)
         return None
+
+    def auto_acq_save_external(self, im_dir: str, name: str, exposure: float):
+        if not mmcore.is_sequence_running():
+            mmcore.start_continuous_sequence_acquisition(100000)
+        if exposure:
+            mmcore.set_exposure(exposure)
+        # check circular buffer
+        im_number = mmcore.get_remaining_image_count()
+        # trigger
+        self.arduino_core.cmd((3, 1, 0, 0))
+        while im_number - mmcore.get_remaining_image_count() == 0:
+            pass
+        tagged_image = mmcore.pop_next_tagged_image()
+        im = np.reshape(tagged_image.pix,
+                        newshape=[tagged_image.tags["Height"], tagged_image.tags["Width"]])
+        thread.start_new_thread(save_image, (im, im_dir, name, tagged_image.tags))
 
     def set_device_state(self, core_mmc=None, shift_type=None):
         """

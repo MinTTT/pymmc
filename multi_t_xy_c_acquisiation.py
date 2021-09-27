@@ -123,11 +123,10 @@ class PymmAcq:
         return None
 
     def multi_acq_3c_sync_light(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
-                     time_duration: list = None):
+                                time_duration: list = None):
         thread.start_new_thread(multi_acq_3c_sync_light,
                                 (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
         return None
-
 
     def multi_acq_4c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):
         thread.start_new_thread(multi_acq_4c,
@@ -416,10 +415,9 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
     return None
 
 
-
 def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_step: int,
-                 time_duration: list,
-                 thread_flag=False) -> None:
+                            time_duration: list,
+                            thread_flag=False) -> None:
     '''
     :param dir: image save dir, str
     :param pos_ps: position file, str
@@ -562,6 +560,7 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
                 return None
         loop_index += 1
         # ======================waiting cycle=========
+    device_cfg.mmcore.stop_sequence_acquisition(device_cfg.mmcore.get_camera_device())
 
     print('finished all loops!')
     return None
