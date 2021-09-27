@@ -165,17 +165,15 @@ void loop()
     switch (inByte)
     {
 
-    // Set digital output
+    // Set digital output, if blanking mode is off, PORTB will out put digital pattern directly.
     case 1:
       if (waitForSerial(timeOut_))
       {
         currentPattern_ = Serial.read();
         // Do not set bits 6 and 7 (not sure if this is needed..)
         currentPattern_ = currentPattern_ & B00111111;
-        if (!blanking_){
-        PORTB = currentPattern_;
-        }
-
+        if (!blanking_)
+          PORTB = currentPattern_;
         Serial.write(byte(1));
       }
       break;
