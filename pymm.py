@@ -91,13 +91,6 @@ def auto_acq_save(im_dir: str, name: str, exposure: float, shutter=None) -> None
     thread.start_new_thread(save_image, (im, im_dir, name, meta))
     return None
 
-def snap_image_trigger(trigger):
-    if not core.is_sequence_running():
-        core.prepare_sequence_acquisition(core.get_camera_device())
-        core.start_continuous_sequence_acquisition(0)
-    # w
-
-
 
 def active_auto_shutter(shutter):
     """
