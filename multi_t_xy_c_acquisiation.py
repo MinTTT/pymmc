@@ -416,7 +416,6 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
     return None
 
 
-
 def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_step: int,
                  time_duration: list,
                  thread_flag=False) -> None:
@@ -469,7 +468,7 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
         if if_acq(loop_index, flu_step) == 0:
             for fov_index, fov in enumerate(fovs):
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
-                file_name = f't{get_filenameindex(image_dir)}'
+                file_name = f't{get_filenameindex(image_dir)}'  # generate growth rate
                 device_cfg.move_xyz_pfs(fov, step=6)  # move stage xy.
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 time.sleep(0.1)

@@ -14,6 +14,7 @@
 # import numpy as np  # Or any other
 # # […]
 import pymm as mm
+from pymm import save_image
 from pymm_uitls import colors
 import time
 import numpy as np
@@ -241,6 +242,25 @@ class MicroscopeParas:
 
         if self.SHUTTER_LAMP == 'Arduino':
             self.arduino_core = ARDUINO()
+
+        if self.MICROSCOPE in ['TiE_prior_arduino']:
+
+            def save_and_acq(im_dir: str, name: str, exposure: float, shutter=None):
+                """
+                auto acquisition image and save.
+
+                :param im_dir: str, path
+                :param name: str, image name
+                :param exposure: float, set exposure time
+                :param shutter: None or str, if None, microscope use current shutter
+                :return: None
+                """
+                if shutter is not None:
+                    active_auto_shutter(shutter)
+                im, meta = snap_image(exposure=exposure)
+                thread.start_new_thread(save_image, (im, im_dir, name, meta))
+                return None
+
 
     def get_position_dict(self, device: Optional[str] = None) -> dict:
         """
