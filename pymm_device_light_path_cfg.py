@@ -22,10 +22,13 @@ from device.prior_device import PriorScan
 from typing import Optional
 from device.arduino import ARDUINO
 import _thread as thread
+
 colors = colors()
 
 # global core
 mmcore = mm.core
+
+thread_lock = thread.allocate_lock()
 
 
 # Own modules
@@ -206,7 +209,6 @@ class MicroscopeParas:
         self.set_ROI = mm.mm_set_camer_roi
 
         if self.XY_DEVICE == 'prior_xy':
-
             self.prior_core = PriorScan()
 
             def move_xyz_pfs(fov, turnoffz=True, step=6, fov_len=133.3, core=self.mmcore):
@@ -316,13 +318,19 @@ class MicroscopeParas:
         im_number = mmcore.get_remaining_image_count()
         # trigger
         self.arduino_core.cmd((3, 1, 0, 0))
-        while im_number - mmcore.get_remaining_image_count() == 0:
+        while im_number - self.mmcore.get_remaining_image_count() == 0:
             # waiting the image transfer to buffer
             pass
-        tagged_image = mmcore.pop_next_tagged_image()
+        thread.start_new_thread(self.grab_img_save, (im_dir, name))
+
+    def grab_img_save(self, im_dir, name):
+        thread_lock.acquire()
+        tagged_image = self.mmcore.pop_next_tagged_image()
+        thread_lock.release()
         im = np.reshape(tagged_image.pix,
                         newshape=[tagged_image.tags["Height"], tagged_image.tags["Width"]])
-        thread.start_new_thread(save_image, (im, im_dir, name, tagged_image.tags))
+        save_image(im, im_dir, name, tagged_image.tags)
+        return None
 
     def set_device_state(self, core_mmc=None, shift_type=None):
         """
@@ -330,7 +338,6 @@ class MicroscopeParas:
         For Ti2E, two devices shall be changed their states. 1. FilterTurret, filter states
         :param core_mmc: mmcore
         :param shift_type: str, 'g2r' or 'r2g' set light path flag
-        :param micro_device: str, which device? 'Ti2E' or 'Ti2E_H'.
         :return: None
         """
         if core_mmc == None:
@@ -426,7 +433,6 @@ class MicroscopeParas:
                 self.arduino_core.trigger_pattern = 32
             if shift_type == 'fluorescent':
                 self.arduino_core.trigger_pattern = 16
-
 
         elif self.MICROSCOPE == 'Ti2E_LDJ':
             if shift_type == 'init_phase':
