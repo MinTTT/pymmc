@@ -21,14 +21,14 @@ import numpy as np
 from device.prior_device import PriorScan
 from typing import Optional
 from device.arduino import ARDUINO
-import _thread as thread
+import threading as thread
 
 colors = colors()
 
 # global core
 mmcore = mm.core
 
-thread_lock = thread.allocate_lock()
+thread_lock = thread.Lock
 
 
 # Own modules
@@ -310,18 +310,18 @@ class MicroscopeParas:
         return None
 
     def auto_acq_save_external(self, im_dir: str, name: str, exposure: float):
-        if not mmcore.is_sequence_running():
-            mmcore.start_continuous_sequence_acquisition(100000)
+        if not self.mmcore.is_sequence_running():
+            self.mmcore.start_continuous_sequence_acquisition(100000)
         if exposure:
-            mmcore.set_exposure(exposure)
+            self.mmcore.set_exposure(exposure)
         # check circular buffer
-        im_number = mmcore.get_remaining_image_count()
+        im_number = self.mmcore.get_remaining_image_count()
         # trigger
         self.arduino_core.cmd((3, 1, 0, 0))
         while im_number - self.mmcore.get_remaining_image_count() == 0:
             # waiting the image transfer to buffer
             pass
-        thread.start_new_thread(self.grab_img_save, (im_dir, name))
+        thread.Thread(target=self.grab_img_save, args=(im_dir, name)).start()
 
     def grab_img_save(self, im_dir, name):
         thread_lock.acquire()
@@ -540,3 +540,48 @@ if __name__ == 'main':
     # %%
     dev = MicroscopeParas('TiE')
     dev.auto_focus()
+
+    import time
+    import threading as thread
+
+    class ImageGrabber:
+        def __init__(self, core=None):
+            self.core = core
+            self.image_names = []
+            self.sequence_state = True
+            self.thread_image_auto_save = thread.Thread(target=self.auto_save)
+            self.init_process()
+            self.thread_image_auto_save.start()
+
+        def append(self, file_name):
+            self.image_names.append(file_name)
+
+        def auto_save(self):
+            while self.sequence_state:
+                if self.image_names:
+                    time.sleep(0.5)
+                    print(self.image_names.pop(0))
+            raise IOError('Sequencing acquisition does not start.')
+
+        def init_process(self):
+            # start acq loop
+            self.core.prepare_sequence_acquisition(self.device_cfg.mmcore.get_camera_device())
+            self.core.start_continuous_sequence_acquisition(0)
+            if self.core.is_sequence_running():
+                self.sequence_state = True
+            else:
+                self.sequence_state = False
+
+
+
+    test = ImageGrabber()
+
+    import numpy as np
+
+    vars = ['a', 'b', 'c']
+
+    for var in vars:
+        globals()[var] = 1
+    print(f'a is b: {a is b}')
+    print(f'b is c: {b is c}')
+    print(f'a is c: {a is c}')
