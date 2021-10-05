@@ -110,7 +110,7 @@ class MicroscopeParas:
             self.prior_core = None  # type: Optional[PriorScan]
             self.arduino_core = None  # type: Optional[ARDUINO]
         elif self.MICROSCOPE == 'TiE_prior_DNA_replicate':
-            self.SHUTTER_LAMP = 'Arduino-Shutter'
+            self.SHUTTER_LAMP = 'Arduino'
             self.INIT_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'XCite-Exacte'
             self.FILTER_TURRET = 'FilterBlock1'
@@ -246,8 +246,9 @@ class MicroscopeParas:
         if self.SHUTTER_LAMP == 'Arduino':
             self.arduino_core = ARDUINO()
 
-        if self.MICROSCOPE in ['TiE_prior_arduino']:
-            self.auto_acq_save = self.auto_acq_save_external
+        if self.MICROSCOPE in ['TiE_prior_arduino', 'TiE_prior_DNA_replicate']:
+            self.image_grabber = mm.ImageGrabber(self.mmcore)
+            self.auto_acq_save = self.image_grabber.auto_acq_save
 
     def get_position_dict(self, device: Optional[str] = None) -> dict:
         """
@@ -525,15 +526,22 @@ class MicroscopeParas:
             if shift_type == 'init_phase':
                 if self.CAM_ROI is not None:
                     self.set_ROI(self.CAM_ROI)
+                self.arduino_core.trigger_pattern = 32
+                self.arduino_core.start_blanking_mode()
                 core_mmc.set_property(self.INIT_LAMP, 'State', 1)
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 4)
                 self.prior_core.set_shutter_state(1)
-                self.prior_core.set_filter_position(1)
+                self.prior_core.set_filter_position(3)
                 mm.waiting_device()
                 self.prior_core.waiting_device()
                 core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity',
                                       self.YELLOW_EXCITE)  # set xcite lamp intensity 50
+            if shift_type == 'phase':
+                self.arduino_core.trigger_pattern = 32
+            if shift_type == 'fluorescent':
+                self.arduino_core.trigger_pattern = 16
         return None
+
 
 
 if __name__ == 'main':
@@ -544,44 +552,5 @@ if __name__ == 'main':
     import time
     import threading as thread
 
-    class ImageGrabber:
-        def __init__(self, core=None):
-            self.core = core
-            self.image_names = []
-            self.sequence_state = True
-            self.thread_image_auto_save = thread.Thread(target=self.auto_save)
-            self.init_process()
-            self.thread_image_auto_save.start()
-
-        def append(self, file_name):
-            self.image_names.append(file_name)
-
-        def auto_save(self):
-            while self.sequence_state:
-                if self.image_names:
-                    time.sleep(0.5)
-                    print(self.image_names.pop(0))
-            raise IOError('Sequencing acquisition does not start.')
-
-        def init_process(self):
-            # start acq loop
-            self.core.prepare_sequence_acquisition(self.device_cfg.mmcore.get_camera_device())
-            self.core.start_continuous_sequence_acquisition(0)
-            if self.core.is_sequence_running():
-                self.sequence_state = True
-            else:
-                self.sequence_state = False
 
 
-
-    test = ImageGrabber()
-
-    import numpy as np
-
-    vars = ['a', 'b', 'c']
-
-    for var in vars:
-        globals()[var] = 1
-    print(f'a is b: {a is b}')
-    print(f'b is c: {b is c}')
-    print(f'a is c: {a is c}')

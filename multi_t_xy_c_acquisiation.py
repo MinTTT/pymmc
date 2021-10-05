@@ -13,7 +13,7 @@ import threading
 import numpy as np
 import tifffile as tiff
 from tqdm import tqdm
-
+from functools import partial
 bcolors = colors()
 
 saving_lock = thread.allocate_lock()
@@ -457,7 +457,8 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
     light_path_state = 'green'
     set_device_state(device_cfg.mmcore, 'init_phase')
     set_device_state(device_cfg.mmcore, 'r2g')
-    time.sleep(2.5)
+    device_cfg.image_grabber.init_process()
+    time.sleep(1.0)
     # TODO：I found the python console initialized and performed this code block first time,
     #  the Ti2E_H has no fluorescent emission light.
     print(f'{colors.OKGREEN}Start ACQ Loop.{colors.ENDC}')
@@ -477,18 +478,21 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
                     device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     set_device_state(device_cfg.mmcore, 'phase')
-                    device_cfg.auto_acq_save(image_dir, name=file_name, exposure=EXPOSURE_PHASE)
+                    device_cfg.auto_acq_save(image_dir, name=file_name, exposure=EXPOSURE_PHASE,
+                                             shutter=device_cfg.arduino_core.cmd)
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     set_device_state(device_cfg.mmcore, 'fluorescent')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                             exposure=get_exposure(light_path_state, device_cfg))
+                                             exposure=get_exposure(light_path_state, device_cfg),
+                                             shutter=device_cfg.arduino_core.cmd)
                 else:
                     print('Snap image (red).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.check_auto_focus(0.1)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                             exposure=get_exposure(light_path_state, device_cfg))
+                                             exposure=get_exposure(light_path_state, device_cfg),
+                                             shutter=device_cfg.arduino_core.cmd)
                 # Second Channel
                 if light_path_state == 'green':
                     light_path_state = 'red'
@@ -497,7 +501,8 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
                     time.sleep(0.1)
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                             exposure=get_exposure(light_path_state, device_cfg))
+                                             exposure=get_exposure(light_path_state, device_cfg),
+                                             shutter=device_cfg.arduino_core.cmd)
                     print(f'Snap image (red).\n')
                 else:
                     light_path_state = 'green'
@@ -507,12 +512,14 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
                     print('Snap image (phase).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     set_device_state(device_cfg.mmcore, 'phase')
-                    device_cfg.auto_acq_save(image_dir, name=file_name, exposure=EXPOSURE_PHASE)
+                    device_cfg.auto_acq_save(image_dir, name=file_name, exposure=EXPOSURE_PHASE,
+                                             shutter=device_cfg.arduino_core.cmd)
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     set_device_state(device_cfg.mmcore, 'fluorescent')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
-                                             exposure=get_exposure(light_path_state, device_cfg))
+                                             exposure=get_exposure(light_path_state, device_cfg),
+                                             shutter=device_cfg.arduino_core.cmd)
         else:
             # ========start phase 100X acq loop=================#
             if light_path_state == 'green':
@@ -533,7 +540,8 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
                 print('Snap image (phase).\n')
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 device_cfg.auto_acq_save(image_dir, name=file_name,
-                                         exposure=EXPOSURE_PHASE)
+                                         exposure=EXPOSURE_PHASE,
+                                         shutter=device_cfg.arduino_core.cmd)
 
         # ======================waiting cycle=========
 
@@ -758,6 +766,7 @@ def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
     # device_cfg.set_light_path('BF', '100X')
     light_path_state = 'yellow'
     set_device_state(device_cfg.mmcore, 'init_phase')
+    device_cfg.image_grabber.init_process()
     time.sleep(2.5)
     # TODO：I found the python console initialized and performed this code block first time,
     #  the Ti2E_H has no fluorescent emission light.
@@ -774,16 +783,18 @@ def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 # time.sleep(0.5)
                 # First Channel
                 print('Snap image (yellow).\n')
+                set_device_state(device_cfg.mmcore, 'fluorescent')
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                 device_cfg.auto_acq_save(image_dir, name=file_name,
-                                         shutter=device_cfg.SHUTTER_LED,
+                                         shutter=device_cfg.arduino_core.cmd,
                                          exposure=EXPOSURE_YELLOW)
 
                 print('Snap image (phase).\n')
+                set_device_state(device_cfg.mmcore, 'phase')
                 device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 device_cfg.auto_acq_save(image_dir, name=file_name,
-                                         shutter=device_cfg.SHUTTER_LAMP, exposure=EXPOSURE_PHASE)
+                                         shutter=device_cfg.arduino_core.cmd, exposure=EXPOSURE_PHASE)
 
         else:
             # ========start phase 100X acq loop=================#
@@ -794,11 +805,13 @@ def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 device_cfg.move_xyz_pfs(fov, step=6)
                 device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
+                set_device_state(device_cfg.mmcore, 'phase')
                 file_name = f't{get_filenameindex(image_dir)}'
                 print(f'''go to next xy[{fov_index + 1}/{len(fovs)}].\n''')
                 print('Snap image (phase).\n')
                 device_cfg.auto_acq_save(image_dir, name=file_name,
-                                         exposure=EXPOSURE_PHASE)
+                                         exposure=EXPOSURE_PHASE,
+                                         shutter=device_cfg.arduino_core.cmd)
 
         # ======================waiting cycle=========
 

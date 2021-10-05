@@ -1,15 +1,16 @@
 # %%
 
 import os
+import sys
 import time
 
 import numpy as np
 # from pycromanager import Acquisition, multi_d_acquisition_events
 import tifffile as tiff
-import _thread as thread
+import threading as thread
 
 from pycromanager import Bridge
-
+thread_lock = thread.Lock()
 bridge = Bridge()
 global core
 core = bridge.get_core()
@@ -35,7 +36,12 @@ def mm_set_camer_roi(roi: list, camera: int = 0) -> None:
     :return: None
     """
     if camera == 0:
-        core.set_roi(*roi)
+        if core.is_sequence_running():
+            core.stop_sequence_acquisition()
+            core.set_roi(*roi)
+            core.start_continuous_sequence_acquisition(0)
+        else:
+            core.set_roi(*roi)
     return None
 
 
@@ -55,7 +61,7 @@ def snap_image(**kwargs):
     return im, tagged_image.tags
 
 
-def save_image(im, im_dir, name, meta):
+def save_image(im, im_dir=None, name=None, meta=None):
     """
     save image acquired to defined dir.
     :param im: ndarray
@@ -64,11 +70,15 @@ def save_image(im, im_dir, name, meta):
     :param name: str, image name
     :return: NULL
     """
+    if im_dir:
+        save_im_dir = os.path.join(im_dir, f'{name}.tiff')
+    else:
+        im_dir = os.path.dirname(name)
+        save_im_dir = name
     try:
         os.makedirs(im_dir)
     except FileExistsError:
         pass
-    save_im_dir = os.path.join(im_dir, f'{name}.tiff')
     meta['time'] = get_current_time()
     meta['axes'] = 'YX'
     tiff.imwrite(file=save_im_dir, data=im, metadata=meta)
@@ -88,7 +98,8 @@ def auto_acq_save(im_dir: str, name: str, exposure: float, shutter=None) -> None
     if shutter is not None:
         active_auto_shutter(shutter)
     im, meta = snap_image(exposure=exposure)
-    thread.start_new_thread(save_image, (im, im_dir, name, meta))
+    # thread.start_new_thread(save_image, ())
+    thread.Thread(target=save_image, args=(im, im_dir, name, meta)).start()
     return None
 
 
@@ -182,6 +193,53 @@ def autofocus():
     waiting_autofocus()
     return None
 
+
+class ImageGrabber:
+    def __init__(self, core=core):
+        self.core = core
+        self.image_names = []
+        self.sequence_state = False
+        self.thread_image_auto_save = None
+
+    def append(self, file_name):
+        self.image_names.append(file_name)
+
+    # def create_thread_and_start(self):
+    #     self.thread_image_auto_save = thread.Thread(target=self.save_from_buffer)
+    #     self.thread_image_auto_save.start()
+
+    def save_from_buffer(self, img_bum_in_buffer=0):
+        while self.sequence_state:
+            if self.image_names and self.core.get_remaining_image_count() > img_bum_in_buffer:
+                tagged_image = self.core.pop_next_tagged_image()
+                im = np.reshape(tagged_image.pix,
+                                newshape=[tagged_image.tags["Height"], tagged_image.tags["Width"]])
+                img_name = self.image_names.pop(0)
+                self.thread_image_auto_save = thread.Thread(target=save_image, kwargs=dict(im=im, name=img_name, meta=tagged_image.tags))
+                self.thread_image_auto_save.start()
+                return None
+        raise IOError('Sequencing acquisition does not start.')
+
+    def auto_acq_save(self, im_dir: str, name: str, exposure: float = None, shutter: object = None):
+        self.append(f'{os.path.join(im_dir, name)}.tiff')
+        if exposure:
+            self.core.set_exposure = exposure
+        img_bum_in_buffer = self.core.get_remaining_image_count()
+        if not self.core.is_sequence_running():
+            self.init_process()
+        shutter((3, 1, 0, 0))
+        self.save_from_buffer(img_bum_in_buffer)
+        return None
+
+    def init_process(self):
+        # start acq loop
+        if not self.core.is_sequence_running():
+            self.core.prepare_sequence_acquisition(self.core.get_camera_device())
+            self.core.start_continuous_sequence_acquisition(0)
+        if self.core.is_sequence_running():
+            self.sequence_state = True
+        else:
+            self.sequence_state = False
 
 # # %%
 # EXPOSURE_GREEN = 50  # ms
