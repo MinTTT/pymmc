@@ -116,7 +116,7 @@ class MicroscopeParas:
             self.FILTER_TURRET = 'FilterBlock1'
             self.FLU_EXCITE = 'XCite-Exacte'
             self.YELLOW_EXCITE = 50
-            self.EXPOSURE_YELLOW = 100
+            self.EXPOSURE_YELLOW = 110
             self.EXPOSURE_PHASE = 30  # 30 ms for 60X
             self.AUTOFOCUS_DEVICE = 'PFSStatus'
             self.AUTOFOCUS_OFFSET = 'PFSOffset'

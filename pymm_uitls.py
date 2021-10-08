@@ -8,6 +8,10 @@ import os
 import time
 import json
 from joblib import dump, load
+from threading import Lock
+
+thread_lock = Lock()
+
 
 # Own modules
 class colors:
@@ -86,8 +90,6 @@ class NDRecorder:
         self.__dict__.update(data_dic)
 
 
-
-
 # ndr = NDRecorder(list(range(4)))
 # for i in ndr:
 #     print(i)
@@ -106,9 +108,6 @@ def get_filenameindex(fold_name):
     return max(tiff_file) + 1
 
 
-
-
-
 def countdown(t, step=1, trigger=[False], msg='sleeping'):
     """
     a countdown timer print waiting time in second.
@@ -124,7 +123,9 @@ def countdown(t, step=1, trigger=[False], msg='sleeping'):
     _current_time = time.time()
     while time.time() - _current_time < t:
         mins, secs = divmod(t + _current_time - time.time(), 60)
+        thread_lock.acquire()
         print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
+        thread_lock.release()
         time.sleep(step)
         if trigger[0]:
             print(CGRE + 'Stop Acq.' + CEND)

@@ -223,7 +223,7 @@ class ImageGrabber:
     def auto_acq_save(self, im_dir: str, name: str, exposure: float = None, shutter: object = None):
         self.append(f'{os.path.join(im_dir, name)}.tiff')
         if exposure:
-            self.core.set_exposure = exposure
+            self.core.set_exposure(exposure)
         img_bum_in_buffer = self.core.get_remaining_image_count()
         if not self.core.is_sequence_running():
             self.init_process()

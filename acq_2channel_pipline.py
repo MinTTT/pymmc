@@ -15,11 +15,11 @@ DIR = r'G:\CP_ZJW\pymmc\cfg_folder\test'
 POSITION_FILE = None
 acq_loop = PymmAcq(device=MICROSCOPE)
 device_cfg = acq_loop.device_cfg
-device_cfg.set_device_state(shift_type='init_phase')
+
 # device_cfg.set_ROI([0, 710, 2048, 1024])
 # device_cfg.set_ROI([0, 0, 2048, 2048])
 device_cfg.set_ROI([0, 812, 2048, 820])
-
+device_cfg.set_device_state(shift_type='init_phase')
 # device_cfg.prior_core.set_filter_speed_acc(100, 100, 1)
 
 
