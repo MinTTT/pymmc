@@ -35,7 +35,7 @@ acq_loop.open_NDUI()
 device_cfg.set_light_path('BF', '60X_External')
 
 # time_step = [0, 3, 30]  # [hr, min, s] in fast growth rate
-time_step = [0, 20, 0]  # [hr, min, s] in slow growth rate
+time_step = [0, 3, 30]  # [hr, min, s] in slow growth rate
 flu_step = 6  # very 6 phase loops acq if 0, don't acq a flu channel
 time_duration = [72, 0, 0]
 
@@ -49,59 +49,5 @@ val_contr = ValveController(port='com9')
 # val_contr.valve_off()
 # if want control valve
 
-# val_contr.valve_off()  # close valve
-val_contr.valve_on([2, 30, 0])  # open valve
-
-# %%
-# import time
-# _current_t = time.time()
-#
-# while time.time() - _current_t < 10:
-#     print(device_cfg.prior_core.device_busy())
-
-# tags = [None] * len(vedio)
-#
-#
-# def parall_output(i):
-#     tagged_image = device_cfg.mmcore.pop_next_tagged_image()
-#     vedio[:, ...] = np.reshape(tagged_image.pix, [tagged_image.tags["Height"], tagged_image.tags["Width"]])
-#     tags[i] = tagged_image.tags
-#
-#
-# _ = Parallel(n_jobs=1, require='sharedmem')(delayed(parall_output)(i) for i in tqdm(range(len(vedio))))
-
-# for i in tqdm(range(len(vedio))):
-#     tagged_image = device_cfg.mmcore.pop_next_tagged_image()
-#     vedio[:, ...] = np.reshape(tagged_image.pix, [tagged_image.tags["Height"], tagged_image.tags["Width"]])
-#     tags[i] = tagged_image.tags
-
-# %%
-import time
-
-mm = acq_loop.device_cfg.mmcore
-# mm.clear_circular_buffer()
-
-acq_loop.device_cfg.arduino_core.trigger_pattern = 32
-acq_loop.device_cfg.arduino_core.start_blanking_mode()
-
-if not mm.is_sequence_running():
-    mm.start_continuous_sequence_acquisition(100000)
-# mm.prepare_sequence_acquisition(mm.get_camera_device())
-# mm.start_continuous_sequence_acquisition(0)
-exp = 11.
-img_buffer = []
-for i in range(100):
-    t1 = time.time()
-    im_num = mm.get_remaining_image_count()
-    t2 = time.time()
-    acq_loop.device_cfg.arduino_core.cmd((3, 1, 0, 0))
-    while mm.get_remaining_image_count() - im_num == 0:
-        pass
-    img_buffer.append(mm.pop_next_image())
-    exp += 1
-    mm.set_exposure(exp)
-    t3 = time.time()
-    print(t3 - t1)
-    print(mm.get_remaining_image_count())
-
-mm.stop_sequence_acquisition(mm.get_camera_device())
+val_contr.valve_off([0, 10, 0])  # close valve
+# val_contr.valve_on([2, 30, 0])  # open valve
