@@ -5,7 +5,7 @@ import pymm_device_light_path_cfg as pymm_cfg
 import os
 import sys
 from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse_position, NDRecorder
-import _thread as thread
+import threading as thread
 from typing import Optional
 from PySide6.QtWidgets import QApplication
 from pymmc_UI.ND_pad_main_py import NDRecorderUI
@@ -16,18 +16,19 @@ from tqdm import tqdm
 from functools import partial
 bcolors = colors()
 
-saving_lock = thread.allocate_lock()
+saving_lock = thread.Lock()
 
 
 # studio = mm.studio
 
-def save_tyx(image_ps, image, meta={}):
-    meta.update({'axes': 'TYX'})
+def save_tyx(image_ps, image, ijmeta={}):
+    ijmeta.update({'axes': 'TYX'})
     print(f'[{image_ps}] -> Waiting.')
-    saving_lock.acquire_lock()
+    saving_lock.acquire()
     print(f'[{image_ps}] -> Writing.')
-    tiff.imwrite(file=image_ps, data=image, metadata=meta, imagej=True, returnoffset=True)
-    saving_lock.release_lock()
+    tiff.imwrite(file=image_ps, data=image, imagej=True, metadata=ijmeta)
+    # tiff.imsave(file=image_ps, data=image, imagej=True, metadata={'axes': 'TYX'}.update(ijmeta))
+    saving_lock.release()
     print(f'[{image_ps}] -> Success.')
     return None
 
@@ -39,7 +40,7 @@ class PymmAcq:
         self.stop = [False]
         self.device_cfg = None  # type: pymm_cfg.MicroscopeParas
         self.nd_recorder = NDRecorder()
-
+        self.time_step = None
         self._current_position = None  # type: Optional[int]
         self.initialize_device()
 
@@ -124,8 +125,8 @@ class PymmAcq:
 
     def multi_acq_3c_sync_light(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
                                 time_duration: list = None):
-        thread.start_new_thread(multi_acq_3c_sync_light,
-                                (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
+        thread.Thread(target=multi_acq_3c_sync_light,
+                                      args=(dir, pos_ps, self, time_step, flu_step, time_duration, self.stop)).start()
         return None
 
     def multi_acq_4c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):
@@ -205,8 +206,8 @@ class PymmAcq:
 
         frame_num = int(duration_time / step)
         self.device_cfg.mmcore.set_exposure(step)
-        self.device_cfg.mmcore.set_property(self.device_cfg.mmcore.get_camera_device(), 'FrameRate',
-                                            duration_time / step)
+        self.device_cfg.mmcore.set_property(self.device_cfg.mmcore.get_camera_device(), 'Exposure',
+                                            step)
         width, height = self.device_cfg.mmcore.get_image_width(), self.device_cfg.mmcore.get_image_height()
         depth = self.device_cfg.mmcore.get_image_bit_depth()
         # create
@@ -215,17 +216,19 @@ class PymmAcq:
             self.device_cfg.mmcore.stop_sequence_acquisition()
         print('start acq!')
         self.device_cfg.mmcore.prepare_sequence_acquisition(self.device_cfg.mmcore.get_camera_device())
-        self.device_cfg.mmcore.start_continuous_sequence_acquisition(float(step))
-        time.sleep(2)
-        pbar = tqdm(total=frame_num)
         self.device_cfg.mmcore.clear_circular_buffer()
+        self.device_cfg.mmcore.start_continuous_sequence_acquisition(float(step))
         time_current = time.time()
+        pbar = tqdm(total=frame_num)
+        # self.device_cfg.mmcore.clear_circular_buffer()
+
         im_count = 0
+        self.device_cfg.mmcore.clear_circular_buffer()
 
         while (time.time() - time_current) * 1000 < duration_time:
             _time_cur = time.time()
             while self.device_cfg.mmcore.get_remaining_image_count() == 0:
-                time.sleep(0.001)
+                pass
             if self.device_cfg.mmcore.get_remaining_image_count() > 0:
                 vedio[im_count] = self.device_cfg.mmcore.pop_next_image().reshape(height, width)
                 im_count += 1
@@ -237,15 +240,16 @@ class PymmAcq:
             pbar.update(1)
 
         pbar.close()
-        frame_rate = self.device_cfg.mmcore.get_property(self.device_cfg.mmcore.get_camera_device(),
-                                                         'FrameRate')
-        print(f'Frame Rate: {frame_rate}')
+        # frame_rate = self.device_cfg.mmcore.get_property(self.device_cfg.mmcore.get_camera_device(),
+        #                                                  'Exposure')
+        # print(f'Frame Rate: {frame_rate}')
         print(f'FPS: {im_count / duration_time * 1000}')
         vedio = vedio[:im_count, ...]
         if save_dir is None:
             return vedio
         else:
-            _ = thread.start_new_thread(save_tyx, (save_dir, vedio,), {'FPS': im_count / duration_time * 1000})
+            save_thread = thread.Thread(target=save_tyx, args=(save_dir, vedio, {'info': f'frame rate is {im_count / duration_time * 1000}'}))
+            save_thread.start()
             return None
 
 
@@ -291,7 +295,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
     fovs = device.nd_recorder.positions
 
     # ==========set loop parameters===============
-    time_step = time_step  # [hr, min, s]
+    time_step = device.time_step  # [hr, min, s]
     flu_step = flu_step  # very 4 phase loops acq
     time_duration = time_duration
     loops_num = parse_second(time_duration) // parse_second(time_step)
@@ -390,7 +394,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
         t_of_acq = time.time() - t_init
         waiting_t = parse_second(time_step) - t_of_acq
 
-        if thread_flag != False:
+        if thread_flag[0] != False:
             if thread_flag[0]:
                 print('Acquisition loop finish!')
                 thread_flag[0] = False
@@ -403,7 +407,7 @@ def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
         else:
             print(f'Waiting next loop[{loop_index + 1}].')
             countdown(waiting_t, 1, thread_flag)
-        if thread_flag != False:
+        if thread_flag[0] != False:
             if thread_flag[0]:
                 print('Acquisition loop finish!')
                 thread_flag[0] = False
@@ -442,9 +446,9 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
     fovs = device.nd_recorder.positions
 
     # ==========set loop parameters===============
-    time_step = time_step  # [hr, min, s]
-    flu_step = flu_step  # very 4 phase loops acq
-    time_duration = time_duration
+    # time_step  # [hr, min, s]
+    # flu_step = flu_step  # very 4 phase loops acq
+    # time_duration = time_duration
     loops_num = parse_second(time_duration) // parse_second(time_step)
     print(
         f'''{loops_num} loops will be performed! Lasting {time_duration[0]} hours/hour and {time_duration[0]} min. \n''')

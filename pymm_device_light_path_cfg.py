@@ -405,14 +405,14 @@ class MicroscopeParas:
             if shift_type == 'init_phase':
                 if self.CAM_ROI is not None:
                     self.set_ROI(self.CAM_ROI)
-                self.arduino_core.trigger_pattern = 32
-                self.arduino_core.start_blanking_mode()
                 core_mmc.set_property(self.INIT_LAMP, 'State', 1)
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 5)
                 self.prior_core.set_shutter_state(1)
                 self.prior_core.set_filter_position(3)
                 mm.waiting_device()
                 self.prior_core.waiting_device()
+                self.arduino_core.trigger_pattern = 32
+                self.arduino_core.start_blanking_mode()
 
             if shift_type == "g2r":
                 self.arduino_core.trigger_pattern = 16
