@@ -17,7 +17,7 @@ from functools import partial
 bcolors = colors()
 
 saving_lock = thread.Lock()
-
+import _thread
 
 # studio = mm.studio
 
@@ -125,8 +125,9 @@ class PymmAcq:
 
     def multi_acq_3c_sync_light(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
                                 time_duration: list = None):
-        thread.Thread(target=multi_acq_3c_sync_light,
-                                      args=(dir, pos_ps, self, time_step, flu_step, time_duration, self.stop)).start()
+        # thread.Thread(target=multi_acq_3c_sync_light,
+        #                               args=(dir, pos_ps, self, time_step, flu_step, time_duration, self.stop)).start()
+        _thread.start_new_thread(multi_acq_3c_sync_light,(dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
         return None
 
     def multi_acq_4c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):

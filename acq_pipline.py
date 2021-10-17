@@ -10,7 +10,7 @@ from device.valve.pymm_valve import ValveController
 
 # %%
 MICROSCOPE = 'TiE_prior_arduino'  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ, TiE_prior, Ti2E_LDJ
-DIR = r'I:\Image_Data\moma_data\20211012_NH2_pECJ3_M5_updownshift'
+DIR = r'F:\zjw\20211013_NH2_pECJ3_M5_updownshift'
 # POSITION_FILE = r'H:\Image_Data\moma_data\20210505_pECJ3_M5_L3\multipoints.xml'
 POSITION_FILE = None
 
@@ -26,6 +26,8 @@ device_cfg.set_device_state(shift_type='init_phase')
 
 # %%
 # acq_loop.nd_recorder.export_pos(DIR)
+device_cfg.set_device_state(shift_type='init_phase')
+
 acq_loop.nd_recorder.import_pos(os.path.join(DIR, 'pos.jl'))
 
 acq_loop.open_NDUI()
@@ -34,7 +36,7 @@ acq_loop.open_NDUI()
 device_cfg.set_device_state(shift_type='init_phase')
 device_cfg.set_light_path('BF', '100X_External')
 
-time_step = [0, 6, 0]  # [hr, min, s] in fast growth rate
+time_step = [0, 3, 30]  # [hr, min, s] in fast growth rate
 # time_step = [0, 20, 0]  # [hr, min, s] in slow growth rate
 flu_step = 6  # very 6 phase loops acq if 0, don't acq a flu channel
 time_duration = [72, 0, 0]
@@ -99,4 +101,16 @@ def delay_timestep(time_step, new_step, time_delay):
     return
 
 
-thread.Thread(target=delay_timestep, args=(acq_loop.time_step, [0, 20, 0], [7, 0, 0])).start()
+thread.Thread(target=delay_timestep, args=(acq_loop.time_step, [0, 6, 0], [0, 45, 1])).start()
+thread.Thread(target=delay_timestep, args=(acq_loop.time_step, [0, 20, 0], [8, 0, 0])).start()
+
+
+#%%
+import numpy as np
+import time
+device_cfg.mmcore.set_position(device_cfg.AUTOFOCUS_OFFSET, 100)
+while True:
+    for fov in acq_loop.nd_recorder.positions:
+        print(fov)
+        device_cfg.move_xyz_pfs(fov)
+        time.sleep(10)
