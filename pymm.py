@@ -8,7 +8,7 @@ import numpy as np
 # from pycromanager import Acquisition, multi_d_acquisition_events
 import tifffile as tiff
 import threading as thread
-
+import h5py
 from pycromanager import Bridge
 thread_lock = thread.Lock()
 bridge = Bridge()
@@ -240,6 +240,7 @@ class ImageGrabber:
             self.sequence_state = True
         else:
             self.sequence_state = False
+
 
 # # %%
 # EXPOSURE_GREEN = 50  # ms

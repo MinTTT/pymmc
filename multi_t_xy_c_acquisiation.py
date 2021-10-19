@@ -4,7 +4,7 @@ import time
 import pymm_device_light_path_cfg as pymm_cfg
 import os
 import sys
-from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse_position, NDRecorder
+from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse_position, NDRecorder, h5_image_saver
 import threading as thread
 from typing import Optional
 from PySide6.QtWidgets import QApplication
@@ -21,12 +21,19 @@ import _thread
 
 # studio = mm.studio
 
-def save_tyx(image_ps, image, ijmeta={}):
+def save_tyx(image_ps, image: np.ndarray, ijmeta={}):
+    file_type = image_ps.split('.')[-1]
     ijmeta.update({'axes': 'TYX'})
     print(f'[{image_ps}] -> Waiting.')
     saving_lock.acquire()
     print(f'[{image_ps}] -> Writing.')
-    tiff.imwrite(file=image_ps, data=image, imagej=True, metadata=ijmeta)
+    if file_type in ['tiff', 'tif']:
+        tiff.imwrite(file=image_ps, data=image, imagej=True, metadata=ijmeta)
+    elif file_type in ['h5']:
+        image_number = len(image)
+        ijmeta.update({f'image_data/{i}': image[i, ...] for i in range(image_number)})
+        ijmeta.update({f'frame': [f'{i+1}/{image_number}' for i in range(image_number)]})
+        h5_image_saver(image_ps, ijmeta)
     # tiff.imsave(file=image_ps, data=image, imagej=True, metadata={'axes': 'TYX'}.update(ijmeta))
     saving_lock.release()
     print(f'[{image_ps}] -> Success.')
@@ -249,7 +256,10 @@ class PymmAcq:
         if save_dir is None:
             return vedio
         else:
-            save_thread = thread.Thread(target=save_tyx, args=(save_dir, vedio, {'info': f'frame rate is {im_count / duration_time * 1000}'}))
+            save_thread = thread.Thread(target=save_tyx,
+                                        args=(save_dir, vedio,
+                                              {'frame_rate': f'{im_count / duration_time * 1000}',
+                                               'location': f'{self.current_position}'}))
             save_thread.start()
             return None
 

@@ -9,7 +9,7 @@ import time
 import json
 from joblib import dump, load
 from threading import Lock
-
+import h5py
 thread_lock = Lock()
 
 
@@ -202,3 +202,11 @@ def parse_position(fp, device=None):
                 poss_list.append(pos_dic)
     print(f'Get {len(poss_list)} positions.\n')
     return poss_list
+
+
+def h5_image_saver(image_ps, image_data:dict):
+    h5_imag = h5py.File(image_ps, 'w')
+    for kws, data in image_data.items():
+        h5_imag.create_dataset(kws, data)
+    h5_imag.close()
+    return None
