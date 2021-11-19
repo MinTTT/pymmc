@@ -47,6 +47,7 @@ class ARDUINO:
         self.ret = struct.unpack(f'!{len(rets)}B', rets)
 
     def start_trigger_mode(self):
+
         self.cmd((8, ))
 
     def stop_trigger_mode(self):
@@ -63,6 +64,14 @@ class ARDUINO:
             self.cmd((22, 0))
         else:
             self.cmd((22, 1))
+
+    def trigger(self,):
+        """
+        This method trigger the port 4 in arduino. It used to trigger camera when it sates in external trigger mode.
+
+        :return:
+        """
+        self.cmd((3, 1, 0, 0))
 
     def close_session(self):
         self._series.close()

@@ -97,11 +97,19 @@ class MicroscopeParas:
             self.INIT_LAMP = 'DiaLamp'
             self.FILTER_TURRET = 'FilterBlock1'
             self.FLU_EXCITE = 'XCite-Exacte'
+            ########### Mother Machine Toggle ####################
+            # self.GREEN_EXCITE = 8
+            # self.RED_EXCITE = 25  # 50 for 100X cfg, 100 for 60X cfg
+            # self.EXPOSURE_GREEN = 25  # 50 ms TiE2
+            # self.EXPOSURE_PHASE = 30  # 30 ms for 60X
+            # self.EXPOSURE_RED = 25  # ms
+            ########### Plasmid  ####################
             self.GREEN_EXCITE = 8
-            self.RED_EXCITE = 25  # 50 for 100X cfg, 100 for 60X cfg
+            self.RED_EXCITE = 75  # 50 for 100X cfg, 100 for 60X cfg
             self.EXPOSURE_GREEN = 25  # 50 ms TiE2
-            self.EXPOSURE_PHASE = 30  # 30 ms for 60X
-            self.EXPOSURE_RED = 25  # ms
+            self.EXPOSURE_PHASE = 40  # 30 ms for 60X
+            self.EXPOSURE_RED = 210  # ms
+            ###########################################
             self.AUTOFOCUS_DEVICE = 'PFSStatus'
             self.AUTOFOCUS_OFFSET = 'PFSOffset'
             self.Z_DEVICE = 'ZDrive'

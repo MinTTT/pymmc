@@ -8,15 +8,17 @@ import os
 from multi_t_xy_c_acquisiation import PymmAcq
 from device.valve.pymm_valve import ValveController
 
+
+
 # %%
 MICROSCOPE = 'TiE_prior_arduino'  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ, TiE_prior, Ti2E_LDJ
-DIR = r'F:\zjw\20211013_NH2_pECJ3_M5_updownshift'
+DIR = r'F:\zjw\20211020_NH2_CP268'
 # POSITION_FILE = r'H:\Image_Data\moma_data\20210505_pECJ3_M5_L3\multipoints.xml'
 POSITION_FILE = None
 
 acq_loop = PymmAcq(device=MICROSCOPE)
 device_cfg = acq_loop.device_cfg
-device_cfg.set_ROI([0, 512, 2048, 820])
+# device_cfg.set_ROI([0, 512, 2048, 820])
 device_cfg.set_device_state(shift_type='init_phase')
 
 # device_cfg.prior_core.set_filter_speed_acc(100, 100, 1)
@@ -36,10 +38,10 @@ acq_loop.open_NDUI()
 device_cfg.set_device_state(shift_type='init_phase')
 device_cfg.set_light_path('BF', '100X_External')
 
-time_step = [0, 3, 30]  # [hr, min, s] in fast growth rate
+time_step = [0, 0, 1]  # [hr, min, s] in fast growth rate
 # time_step = [0, 20, 0]  # [hr, min, s] in slow growth rate
 flu_step = 6  # very 6 phase loops acq if 0, don't acq a flu channel
-time_duration = [72, 0, 0]
+time_duration = [0, 0, 1]
 
 acq_loop.time_step = time_step
 acq_loop.multi_acq_3c_sync_light(DIR, POSITION_FILE, acq_loop.time_step, flu_step, time_duration)
@@ -103,6 +105,7 @@ def delay_timestep(time_step, new_step, time_delay):
 
 thread.Thread(target=delay_timestep, args=(acq_loop.time_step, [0, 6, 0], [0, 45, 1])).start()
 thread.Thread(target=delay_timestep, args=(acq_loop.time_step, [0, 20, 0], [8, 0, 0])).start()
+thread.Thread(target=delay_timestep, args=(acq_loop.time_step, [0, 3, 30], [0, 0, 1])).start()
 
 
 #%%
