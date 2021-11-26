@@ -1,4 +1,4 @@
-import serial
+import serial  # pyserial
 import struct
 from typing import Union, Optional
 # values = (8,)
@@ -38,7 +38,12 @@ class ARDUINO:
     def connect(self):
         self._series = serial.Serial(self.com_port, self.baud, timeout=self.time_out)
 
-    def cmd(self, code):
+    def cmd(self, code: Union[int, tuple]):
+        """
+        sent bytes to arduino series, input int or Tuple[int].
+        :param code: int or tuple
+        :return: None
+        """
         if not isinstance(code, tuple):
             code = (code, )
         command = struct.pack('!{0}B'.format(len(code)), *code)
@@ -78,6 +83,33 @@ class ARDUINO:
 
 #%%
 if __name__ == '__mian__':
-    arduino = ARDUINO('COM7')
-    arduino.trigger_pattern = 0b00110000
-    arduino.start_blanking_mode()
+
+    import time
+    arduino = ARDUINO('COM3')
+    from math import floor
+    # arduino.trigger_pattern = 0b00110000
+    arduino.cmd(1)
+
+
+    while True:
+        exposure = 21
+
+        freq = floor(1000/exposure)  # req
+        if freq < 200:
+            cycle_time = 1000./freq
+            off_duty_cycle = cycle_time - exposure
+            one_step_time = cycle_time / 255.
+            on_step_num = 255 - int(off_duty_cycle / one_step_time)  # intensity
+        else:
+            freq = 200
+            cycle_time = 1000./freq
+            off_duty_cycle = cycle_time - exposure
+            one_step_time = cycle_time / 255.
+            on_step_num = 255 - int(off_duty_cycle / one_step_time)  # intensity
+
+
+        real_time = one_step_time * on_step_num
+        print(real_time, freq, on_step_num)
+        arduino.cmd((2, freq, on_step_num))
+        time.sleep(0.01)
+
