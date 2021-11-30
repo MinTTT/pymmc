@@ -21,6 +21,7 @@ import numpy as np
 from device.prior_device import PriorScan
 from typing import Optional
 from device.arduino import ARDUINO
+from device.NI_FPGA import NIFPGADevice
 import threading as thread
 
 colors = colors()
@@ -104,12 +105,18 @@ class MicroscopeParas:
             # self.EXPOSURE_PHASE = 30  # 30 ms for 60X
             # self.EXPOSURE_RED = 25  # ms
             ########### Plasmid  ####################
+            # self.GREEN_EXCITE = 8
+            # self.RED_EXCITE = 75  # 50 for 100X cfg, 100 for 60X cfg
+            # self.EXPOSURE_GREEN = 25  # 50 ms TiE2
+            # self.EXPOSURE_PHASE = 40  # 30 ms for 60X
+            # self.EXPOSURE_RED = 210  # ms
+            ########### TUcam  ####################
             self.GREEN_EXCITE = 8
             self.RED_EXCITE = 75  # 50 for 100X cfg, 100 for 60X cfg
-            self.EXPOSURE_GREEN = 25  # 50 ms TiE2
-            self.EXPOSURE_PHASE = 40  # 30 ms for 60X
-            self.EXPOSURE_RED = 210  # ms
-            ###########################################
+            self.EXPOSURE_GREEN = 25 + 25  # 50 ms TiE2
+            self.EXPOSURE_PHASE = 25 + 30  # 30 ms for 60X
+            self.EXPOSURE_RED = 25 + 200  # ms
+            ################################################
             self.AUTOFOCUS_DEVICE = 'PFSStatus'
             self.AUTOFOCUS_OFFSET = 'PFSOffset'
             self.Z_DEVICE = 'ZDrive'
@@ -117,6 +124,7 @@ class MicroscopeParas:
             self.mmcore = mmcore
             self.prior_core = None  # type: Optional[PriorScan]
             self.arduino_core = None  # type: Optional[ARDUINO]
+            self.fpga_core = None  # type: Optional[NIFPGADevice]
         elif self.MICROSCOPE == 'TiE_prior_DNA_replicate':
             self.SHUTTER_LAMP = 'Arduino'
             self.INIT_LAMP = 'DiaLamp'
@@ -255,7 +263,8 @@ class MicroscopeParas:
             self.arduino_core = ARDUINO()
 
         if self.MICROSCOPE in ['TiE_prior_arduino', 'TiE_prior_DNA_replicate']:
-            self.image_grabber = mm.ImageGrabber(self.mmcore)
+            self.fpga_core = NIFPGADevice()
+            self.image_grabber = mm.ImageGrabber(self.mmcore, self.fpga_core)
             self.auto_acq_save = self.image_grabber.auto_acq_save
 
     def get_position_dict(self, device: Optional[str] = None) -> dict:
@@ -291,16 +300,8 @@ class MicroscopeParas:
                 delta_z = self.mmcore.get_position(self.Z_DEVICE) - z_init
                 if delta_z > 5:
                     z_init = self.mmcore.get_position(self.Z_DEVICE) + 0.1
-                # elif -10 > delta_z:
-                #     z_init = self.mmcore.get_position(self.Z_DEVICE)
                 else:
                     z_init += 8
-                # while not self.mmcore.is_continuous_focus_enabled():
-                #     time.sleep(0.1)
-                #     self.mmcore.enable_continuous_focus(True)
-
-                # while mmcore.device_busy(self.Z_DEVICE):
-                #     time.sleep(0.001)
                 if z_init > z_top:
                     z_init = z - 100
                 if z_init < z_bottom:
@@ -349,7 +350,7 @@ class MicroscopeParas:
         :param shift_type: str, 'g2r' or 'r2g' set light path flag
         :return: None
         """
-        if core_mmc == None:
+        if core_mmc is None:
             core_mmc = self.mmcore
 
         if self.MICROSCOPE == 'Ti2E':
@@ -369,6 +370,7 @@ class MicroscopeParas:
                 core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity',
                                       self.GREEN_EXCITE)  # set xcite lamp intensity 2
                 mm.waiting_device()
+
         elif self.MICROSCOPE == 'TiE':
             if shift_type == 'init_phase':
                 if self.CAM_ROI is not None:
@@ -409,7 +411,7 @@ class MicroscopeParas:
                 mm.waiting_device()
                 self.prior_core.waiting_device()
 
-        elif self.MICROSCOPE == 'TiE_prior_arduino':
+        elif self.MICROSCOPE in ['TiE_prior_arduino']:
             if shift_type == 'init_phase':
                 if self.CAM_ROI is not None:
                     self.set_ROI(self.CAM_ROI)

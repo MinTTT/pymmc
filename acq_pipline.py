@@ -12,7 +12,7 @@ from device.valve.pymm_valve import ValveController
 
 # %%
 MICROSCOPE = 'TiE_prior_arduino'  # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ, TiE_prior, Ti2E_LDJ
-DIR = r'F:\zjw\20211020_NH2_CP268'
+DIR = r'F:\zjw\20211119_Cho_plus'
 # POSITION_FILE = r'H:\Image_Data\moma_data\20210505_pECJ3_M5_L3\multipoints.xml'
 POSITION_FILE = None
 
@@ -38,10 +38,10 @@ acq_loop.open_NDUI()
 device_cfg.set_device_state(shift_type='init_phase')
 device_cfg.set_light_path('BF', '100X_External')
 
-time_step = [0, 0, 1]  # [hr, min, s] in fast growth rate
+time_step = [0, 0, 10]  # [hr, min, s] in fast growth rate
 # time_step = [0, 20, 0]  # [hr, min, s] in slow growth rate
-flu_step = 6  # very 6 phase loops acq if 0, don't acq a flu channel
-time_duration = [0, 0, 1]
+flu_step = 2  # very 6 phase loops acq if 0, don't acq a flu channel
+time_duration = [1, 0, 10]
 
 acq_loop.time_step = time_step
 acq_loop.multi_acq_3c_sync_light(DIR, POSITION_FILE, acq_loop.time_step, flu_step, time_duration)
@@ -111,9 +111,13 @@ thread.Thread(target=delay_timestep, args=(acq_loop.time_step, [0, 3, 30], [0, 0
 #%%
 import numpy as np
 import time
-device_cfg.mmcore.set_position(device_cfg.AUTOFOCUS_OFFSET, 100)
-while True:
-    for fov in acq_loop.nd_recorder.positions:
-        print(fov)
-        device_cfg.move_xyz_pfs(fov)
-        time.sleep(10)
+# device_cfg.mmcore.set_position(device_cfg.AUTOFOCUS_OFFSET, 100)
+# while True:
+#     for fov in acq_loop.nd_recorder.positions:
+#         print(fov)
+#         device_cfg.move_xyz_pfs(fov)
+#         time.sleep(10)
+for i in range(200):
+    device_cfg.fpga_core.trigger_one_pulse()
+    print(f'{i}\n')
+    time.sleep(0.1)

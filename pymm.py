@@ -8,8 +8,12 @@ import numpy as np
 # from pycromanager import Acquisition, multi_d_acquisition_events
 import tifffile as tiff
 import threading as thread
+from device.arduino import ARDUINO
 import h5py
+from typing import Callable
 from pycromanager import Bridge
+from device.NI_FPGA import NIFPGADevice
+from typing import Optional, Callable
 thread_lock = thread.Lock()
 bridge = Bridge()
 global core
@@ -195,8 +199,9 @@ def autofocus():
 
 
 class ImageGrabber:
-    def __init__(self, core=core):
-        self.core = core
+    def __init__(self, mm_core=None, fgba_core: Optional[NIFPGADevice] = None):
+        self.core = mm_core
+        self.fgba_core = fgba_core
         self.image_names = []
         self.sequence_state = False
         self.thread_image_auto_save = None
@@ -215,19 +220,21 @@ class ImageGrabber:
                 im = np.reshape(tagged_image.pix,
                                 newshape=[tagged_image.tags["Height"], tagged_image.tags["Width"]])
                 img_name = self.image_names.pop(0)
-                self.thread_image_auto_save = thread.Thread(target=save_image, kwargs=dict(im=im, name=img_name, meta=tagged_image.tags))
-                self.thread_image_auto_save.start()
+                thread.Thread(target=save_image,
+                              kwargs=dict(im=im, name=img_name, meta=tagged_image.tags)).start()
                 return None
+            time.sleep(0.05)
         raise IOError('Sequencing acquisition does not start.')
 
-    def auto_acq_save(self, im_dir: str, name: str, exposure: float = None, shutter: object = None):
+    def auto_acq_save(self, im_dir: str, name: str, exposure: float = None, shutter=None):
         self.append(f'{os.path.join(im_dir, name)}.tiff')
         if exposure:
-            self.core.set_exposure(exposure)
-        img_bum_in_buffer = self.core.get_remaining_image_count()
+            # self.core.set_exposure(exposure)
+            self.fgba_core.set_exposure(exposure)
         if not self.core.is_sequence_running():
             self.init_process()
-        shutter((3, 1, 0, 0))
+        img_bum_in_buffer = self.core.get_remaining_image_count()
+        shutter()
         self.save_from_buffer(img_bum_in_buffer)
         return None
 

@@ -5,19 +5,20 @@ import pymm_device_light_path_cfg as pymm_cfg
 import os
 import sys
 from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse_position, NDRecorder, h5_image_saver
-import threading as thread
 from typing import Optional
 from PySide6.QtWidgets import QApplication
 from pymmc_UI.ND_pad_main_py import NDRecorderUI
-import threading
+import threading as thread
 import numpy as np
 import tifffile as tiff
 from tqdm import tqdm
 from functools import partial
+from typing import Callable
 bcolors = colors()
 
 saving_lock = thread.Lock()
 import _thread
+
 
 # studio = mm.studio
 
@@ -126,25 +127,25 @@ class PymmAcq:
 
     def multi_acq_3c(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
                      time_duration: list = None):
-        thread.start_new_thread(multi_acq_3c,
+        _thread.start_new_thread(multi_acq_3c,
                                 (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
         return None
 
     def multi_acq_3c_sync_light(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
                                 time_duration: list = None):
-        # thread.Thread(target=multi_acq_3c_sync_light,
-        #                               args=(dir, pos_ps, self, time_step, flu_step, time_duration, self.stop)).start()
-        _thread.start_new_thread(multi_acq_3c_sync_light, (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
+        thread.Thread(target=multi_acq_3c_sync_light,
+                                      args=(dir, pos_ps, self, time_step, flu_step, time_duration, self.stop)).start()
+        # _thread.start_new_thread(multi_acq_3c_sync_light, (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
         return None
 
     def multi_acq_4c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):
-        thread.start_new_thread(multi_acq_4c,
+        _thread.start_new_thread(multi_acq_4c,
                                 (dir, pos_ps, self.device_cfg, time_step, flu_step, time_duration, self.stop))
         return None
 
     def multi_acq_2c(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
                      time_duration: list = None):
-        thread.start_new_thread(multi_acq_2c,
+        _thread.start_new_thread(multi_acq_2c,
                                 (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
         return None
 
@@ -162,7 +163,7 @@ class PymmAcq:
             ui.show()
             app.exec()
 
-        threading.Thread(target=open_in_subprocess, args=(self,)).start()
+        thread.Thread(target=open_in_subprocess, args=(self,)).start()
 
     def sequence_acq(self, duration_time: float, step: float, exposure: float = None, save_dir: str = None):
         """
@@ -199,7 +200,7 @@ class PymmAcq:
         if save_dir is None:
             return vedio
         else:
-            _ = thread.start_new_thread(save_tyx, (save_dir, vedio,))
+            _ = _thread.start_new_thread(save_tyx, (save_dir, vedio,))
             return None
 
     def continuous_acq(self, duration_time: float, step: float, save_dir: str = None):
@@ -264,7 +265,7 @@ class PymmAcq:
             return None
 
 
-def get_exposure(state, device_cfg):
+def get_exposure(state, device_cfg) -> float:
     if state == 'green':
         return device_cfg.EXPOSURE_GREEN
     else:
@@ -448,6 +449,7 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
     # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
     # -----------------------------------------------------------------------------------
     device_cfg = device.device_cfg
+    camera_trigger = device_cfg.fpga_core.trigger_one_pulse  # type: Callable
     # %%
     # ==========get multiple positions============
     if POSITION_FILE is not None:
@@ -494,31 +496,32 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     set_device_state(device_cfg.mmcore, 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name, exposure=EXPOSURE_PHASE,
-                                             shutter=device_cfg.arduino_core.cmd)
+                                             shutter=camera_trigger)
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     set_device_state(device_cfg.mmcore, 'fluorescent')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              exposure=get_exposure(light_path_state, device_cfg),
-                                             shutter=device_cfg.arduino_core.cmd)
+                                             shutter=camera_trigger)
                 else:
                     print('Snap image (red).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.check_auto_focus(0.1)
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              exposure=get_exposure(light_path_state, device_cfg),
-                                             shutter=device_cfg.arduino_core.cmd)
+                                             shutter=camera_trigger)
                 # Second Channel
                 if light_path_state == 'green':
                     light_path_state = 'red'
                     set_device_state(device_cfg.mmcore, 'g2r')
+                    image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
                     time.sleep(0.1)
-                    image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
+                    print(f'Snap image (red).\n')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              exposure=get_exposure(light_path_state, device_cfg),
-                                             shutter=device_cfg.arduino_core.cmd)
-                    print(f'Snap image (red).\n')
+                                             shutter=camera_trigger)
+
                 else:
                     light_path_state = 'green'
                     set_device_state(device_cfg.mmcore, 'r2g')
@@ -528,13 +531,13 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                     set_device_state(device_cfg.mmcore, 'phase')
                     device_cfg.auto_acq_save(image_dir, name=file_name, exposure=EXPOSURE_PHASE,
-                                             shutter=device_cfg.arduino_core.cmd)
+                                             shutter=camera_trigger)
                     print('Snap image (green).\n')
                     image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                     set_device_state(device_cfg.mmcore, 'fluorescent')
                     device_cfg.auto_acq_save(image_dir, name=file_name,
                                              exposure=get_exposure(light_path_state, device_cfg),
-                                             shutter=device_cfg.arduino_core.cmd)
+                                             shutter=camera_trigger)
         else:
             # ========start phase 100X acq loop=================#
             if light_path_state == 'green':
@@ -556,8 +559,7 @@ def multi_acq_3c_sync_light(dir: str, pos_ps: str, device: PymmAcq, time_step: l
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 device_cfg.auto_acq_save(image_dir, name=file_name,
                                          exposure=EXPOSURE_PHASE,
-                                         shutter=device_cfg.arduino_core.cmd)
-
+                                         shutter=camera_trigger)
         # ======================waiting cycle=========
 
         t_of_acq = time.time() - t_init

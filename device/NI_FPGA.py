@@ -24,7 +24,36 @@ import warnings
 
 
 class NIFPGADevice:
-    def __init__(self, bitfile: str, resource: str):
+    """
+    Basic Usage:
+
+    METHOD:
+
+    .busy(): - bool, get the NI_FPGA state, True indicates the device is outputting signals
+
+    .set_exposure() - float, set the exposure time in milliseconds.
+
+    .get_exposure() - return the exposure time in milliseconds.
+
+    .trigger_one_pulse() - only output one pulse. useful for get a snap.
+
+    .trigger_continuously() - output a pulse sequence, useful for living or acquiring a image sequence.
+
+    .stop_trigger_continuously() - stop continuous trigger, interrupt the living.
+
+    .close() - close the NI_FPGA session.
+
+    PROPERTY:
+
+    NOTime - set or get the pulse width in microseconds.
+
+    OFFTime - set or get the width between two pulse in microseconds.
+
+    FrameRate - set or get the frame rate.
+
+    """
+    def __init__(self, bitfile: str=r'device/NI_FPGA/myRIO_v1.lvbitx',
+                 resource: str='rio://172.22.11.2/RIO0'):
         """
         Initial the NI_FPGA session
         :param bitfile: string, bitfile location.
@@ -48,7 +77,7 @@ class NIFPGADevice:
         self._ReadOutTimeLimit = 13600  # type: int # microsecond
         self._DefaultPulseNumber = 1  # type: Optional[int]
         self._trigger = None  # type: Optional[Callable]
-        self._DefaultParameters = {'PulseNumberperLoop': 100,
+        self._DefaultParameters = {'PulseNumberperLoop': 1,
                                    'BreakinLoop': False,
                                    'Trigger': 0,
                                    'OFFTime': 15000,
@@ -136,7 +165,7 @@ class NIFPGADevice:
         if desired_off_time < self._ReadOutTimeLimit:
             self.ONTime = int(cycle_time - self._ReadOutTimeLimit)
             self.OFFTime = self._ReadOutTimeLimit
-            warnings.warn("Need more time for image reading out, the exposure time is set to %.2f ms."
+            warnings.warn('Need more time for image reading out, the exposure time is set to %.2f ms.'
                           % (self._ONTime / 1000))
         else:
             self.OFFTime = int(desired_off_time)
@@ -153,13 +182,18 @@ class NIFPGADevice:
         return self.ONTime / 1000.
 
     def trigger_one_pulse(self):
+        while self.busy():
+            pass
+        self.fpga_session.registers['PulseNumberperLoop'].write(1)
         self._trigger.write(self._trigger_value)
         while self.busy():
             pass
+        return None
 
     def trigger_continuously(self):
         self.fpga_session.registers['PulseNumberperLoop'].write(-1)
         self._trigger.write(self._trigger_value)
+        return None
 
     def stop_trigger_continuously(self):
         self.fpga_session.registers['BreakinLoop'].write(True)
@@ -167,6 +201,7 @@ class NIFPGADevice:
             pass
         self.fpga_session.registers['PulseNumberperLoop'].write(self._PulseNumber)
         self.fpga_session.registers['BreakinLoop'].write(False)
+        return None
 
     def close(self):
         """
@@ -174,6 +209,7 @@ class NIFPGADevice:
         :return:
         """
         self.fpga_session.close()
+        return None
 
 
 # %%
