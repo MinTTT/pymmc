@@ -38,6 +38,7 @@ thread_lock = thread.Lock
 class MicroscopeParas:
     def __init__(self, MICROSCOPE, CAM_ROI=None):
         self.MICROSCOPE = MICROSCOPE
+        self.image_grabber = None
         if self.MICROSCOPE == 'Ti2E':
             self.SHUTTER_LAMP = 'DiaLamp'
             self.SHUTTER_LED = 'XCite-Exacte'
@@ -131,9 +132,9 @@ class MicroscopeParas:
             self.SHUTTER_LED = 'XCite-Exacte'
             self.FILTER_TURRET = 'FilterBlock1'
             self.FLU_EXCITE = 'XCite-Exacte'
-            self.YELLOW_EXCITE = 50
-            self.EXPOSURE_YELLOW = 110
-            self.EXPOSURE_PHASE = 30  # 30 ms for 60X
+            self.YELLOW_EXCITE = 100
+            self.EXPOSURE_YELLOW = 220
+            self.EXPOSURE_PHASE = 25  # 30 ms for 60X
             self.AUTOFOCUS_DEVICE = 'PFSStatus'
             self.AUTOFOCUS_OFFSET = 'PFSOffset'
             self.Z_DEVICE = 'ZDrive'

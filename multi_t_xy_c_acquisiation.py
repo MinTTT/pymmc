@@ -134,19 +134,21 @@ class PymmAcq:
     def multi_acq_3c_sync_light(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
                                 time_duration: list = None):
         thread.Thread(target=multi_acq_3c_sync_light,
-                                      args=(dir, pos_ps, self, time_step, flu_step, time_duration, self.stop)).start()
+                      args=(dir, pos_ps, self, time_step, flu_step, time_duration, self.stop)).start()
         # _thread.start_new_thread(multi_acq_3c_sync_light, (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
         return None
 
     def multi_acq_4c(self, dir: str, pos_ps: str, time_step: list, flu_step: int, time_duration: list):
         _thread.start_new_thread(multi_acq_4c,
-                                (dir, pos_ps, self.device_cfg, time_step, flu_step, time_duration, self.stop))
+                                 (dir, pos_ps, self.device_cfg, time_step, flu_step, time_duration, self.stop))
         return None
 
     def multi_acq_2c(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
                      time_duration: list = None):
-        _thread.start_new_thread(multi_acq_2c,
-                                (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
+        # _thread.start_new_thread(multi_acq_2c,
+        #                         (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
+        thread.Thread(target=multi_acq_2c,
+                      args=(dir, pos_ps, self, time_step, flu_step, time_duration, self.stop)).start()
         return None
 
     def stop_acq_loop(self):
@@ -759,6 +761,7 @@ def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
     # Ti2E, Ti2E_H, Ti2E_DB, Ti2E_H_LDJ
     # -----------------------------------------------------------------------------------
     device_cfg = device.device_cfg
+    camera_trigger = device_cfg.fpga_core.trigger_one_pulse  # type: Callable
     # %%
     # ==========get multiple positions============
     if POSITION_FILE is not None:
@@ -803,7 +806,7 @@ def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 set_device_state(device_cfg.mmcore, 'fluorescent')
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', light_path_state)
                 device_cfg.auto_acq_save(image_dir, name=file_name,
-                                         shutter=device_cfg.arduino_core.cmd,
+                                         shutter=camera_trigger,
                                          exposure=EXPOSURE_YELLOW)
 
                 print('Snap image (phase).\n')
@@ -811,7 +814,7 @@ def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 device_cfg.check_auto_focus(0.1)  # check auto focus, is important!
                 image_dir = os.path.join(DIR, f'fov_{fov_index}', 'phase')
                 device_cfg.auto_acq_save(image_dir, name=file_name,
-                                         shutter=device_cfg.arduino_core.cmd, exposure=EXPOSURE_PHASE)
+                                         shutter=camera_trigger, exposure=EXPOSURE_PHASE)
 
         else:
             # ========start phase 100X acq loop=================#
@@ -828,7 +831,7 @@ def multi_acq_2c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_st
                 print('Snap image (phase).\n')
                 device_cfg.auto_acq_save(image_dir, name=file_name,
                                          exposure=EXPOSURE_PHASE,
-                                         shutter=device_cfg.arduino_core.cmd)
+                                         shutter=camera_trigger)
 
         # ======================waiting cycle=========
 

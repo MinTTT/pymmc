@@ -14,6 +14,7 @@ from typing import Callable
 from pycromanager import Bridge
 from device.NI_FPGA import NIFPGADevice
 from typing import Optional, Callable
+
 thread_lock = thread.Lock()
 bridge = Bridge()
 global core
@@ -215,7 +216,7 @@ class ImageGrabber:
 
     def save_from_buffer(self, img_bum_in_buffer=0):
         while self.sequence_state:
-            if self.image_names and self.core.get_remaining_image_count() > img_bum_in_buffer:
+            if self.image_names and (self.core.get_remaining_image_count() > img_bum_in_buffer):
                 tagged_image = self.core.pop_next_tagged_image()
                 im = np.reshape(tagged_image.pix,
                                 newshape=[tagged_image.tags["Height"], tagged_image.tags["Width"]])
@@ -227,6 +228,14 @@ class ImageGrabber:
         raise IOError('Sequencing acquisition does not start.')
 
     def auto_acq_save(self, im_dir: str, name: str, exposure: float = None, shutter=None):
+        """
+        Trigger the camera and save the image.
+        :param im_dir: The directory to save image.
+        :param name: image name
+        :param exposure: exposure time in milliseconds.
+        :param shutter: the callable for trigger camera
+        :return:
+        """
         self.append(f'{os.path.join(im_dir, name)}.tiff')
         if exposure:
             # self.core.set_exposure(exposure)
