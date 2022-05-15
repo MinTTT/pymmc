@@ -53,21 +53,7 @@ val_contr.valve_on()  # open valve
 # %%
 
 
-# tags = [None] * len(vedio)
-#
-#
-# def parall_output(i):
-#     tagged_image = device_cfg.mmcore.pop_next_tagged_image()
-#     vedio[:, ...] = np.reshape(tagged_image.pix, [tagged_image.tags["Height"], tagged_image.tags["Width"]])
-#     tags[i] = tagged_image.tags
-#
-#
-# _ = Parallel(n_jobs=1, require='sharedmem')(delayed(parall_output)(i) for i in tqdm(range(len(vedio))))
 
-# for i in tqdm(range(len(vedio))):
-#     tagged_image = device_cfg.mmcore.pop_next_tagged_image()
-#     vedio[:, ...] = np.reshape(tagged_image.pix, [tagged_image.tags["Height"], tagged_image.tags["Width"]])
-#     tags[i] = tagged_image.tags
 
 
 exp_time = 25
@@ -82,12 +68,12 @@ for i in range(200):
 
 import numpy as np
 device_cfg.set_ROI([0, 812, 2048, 820])
-for i in range(200):
-    exp_time = np.random.uniform(20, 250)
-    device_cfg.image_grabber.auto_acq_save(r'C:\Users\pc\Desktop\streads\HDR_random_exp',
-                                           f'test{i}.tiff', exposure=exp_time,
+for i in range(10):
+    exp_time = np.random.uniform(25, 200)
+    device_cfg.image_grabber.auto_acq_save(r'F:\zjw\20211209_test\Globalresetlow',
+                                           f'test{i}', exposure=exp_time,
                                            shutter=device_cfg.fpga_core.trigger_one_pulse)
-    time.sleep(0.05)
+    time.sleep(0.1)
 
 exp_time = 50
 device_cfg.set_ROI([0, 812, 2048, 820])

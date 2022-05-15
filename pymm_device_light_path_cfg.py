@@ -442,9 +442,11 @@ class MicroscopeParas:
                 self.prior_core.waiting_device()
 
             if shift_type == 'phase':
+                # '0b100000' the binary pattern represents the digital pins, 13 12 11 10 9 8.
+                # Here, the pin 13 has output.
                 self.arduino_core.trigger_pattern = 32
             if shift_type == 'fluorescent':
-                self.arduino_core.trigger_pattern = 16
+                self.arduino_core.trigger_pattern = 16  # '0b010000' pin 12 has output
 
         elif self.MICROSCOPE == 'Ti2E_LDJ':
             if shift_type == 'init_phase':
