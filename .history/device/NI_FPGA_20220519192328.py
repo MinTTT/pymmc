@@ -52,7 +52,7 @@ class NIFPGADevice:
     FrameRate - set or get the frame rate.
 
     """
-    def __init__(self, bitfile: str=r'device/NI_FPGA/myRIO_v2.lvbitx',
+    def __init__(self, bitfile: str=r'device/NI_FPGA/myRIO_v1.lvbitx',
                  resource: str='rio://172.22.11.2/RIO0'):
         """
         Initial the NI_FPGA session
@@ -82,7 +82,7 @@ class NIFPGADevice:
                                    'Trigger': 0,
                                    'OFFTime': 15000,
                                    'ONTime': 30000,
-                                   'OutputPinMap': 0}
+                                    'OutputPinMap'}
         # init device
         self.open_session()
         self.fpga_session.registers['PulseNumberperLoop'].write(self._DefaultPulseNumber)
@@ -105,7 +105,6 @@ class NIFPGADevice:
         self._ONTime = self.register_values['ONTime']
         self._OFFTime = self.register_values['OFFTime']
         self._PulseNumber = self.register_values['PulseNumberperLoop']
-        self._OutPutPinMap = self.register_values['OutPutPinMap']
 
     def busy(self) -> bool:
         if self.fpga_session.registers['Trigger'].read() != 0:
@@ -175,21 +174,10 @@ class NIFPGADevice:
     def set_exposure(self, time: float):
         """
         set the exposure time
-        :param time: float, unit is millisecond.
+        :param time: float, unit is ms
         :return:
         """
         self.ONTime = int(time * 1000)
-    
-    def set_outputpinmap(self, pin_map: int):
-        """Set the Connector C DIO 1-7 output mode.
-
-        Parameters
-        ---------------
-        pin_map : int
-            Connector C DIO 1-7 are mapped to its bitwise value. 
-
-        """
-        self._OFFTime.write(np.uint8(pin_map))
 
     def get_exposure(self):
         return self.ONTime / 1000.

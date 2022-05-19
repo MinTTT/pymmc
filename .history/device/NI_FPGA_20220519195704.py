@@ -181,13 +181,8 @@ class NIFPGADevice:
         self.ONTime = int(time * 1000)
     
     def set_outputpinmap(self, pin_map: int):
-        """Set the Connector C DIO 1-7 output mode.
-
-        Parameters
-        ---------------
-        pin_map : int
-            Connector C DIO 1-7 are mapped to its bitwise value. 
-
+        """
+            
         """
         self._OFFTime.write(np.uint8(pin_map))
 

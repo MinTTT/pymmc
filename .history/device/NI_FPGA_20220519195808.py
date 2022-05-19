@@ -186,7 +186,7 @@ class NIFPGADevice:
         Parameters
         ---------------
         pin_map : int
-            Connector C DIO 1-7 are mapped to its bitwise value. 
+
 
         """
         self._OFFTime.write(np.uint8(pin_map))

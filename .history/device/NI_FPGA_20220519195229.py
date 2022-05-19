@@ -105,7 +105,7 @@ class NIFPGADevice:
         self._ONTime = self.register_values['ONTime']
         self._OFFTime = self.register_values['OFFTime']
         self._PulseNumber = self.register_values['PulseNumberperLoop']
-        self._OutPutPinMap = self.register_values['OutPutPinMap']
+        self._OutPutPinMap = self.register_values['_OutPutPinMap']
 
     def busy(self) -> bool:
         if self.fpga_session.registers['Trigger'].read() != 0:
@@ -179,17 +179,6 @@ class NIFPGADevice:
         :return:
         """
         self.ONTime = int(time * 1000)
-    
-    def set_outputpinmap(self, pin_map: int):
-        """Set the Connector C DIO 1-7 output mode.
-
-        Parameters
-        ---------------
-        pin_map : int
-            Connector C DIO 1-7 are mapped to its bitwise value. 
-
-        """
-        self._OFFTime.write(np.uint8(pin_map))
 
     def get_exposure(self):
         return self.ONTime / 1000.
