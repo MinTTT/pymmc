@@ -85,7 +85,7 @@ class ARDUINO:
 if __name__ == '__mian__':
 
     import time
-    arduino = ARDUINO('COM3')
+    arduino = ARDUINO('COM7')
     from math import floor
     # arduino.trigger_pattern = 0b00110000
     arduino.cmd(1)

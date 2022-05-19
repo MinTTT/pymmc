@@ -98,7 +98,7 @@ class MicroscopeParas:
             self.SHUTTER_LAMP = 'Arduino'
             self.INIT_LAMP = 'DiaLamp'
             self.FILTER_TURRET = 'FilterBlock1'
-            self.FLU_EXCITE = 'XCite-Exacte'
+            self.FLU_EXCITE = 'Spectra'
             ########### Mother Machine Toggle ####################
             # self.GREEN_EXCITE = 8
             # self.RED_EXCITE = 25  # 50 for 100X cfg, 100 for 60X cfg
@@ -417,7 +417,7 @@ class MicroscopeParas:
                 if self.CAM_ROI is not None:
                     self.set_ROI(self.CAM_ROI)
                 core_mmc.set_property(self.INIT_LAMP, 'State', 1)
-                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)
+                core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # turret location
                 self.prior_core.set_shutter_state(1)
                 self.prior_core.set_filter_position(3)
                 mm.waiting_device()
@@ -427,24 +427,26 @@ class MicroscopeParas:
 
             if shift_type == "g2r":
                 self.arduino_core.trigger_pattern = 16
-                core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity', self.RED_EXCITE)  # set xcite lamp intensity 50
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 3 pos
+                core_mmc.set_property(self.SHUTTER_LED, 'YG_Filter', 1)
+                core_mmc.set_property(self.SHUTTER_LED, 'Green_Level', self.RED_EXCITE)
                 self.prior_core.set_filter_position(4)
                 mm.waiting_device()
                 self.prior_core.waiting_device()
 
             if shift_type == "r2g":
                 core_mmc.set_property(self.FILTER_TURRET, 'State', 5)  # set filer in 2 pos
-                core_mmc.set_property(self.FLU_EXCITE, 'Lamp-Intensity',
-                                      self.GREEN_EXCITE)  # set xcite lamp intensity 2
+                core_mmc.set_property(self.SHUTTER_LED, 'Blue_Level', self.GREEN_EXCITE)
                 self.prior_core.set_filter_position(3)
                 mm.waiting_device()
                 self.prior_core.waiting_device()
 
             if shift_type == 'phase':
+                # '0b100000' the binary pattern represents the digital pins, 13 12 11 10 9 8.
+                # Here, the pin 13 has output.
                 self.arduino_core.trigger_pattern = 32
             if shift_type == 'fluorescent':
-                self.arduino_core.trigger_pattern = 16
+                self.arduino_core.trigger_pattern = 16  # '0b010000' pin 12 has output
 
         elif self.MICROSCOPE == 'Ti2E_LDJ':
             if shift_type == 'init_phase':

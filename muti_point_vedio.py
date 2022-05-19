@@ -11,15 +11,16 @@ device_cfg.set_ROI([0, 0, 2048, 2048])
 device_cfg.prior_core.set_filter_speed_acc(100, 100, 1)
 device_cfg.set_light_path('BF', '10X')
 
-device_cfg.mmcore.set_property(device_cfg.mmcore.get_camera_device(), 'Binning', '1x1')
+# device_cfg.mmcore.set_property(device_cfg.mmcore.get_camera_device(), 'Binning', '1x1')
 acq_loop.open_NDUI()
 #%%
 device_cfg.set_device_state(shift_type='init_phase')
+# device_cfg.set_device_state(shift_type='r2g')
 
-duration_time = 60 * 1000  # ms
-step = 100  # ms
+duration_time = 5 * 1000  # ms
+step = 20  # ms
 
-dir = r'E:\20211012rp-cheZ30'
+dir = r'E:\Test'
 name = 'rp-ptet-cheZ80atc+GFP'
 
 #%%
