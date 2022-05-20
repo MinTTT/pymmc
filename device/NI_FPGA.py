@@ -105,7 +105,7 @@ class NIFPGADevice:
         self._ONTime = self.register_values['ONTime']
         self._OFFTime = self.register_values['OFFTime']
         self._PulseNumber = self.register_values['PulseNumberperLoop']
-        self._OutPutPinMap = self.register_values['OutPutPinMap']
+        self._OutPutPinMap = self.register_values['OutputPinMap']
 
     def busy(self) -> bool:
         if self.fpga_session.registers['Trigger'].read() != 0:
@@ -189,7 +189,7 @@ class NIFPGADevice:
             Connector C DIO 1-7 are mapped to its bitwise value. 
 
         """
-        self._OFFTime.write(np.uint8(pin_map))
+        self.fpga_session.registers['OutputPinMap'].write(np.uint8(pin_map))
 
     def get_exposure(self):
         return self.ONTime / 1000.
@@ -228,4 +228,4 @@ class NIFPGADevice:
 # %%
 if __name__ == '__main__':
     # %%
-    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v1.lvbitx', resource='rio://172.22.11.2/RIO0')
+    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v2.lvbitx', resource='rio://172.22.11.2/RIO0')
