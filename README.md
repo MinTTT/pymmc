@@ -55,9 +55,14 @@ PymmAcq.stop_streaming()
 ## **Dependence**
 
 This package needs python packages followed,
-> micromanager \
+> [micromanager](https://pypi.org/project/pycromanager/) \
+> pip install pycromanager --upgrade \
 > numpy \
 > scipy\
 > tifffile\
-> nifpga
+> [nifpga](https://pypi.org/project/nifpga/) \
+> pip install nifpga \
+> [napari](https://napari.org/) \
+> pip install "napari[pyside2]"
+> 
 
