@@ -14,10 +14,13 @@ import tifffile as tiff
 from tqdm import tqdm
 from functools import partial
 from typing import Callable
+
 bcolors = colors()
 
 saving_lock = thread.Lock()
 import _thread
+import napari
+from napari.qt.threading import thread_worker
 
 
 # studio = mm.studio
@@ -33,7 +36,7 @@ def save_tyx(image_ps, image: np.ndarray, ijmeta={}):
     elif file_type in ['h5']:
         image_number = len(image)
         ijmeta.update({f'image_data/{i}': image[i, ...] for i in range(image_number)})
-        ijmeta.update({f'frame': [f'{i+1}/{image_number}' for i in range(image_number)]})
+        ijmeta.update({f'frame': [f'{i + 1}/{image_number}' for i in range(image_number)]})
         h5_image_saver(image_ps, ijmeta)
     # tiff.imsave(file=image_ps, data=image, imagej=True, metadata={'axes': 'TYX'}.update(ijmeta))
     saving_lock.release()
@@ -51,6 +54,39 @@ class PymmAcq:
         self.time_step = None
         self._current_position = None  # type: Optional[int]
         self.initialize_device()
+        self.napari_viewer = None
+
+        self.img_depth = None
+        self.img_shape = None
+
+        self._live_status = None
+
+    def _get_img_info(self):
+        depth_dict = {16: np.uint16, 8: np.uint8, 12: np.uint16}
+
+        width, height = self.device_cfg.mmcore.get_image_width(), self.device_cfg.mmcore.get_image_height()
+        self.img_shape = (height, width)
+        self.img_depth = depth_dict[self.device_cfg.mmcore.get_image_bit_depth()]
+
+    def _init_camera_acq(self):
+        """
+        Reset the camera state.
+        :return:
+        :rtype:
+        """
+        if self.device_cfg.mmcore.is_sequence_running():
+            self.device_cfg.mmcore.stop_sequence_acquisition()
+        self.device_cfg.mmcore.clear_circular_buffer()
+        self.device_cfg.mmcore.prepare_sequence_acquisition(self.device_cfg.mmcore.get_camera_device())
+
+    def open_viewer(self):
+        try:
+            if self.napari_viewer is None:
+                self.napari_viewer = napari.Viewer()
+            self.napari_viewer.show()
+        except RuntimeError:
+            self.napari_viewer = napari.Viewer()
+            self.napari_viewer.show()
 
     @property
     def current_position(self) -> Optional[int]:
@@ -128,7 +164,7 @@ class PymmAcq:
     def multi_acq_3c(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
                      time_duration: list = None):
         _thread.start_new_thread(multi_acq_3c,
-                                (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
+                                 (dir, pos_ps, self, time_step, flu_step, time_duration, self.stop))
         return None
 
     def multi_acq_3c_sync_light(self, dir: str, pos_ps: str = None, time_step: list = None, flu_step: int = None,
@@ -177,26 +213,23 @@ class PymmAcq:
         :return: None or ndarray
         """
 
-        depth_dict = {16: np.uint16, 8: np.uint8, 12: np.uint16}
+        self._get_img_info()
+
         if exposure is not None:
             self.device_cfg.mmcore.set_exposure(exposure)
         frame_num = round(duration_time / step)
-        width, height = self.device_cfg.mmcore.get_image_width(), self.device_cfg.mmcore.get_image_height()
-        depth = self.device_cfg.mmcore.get_image_bit_depth()
-        # create
-        vedio = np.empty((frame_num, height, width), dtype=depth_dict[depth])
-        print('start acq!')
-        if self.device_cfg.mmcore.is_sequence_running():
-            self.device_cfg.mmcore.stop_sequence_acquisition()
-        self.device_cfg.mmcore.clear_circular_buffer()
-        self.device_cfg.mmcore.prepare_sequence_acquisition(self.device_cfg.mmcore.get_camera_device())
-        self.device_cfg.mmcore.start_sequence_acquisition(frame_num, step, False)
 
+        # create a video buffer
+        vedio = np.empty((frame_num, *self.img_shape), dtype=self.img_depth)
+        self._init_camera_acq()
+
+        print('start acq!')
+        self.device_cfg.mmcore.start_sequence_acquisition(frame_num, step, False)
         for i in tqdm(range(frame_num)):
             while self.device_cfg.mmcore.get_remaining_image_count() == 0:
-                time.sleep(0.0001)
+                time.sleep(0.0005)
             if self.device_cfg.mmcore.get_remaining_image_count() > 0:
-                vedio[i] = self.device_cfg.mmcore.pop_next_image().reshape(height, width)
+                vedio[i] = self.device_cfg.mmcore.pop_next_image().reshape(*self.img_shape)
         self.device_cfg.mmcore.stop_sequence_acquisition()
 
         if save_dir is None:
@@ -205,6 +238,55 @@ class PymmAcq:
             _ = _thread.start_new_thread(save_tyx, (save_dir, vedio,))
             return None
 
+    def update_napari_layer(self, new_image):
+        try:
+            # if the layer exists, update the data
+            self.napari_viewer.layers['Live Camera'].data = new_image
+        except KeyError:
+            # otherwise add it to the viewer
+            self.napari_viewer.add_image(new_image, name='Live Camera')
+
+    def stream_acq(self, step):
+        @thread_worker(connect={"yielded": self.update_napari_layer})
+        def _stream_acq(step: float):
+            self.device_cfg.mmcore.start_continuous_sequence_acquisition(float(step))
+            img = np.zeros(self.img_shape).astype(self.img_depth)
+
+            while self._live_status:
+
+                while self.device_cfg.mmcore.get_remaining_image_count() == 0:
+                    pass
+                if self.device_cfg.mmcore.get_remaining_image_count() > 0:
+                    img = self.device_cfg.mmcore.pop_next_image().reshape(*self.img_shape)
+                    yield img
+
+            self.device_cfg.mmcore.stop_sequence_acquisition()
+            return img
+
+        _stream_acq(step)
+
+    def start_streaming(self, step):
+        """
+
+        :param step:
+        :type step:
+        :return:
+        :rtype:
+        """
+        self.open_viewer()
+        self._live_status = True
+        self.stream_acq(step)
+
+    def stop_streaming(self):
+        """
+        Stop the Live Camera streaming.
+        :return:
+        :rtype:
+        """
+        self._live_status = False
+        self.device_cfg.mmcore.stop_sequence_acquisition()
+        self.device_cfg.mmcore.clear_circular_buffer()
+
     def continuous_acq(self, duration_time: float, step: float, save_dir: str = None):
         """
         :param duration_time: duration time, how long will acquisition lasting. unit: ms
@@ -212,50 +294,47 @@ class PymmAcq:
         :param save_dir: sequence images save dir. if None, return numpy array (t, y, x)
         :return: None or ndarray
         """
-
-        depth_dict = {16: np.uint16, 8: np.uint8, 12: np.uint16}
+        self._get_img_info()
 
         frame_num = int(duration_time / step)
         self.device_cfg.mmcore.set_exposure(step)
         self.device_cfg.mmcore.set_property(self.device_cfg.mmcore.get_camera_device(), 'Exposure',
                                             step)
-        width, height = self.device_cfg.mmcore.get_image_width(), self.device_cfg.mmcore.get_image_height()
-        depth = self.device_cfg.mmcore.get_image_bit_depth()
-        # create
-        vedio = np.empty((round(frame_num * 1.01), height, width), dtype=depth_dict[depth])
-        if self.device_cfg.mmcore.is_sequence_running():
-            self.device_cfg.mmcore.stop_sequence_acquisition()
+
+        # create a buffer
+        vedio = np.empty((round(frame_num*1.01), *self.img_shape), dtype=self.img_depth)
+        # if self.device_cfg.mmcore.is_sequence_running():
+        #     self.device_cfg.mmcore.stop_sequence_acquisition()
+        self._init_camera_acq()
+
         print('start acq!')
-        self.device_cfg.mmcore.prepare_sequence_acquisition(self.device_cfg.mmcore.get_camera_device())
-        self.device_cfg.mmcore.clear_circular_buffer()
         self.device_cfg.mmcore.start_continuous_sequence_acquisition(float(step))
-        time_current = time.time()
-        pbar = tqdm(total=frame_num)
-        # self.device_cfg.mmcore.clear_circular_buffer()
+
 
         im_count = 0
-        self.device_cfg.mmcore.clear_circular_buffer()
-
+        time_current = time.time()
+        pbar = tqdm(total=frame_num)  # create progress bar
         while (time.time() - time_current) * 1000 < duration_time:
             _time_cur = time.time()
             while self.device_cfg.mmcore.get_remaining_image_count() == 0:
                 pass
             if self.device_cfg.mmcore.get_remaining_image_count() > 0:
-                vedio[im_count] = self.device_cfg.mmcore.pop_next_image().reshape(height, width)
+                vedio[im_count] = self.device_cfg.mmcore.pop_next_image().reshape(*self.img_shape)
                 im_count += 1
                 pbar.update(1)
+
         self.device_cfg.mmcore.stop_sequence_acquisition()
         while self.device_cfg.mmcore.get_remaining_image_count() != 0:
-            vedio[im_count] = self.device_cfg.mmcore.pop_next_image().reshape(height, width)
+            vedio[im_count] = self.device_cfg.mmcore.pop_next_image().reshape(*self.img_shape)
             im_count += 1
             pbar.update(1)
-
         pbar.close()
+        vedio = vedio[:im_count, ...]  # clean the buffer
         # frame_rate = self.device_cfg.mmcore.get_property(self.device_cfg.mmcore.get_camera_device(),
         #                                                  'Exposure')
         # print(f'Frame Rate: {frame_rate}')
         print(f'FPS: {im_count / duration_time * 1000}')
-        vedio = vedio[:im_count, ...]
+
         if save_dir is None:
             return vedio
         else:

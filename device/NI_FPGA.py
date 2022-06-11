@@ -33,6 +33,8 @@ class NIFPGADevice:
 
     .set_exposure() - float, set the exposure time in milliseconds.
 
+    .set_outputpinmap() - bitwise, the output pin for 1-7 DIOs of FPGA that will be triggered simultaneously with camera.
+
     .get_exposure() - return the exposure time in milliseconds.
 
     .trigger_one_pulse() - only output one pulse. useful for get a snap.

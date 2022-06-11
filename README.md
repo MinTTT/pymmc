@@ -31,17 +31,33 @@ Connector C DIO 1-7 are usd for triggering the light source, for convenience, 1-
    `ONTime`: int, Trigger pulse width (high state width) in microsecond.\
    `OutPutPinMap`: uint8, Connector C DIO 1-7 are mapped to its bitwise value. i.e., for C:DIO 1 to be ON, when the camera output signal come, needs a decimal value of 1 (B00000001), for all pins to be ON, needs a decimal value 127 (B01111111).
 
+## Module
+-----------------
+###  multi_t_xy_c_acquisiation/PymmAcq
+
+This module used to control the device states and the UI
+
+For live mode, the two methods can be called.
+
+PymmAcq.start_streaming(step)
+
+the `step` set the exposure time of camera.
+
+PymmAcq.stop_streaming()
+
+
+
 
 
 
 
 
 ## **Dependence**
+
 This package needs python packages followed,
 > micromanager \
 > numpy \
 > scipy\
 > tifffile\
 > nifpga
-
 

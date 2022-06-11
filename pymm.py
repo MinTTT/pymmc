@@ -200,6 +200,10 @@ def autofocus():
 
 
 class ImageGrabber:
+    """
+    This class create a wrap of NI_FPGA and MMCore for image acquisition.
+    """
+
     def __init__(self, mm_core=None, fgba_core: Optional[NIFPGADevice] = None):
         self.core = mm_core
         self.fgba_core = fgba_core
@@ -209,10 +213,6 @@ class ImageGrabber:
 
     def append(self, file_name):
         self.image_names.append(file_name)
-
-    # def create_thread_and_start(self):
-    #     self.thread_image_auto_save = thread.Thread(target=self.save_from_buffer)
-    #     self.thread_image_auto_save.start()
 
     def save_from_buffer(self, img_bum_in_buffer=0):
         while self.sequence_state:
