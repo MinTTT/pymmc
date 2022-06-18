@@ -94,6 +94,7 @@ class MicroscopeParas:
             self.XY_DEVICE = 'prior_xy'
             self.mmcore = mmcore
             self.prior_core = None  # type: Optional[PriorScan]
+
         elif self.MICROSCOPE == 'TiE_prior_arduino':
             self.SHUTTER_LAMP = 'Arduino'
             self.INIT_LAMP = 'DiaLamp'
@@ -556,7 +557,6 @@ class MicroscopeParas:
         return None
 
 
-
 if __name__ == 'main':
     # %%
     dev = MicroscopeParas('TiE')
@@ -564,6 +564,3 @@ if __name__ == 'main':
 
     import time
     import threading as thread
-
-
-
