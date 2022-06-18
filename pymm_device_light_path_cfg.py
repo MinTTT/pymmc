@@ -127,6 +127,38 @@ class MicroscopeParas:
             self.prior_core = None  # type: Optional[PriorScan]
             self.arduino_core = None  # type: Optional[ARDUINO]
             self.fpga_core = None  # type: Optional[NIFPGADevice]
+        elif self.MICROSCOPE == 'TiE_prior_NIFPGA':
+            self.SHUTTER_LAMP = 'NIFPGA'
+            self.INIT_LAMP = 'DiaLamp'
+            self.FILTER_TURRET = 'FilterBlock1'
+            self.FLU_EXCITE = 'Spectra'
+            ########### Mother Machine Toggle ####################
+            # self.GREEN_EXCITE = 8
+            # self.RED_EXCITE = 25  # 50 for 100X cfg, 100 for 60X cfg
+            # self.EXPOSURE_GREEN = 25  # 50 ms TiE2
+            # self.EXPOSURE_PHASE = 30  # 30 ms for 60X
+            # self.EXPOSURE_RED = 25  # ms
+            ########### Plasmid  ####################
+            # self.GREEN_EXCITE = 8
+            # self.RED_EXCITE = 75  # 50 for 100X cfg, 100 for 60X cfg
+            # self.EXPOSURE_GREEN = 25  # 50 ms TiE2
+            # self.EXPOSURE_PHASE = 40  # 30 ms for 60X
+            # self.EXPOSURE_RED = 210  # ms
+            ########### TUcam  ####################
+            self.GREEN_EXCITE = 8
+            self.RED_EXCITE = 75  # 50 for 100X cfg, 100 for 60X cfg
+            self.EXPOSURE_GREEN = 25 + 25  # 50 ms TiE2
+            self.EXPOSURE_PHASE = 25 + 30  # 30 ms for 60X
+            self.EXPOSURE_RED = 25 + 200  # ms
+            ################################################
+            self.AUTOFOCUS_DEVICE = 'PFSStatus'
+            self.AUTOFOCUS_OFFSET = 'PFSOffset'
+            self.Z_DEVICE = 'ZDrive'
+            self.XY_DEVICE = 'prior_xy'
+            self.mmcore = mmcore
+            self.prior_core = None  # type: Optional[PriorScan]
+            self.arduino_core = None  # type: Optional[ARDUINO]
+            self.fpga_core = None  # type: Optional[NIFPGADevice]
         elif self.MICROSCOPE == 'TiE_prior_DNA_replicate':
             self.SHUTTER_LAMP = 'Arduino'
             self.INIT_LAMP = 'DiaLamp'
@@ -263,6 +295,11 @@ class MicroscopeParas:
 
         if self.SHUTTER_LAMP == 'Arduino':
             self.arduino_core = ARDUINO()
+
+        if self.SHUTTER_LAMP == 'NIFPGA':
+            self.fpga_core = NIFPGADevice()
+            self.image_grabber = mm.ImageGrabber(self.mmcore, self.fpga_core)
+            self.auto_acq_save = self.image_grabber.auto_acq_save
 
         if self.MICROSCOPE in ['TiE_prior_arduino', 'TiE_prior_DNA_replicate']:
             self.fpga_core = NIFPGADevice()

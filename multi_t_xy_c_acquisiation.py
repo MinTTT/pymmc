@@ -361,7 +361,7 @@ def if_acq(loop_index, flu_step):
         return 1
 
 
-def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, time_step: list, flu_step: int,
+def multi_acq_3c(dir: str, pos_ps: str, device: PymmAcq, flu_step: int,
                  time_duration: list,
                  thread_flag=False) -> None:
     '''
