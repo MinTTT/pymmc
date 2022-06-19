@@ -33,9 +33,9 @@ Connector C DIO 1-7 are usd for triggering the light source, for convenience, 1-
    
    ![FPGA_sync_diagram](README.assets/image-20220619134442443.png)
 
-
 ## Module
------------------
+
+
 ###  multi_t_xy_c_acquisiation/PymmAcq
 
 This module used to control the device states and the UI
