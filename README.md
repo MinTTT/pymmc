@@ -29,7 +29,10 @@ Connector C DIO 1-7 are usd for triggering the light source, for convenience, 1-
    `Trigger`: int, default is `0`. It determines the trigger cycle numbers. \
    `OFFTime`: int, Trigger pulse width (high state width) in microsecond.\
    `ONTime`: int, Trigger pulse width (high state width) in microsecond.\
-   `OutPutPinMap`: uint8, Connector C DIO 1-7 are mapped to its bitwise value. i.e., for C:DIO 1 to be ON, when the camera output signal come, needs a decimal value of 1 (B00000001), for all pins to be ON, needs a decimal value 127 (B01111111).
+   `OutPutPinMap`: uint8, Connector **C DIO 1-7** are mapped to its bitwise value. i.e., for C:DIO 1 to be ON, when the camera output signal come, needs a decimal value of 1 (B00000001), for all pins to be ON, needs a decimal value 127 (B01111111).
+   
+   ![FPGA_sync_diagram](README.assets/image-20220619134442443.png)
+
 
 ## Module
 -----------------
@@ -66,3 +69,7 @@ This package needs python packages followed,
 > pip install "napari[pyside2]"
 > 
 
+## Appendix
+   ![NIFPGA_Camera_trigger_diagram](README.assets/image-20220619132225733.png)
+
+   ![NI_FPGA_output](README.assets/image-20220619132314051.png)

@@ -1,4 +1,6 @@
+.idea/*
 .idea
+.history
 test_data
 *.pyc
 ./cfg_folder/test
