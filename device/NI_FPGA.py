@@ -82,7 +82,7 @@ class NIFPGADevice:
         self._DefaultParameters = {'PulseNumberperLoop': 1,
                                    'BreakinLoop': False,
                                    'Trigger': 0,
-                                   'OFFTime': 15000,
+                                   'OFFTime': 20000,
                                    'ONTime': 30000,
                                    'OutputPinMap': 0}
         # init device
@@ -230,4 +230,4 @@ class NIFPGADevice:
 # %%
 if __name__ == '__main__':
     # %%
-    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v2.lvbitx', resource='rio://172.22.11.2/RIO0')
+    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v3.lvbitx', resource='rio://172.22.11.2/RIO0')
