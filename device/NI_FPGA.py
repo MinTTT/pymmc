@@ -53,8 +53,10 @@ class NIFPGADevice:
 
     FrameRate - set or get the frame rate.
 
+    Synchronization - if True, the light source state dependent on camera trigger out singal.
+
     """
-    def __init__(self, bitfile: str=r'device/NI_FPGA/myRIO_v2.lvbitx',
+    def __init__(self, bitfile: str=r'device/NI_FPGA/myRIO_v4.lvbitx',
                  resource: str='rio://172.22.11.2/RIO0'):
         """
         Initial the NI_FPGA session
@@ -79,12 +81,14 @@ class NIFPGADevice:
         self._ReadOutTimeLimit = 13600  # type: int # microsecond
         self._DefaultPulseNumber = 1  # type: Optional[int]
         self._trigger = None  # type: Optional[Callable]
+        self._sync = None  # type: Optional[bool]
         self._DefaultParameters = {'PulseNumberperLoop': 1,
                                    'BreakinLoop': False,
                                    'Trigger': 0,
                                    'OFFTime': 20000,
                                    'ONTime': 30000,
-                                   'OutputPinMap': 0}
+                                   'OutputPinMap': 0,
+                                   'Synchronization': False}
         # init device
         self.open_session()
         self.fpga_session.registers['PulseNumberperLoop'].write(self._DefaultPulseNumber)
@@ -108,6 +112,13 @@ class NIFPGADevice:
         self._OFFTime = self.register_values['OFFTime']
         self._PulseNumber = self.register_values['PulseNumberperLoop']
         self._OutPutPinMap = self.register_values['OutputPinMap']
+        self._sync = self.register_values['Synchronization']
+
+    def register_reader(self, name: str):
+        return self.fpga_session.registers[name].read()
+
+    def register_writer(self, name, value):
+        self.fpga_session.registers[name].write(value)
 
     def busy(self) -> bool:
         if self.fpga_session.registers['Trigger'].read() != 0:
@@ -116,12 +127,26 @@ class NIFPGADevice:
             return False
 
     @property
+    def Synchronization(self):
+        self._sync = self.register_reader('Synchronization')
+        return self._sync
+
+    @Synchronization.setter
+    def Synchronization(self, state: bool):
+        self._sync = state
+        self.register_writer('Synchronization', state)
+
+    @property
     def ONTime(self):
         self._ONTime = self.fpga_session.registers['ONTime'].read()
         return self._ONTime
 
     @ONTime.setter
     def ONTime(self, time: int):
+        """
+        NOTime - set or get the pulse width in microseconds.
+        :param time: microseconds
+        """
         self._ONTime = time
         self.fpga_session.registers['ONTime'].write(time)
 
@@ -230,4 +255,4 @@ class NIFPGADevice:
 # %%
 if __name__ == '__main__':
     # %%
-    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v3.lvbitx', resource='rio://172.22.11.2/RIO0')
+    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v4.lvbitx', resource='rio://172.22.11.2/RIO0')
