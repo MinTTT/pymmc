@@ -17,6 +17,8 @@ import numpy as np  # Or any other
 from typing import Optional, List, Callable
 import warnings
 
+from functools import partial
+
 
 # […]
 
@@ -56,25 +58,26 @@ class NIFPGADevice:
     Synchronization - if True, the light source state dependent on camera trigger out singal.
 
     """
-    def __init__(self, bitfile: str=r'device/NI_FPGA/myRIO_v4.lvbitx',
-                 resource: str='rio://172.22.11.2/RIO0'):
+
+    def __init__(self, bitfile: str = r'device/NI_FPGA/myRIO_v4.lvbitx',
+                 resource: str = 'rio://172.22.11.2/RIO0'):
         """
-        Initial the NI_FPGA session
+        Initial the NI_FPGA session:
         :param bitfile: string, bitfile location.
         :param resource: string an already open session
         """
         self.bifile = bitfile
         self.resource = resource
         self.fpga_session = None  # type: Optional[Session]
-        self._ONTime = None  # type: Optional[int] # unit: microsecond
-        self._OFFTime = None  # type: Optional[int] # unit: microsecond
+        self.register_names = []  # type: List[str]
+        self.register_values = dict()  # type: dict
+
         self._PulseNumber = None  # type: Optional[int]
 
         self._trigger_value = 1  # type: int
         self._block_TTL = True  # type: bool
         self._TTL_on = False  # type: bool
-        self.register_names = []  # type: List[str]
-        self.register_values = dict()  # type: dict
+
         self._FPS = None  # type: Optional[float]
         self._cycle_time = None  # type: Optional[float]
         self._FPSLimit = 40.  # type: float
@@ -82,19 +85,36 @@ class NIFPGADevice:
         self._DefaultPulseNumber = 1  # type: Optional[int]
         self._trigger = None  # type: Optional[Callable]
         self._sync = None  # type: Optional[bool]
-        self._DefaultParameters = {'PulseNumberperLoop': 1,
-                                   'BreakinLoop': False,
-                                   'Trigger': 0,
-                                   'OFFTime': 20000,
-                                   'ONTime': 30000,
-                                   'OutputPinMap': 0,
-                                   'Synchronization': False}
+        self._sequence = False
+        self._OutputPinMap = 0
+        self._breakinloop = False
+        self._trigger = 0
+        self._PinArray = [0, 0, 0, 0, 0, 0, 0, 0]
+        self._SequenceSize = 0
+        self._ONTime = None  # type: Optional[int] # unit: microsecond
+        self._OFFTime = None  # type: Optional[int] # unit: microsecond
+
+        self._DefaultParameters = {'PulseNumberperLoop': [self._PulseNumber, 1],
+                                   'BreakinLoop': [self._breakinloop, False],
+                                   'Trigger': [self._trigger, 0],
+                                   'OFFTime': [self._OFFTime, 20000],
+                                   'ONTime': [self._ONTime, 30000],
+                                   'OutputPinMap': [self._OutputPinMap, 0],
+                                   'Synchronization': [self._sync, False],
+                                   'Sequence': [self._sequence, False],
+                                   'SequenceSize': [self._SequenceSize, 0],
+                                   'PinArray': [self._PinArray, [0, 0, 0, 0, 0, 0, 0, 0]]
+                                   }
+
         # init device
         self.open_session()
         self.fpga_session.registers['PulseNumberperLoop'].write(self._DefaultPulseNumber)
         self.get_register_values()
         for key, values in self._DefaultParameters.items():
-            self.fpga_session.registers[key].write(values)
+            self.fpga_session.registers[key].write(values[-1])
+
+    def __del__(self):
+        self.close()
 
     def open_session(self):
         self.fpga_session = Session(self.bifile, self.resource)
@@ -114,6 +134,27 @@ class NIFPGADevice:
         self._OutPutPinMap = self.register_values['OutputPinMap']
         self._sync = self.register_values['Synchronization']
 
+    def get_prop(self, prop_name):
+        attr_name = self._DefaultParameters[prop_name][0]
+        self.__dict__[attr_name] = self.register_reader(prop_name)
+        return self.__dict__[attr_name]
+
+    def set_prop(self, prop_name, value):
+        attr_name = self._DefaultParameters[prop_name][0]
+        self.__dict__[attr_name] = value
+        self.register_writer(prop_name)
+
+    def del_prop(self, prop_name):
+        attr_name = self._DefaultParameters[prop_name][0]
+        del self.__dict__[attr_name]
+
+    #
+    # def initProperty(self):
+    #     for key, value in self._DefaultParameters.items():
+    #         self.__dict__[key] = property(partial(self.get_prop, key),
+    #                                             partial(self.set_prop, key),
+    #                                             partial(self.del_prop, key))
+
     def register_reader(self, name: str):
         return self.fpga_session.registers[name].read()
 
@@ -127,6 +168,27 @@ class NIFPGADevice:
             return False
 
     @property
+    def PinArray(self):
+        self._PinArray = self.register_reader('PinArray')
+        return self._PinArray
+
+    @PinArray.setter
+    def PinArray(self, pinArray: list):
+        for i in range(len(pinArray)):
+            pinArray[i] = np.uint8(pinArray[i])
+        self._PinArray = pinArray
+
+    @property
+    def OutPutPinMap(self):
+        self._OutputPinMap = self.register_reader('OutputPinMap')
+        return self._OutputPinMap
+
+    @OutPutPinMap.setter
+    def OutPutPinMap(self, map: int):
+        self._OutputPinMap = map
+        self.register_writer('OutputPinMap', np.uint8(map))
+
+    @property
     def Synchronization(self):
         self._sync = self.register_reader('Synchronization')
         return self._sync
@@ -135,6 +197,26 @@ class NIFPGADevice:
     def Synchronization(self, state: bool):
         self._sync = state
         self.register_writer('Synchronization', state)
+
+    @property
+    def Sequence(self):
+        self._sequence = self.register_reader('Sequence')
+        return self._sequence
+
+    @Sequence.setter
+    def Sequence(self, value):
+        self._sequence = value
+        self.register_writer('Sequence', value)
+
+    @property
+    def SequenceSize(self):
+        self._SequenceSize = self.register_reader('SequenceSIze')
+        return self._SequenceSize
+
+    @SequenceSize.setter
+    def SequenceSize(self, value: int):
+        self._SequenceSize = value
+        self.register_writer('SequenceSize', value)
 
     @property
     def ONTime(self):
@@ -206,7 +288,7 @@ class NIFPGADevice:
         :return:
         """
         self.ONTime = int(time * 1000)
-    
+
     def set_outputpinmap(self, pin_map: int):
         """Set the Connector C DIO 1-7 output mode.
 
@@ -216,7 +298,7 @@ class NIFPGADevice:
             Connector C DIO 1-7 are mapped to its bitwise value. 
 
         """
-        self.fpga_session.registers['OutputPinMap'].write(np.uint8(pin_map))
+        self.OutPutPinMap = pin_map
 
     def get_exposure(self):
         return self.ONTime / 1000.
@@ -246,13 +328,11 @@ class NIFPGADevice:
     def close(self):
         """
         Close the session of NI FPGA,
-        :return:
         """
         self.fpga_session.close()
-        return None
 
 
 # %%
 if __name__ == '__main__':
     # %%
-    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v4.lvbitx', resource='rio://172.22.11.2/RIO0')
+    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v5.lvbitx', resource='rio://172.22.11.2/RIO0')
