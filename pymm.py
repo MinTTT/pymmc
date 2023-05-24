@@ -12,15 +12,17 @@ from device.arduino import ARDUINO
 import h5py
 from typing import Callable
 from pycromanager import Bridge
+from pycromanager import Core
+from pycromanager import Studio
 from device.NI_FPGA import NIFPGADevice
 from typing import Optional, Callable
 
 thread_lock = thread.Lock()
 bridge = Bridge()
 global core
-core = bridge.get_core()
+core = Core()
 
-studio = bridge.get_studio()
+studio = Studio()
 
 
 # %%

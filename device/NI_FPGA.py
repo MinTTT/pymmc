@@ -55,7 +55,7 @@ class NIFPGADevice:
 
     FrameRate - set or get the frame rate.
 
-    Synchronization - if True, the light source state dependent on camera trigger out singal.
+    Synchronization - if True, the light source state dependent on camera trigger out signal.
 
     """
 
@@ -114,6 +114,8 @@ class NIFPGADevice:
             self.fpga_session.registers[key].write(values[-1])
 
     def __del__(self):
+        for key, values in self._DefaultParameters.items():
+            self.fpga_session.registers[key].write(values[-1])
         self.close()
 
     def open_session(self):
@@ -210,7 +212,7 @@ class NIFPGADevice:
 
     @property
     def SequenceSize(self):
-        self._SequenceSize = self.register_reader('SequenceSIze')
+        self._SequenceSize = self.register_reader('SequenceSize')
         return self._SequenceSize
 
     @SequenceSize.setter
