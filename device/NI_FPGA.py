@@ -81,7 +81,7 @@ class NIFPGADevice:
         self._FPS = None  # type: Optional[float]
         self._cycle_time = None  # type: Optional[float]
         self._FPSLimit = 40.  # type: float
-        self._ReadOutTimeLimit = 13600  # type: int # microsecond
+        self._ReadOutTimeLimit = 1360  # type: int # microsecond
         self._DefaultPulseNumber = 1  # type: Optional[int]
         self._trigger = None  # type: Optional[Callable]
         self._sync = None  # type: Optional[bool]
@@ -95,12 +95,12 @@ class NIFPGADevice:
         self._OFFTime = None  # type: Optional[int] # unit: microsecond
 
         self._DefaultParameters = {'PulseNumberperLoop': [self._PulseNumber, 1],
-                                   'BreakinLoop': [self._breakinloop, False],
+                                   'BreakinLoop': [self._breakinloop, True],
                                    'Trigger': [self._trigger, 0],
                                    'OFFTime': [self._OFFTime, 20000],
                                    'ONTime': [self._ONTime, 30000],
                                    'OutputPinMap': [self._OutputPinMap, 0],
-                                   'Synchronization': [self._sync, False],
+                                   'Synchronization': [self._sync, True],
                                    'Sequence': [self._sequence, False],
                                    'SequenceSize': [self._SequenceSize, 0],
                                    'PinArray': [self._PinArray, [0, 0, 0, 0, 0, 0, 0, 0]]
@@ -110,13 +110,17 @@ class NIFPGADevice:
         self.open_session()
         self.fpga_session.registers['PulseNumberperLoop'].write(self._DefaultPulseNumber)
         self.get_register_values()
-        for key, values in self._DefaultParameters.items():
-            self.fpga_session.registers[key].write(values[-1])
+        self.initialMyRIO()
 
     def __del__(self):
         for key, values in self._DefaultParameters.items():
             self.fpga_session.registers[key].write(values[-1])
         self.close()
+
+    def initialMyRIO(self):
+        for key, values in self._DefaultParameters.items():
+            self.fpga_session.registers[key].write(values[-1])
+        self.stop_trigger_continuously()
 
     def open_session(self):
         self.fpga_session = Session(self.bifile, self.resource)
@@ -179,6 +183,7 @@ class NIFPGADevice:
         for i in range(len(pinArray)):
             pinArray[i] = np.uint8(pinArray[i])
         self._PinArray = pinArray
+        self.register_writer('PinArray', self._PinArray)
 
     @property
     def OutPutPinMap(self):
@@ -266,7 +271,7 @@ class NIFPGADevice:
         2. Standard Mode, Exposure Mode - Width, the exposure time is dependent to pulse width.
         3. Synchronization. The exposure time dependent to pulse cycle. ON time + OFF time is the exposure time.
 
-        For the safety reason, the OFF time is not allowed to be set to lower than 13600 microseconds.
+        For the safety reason, the OFF time is not allowed to be set to lower than 1360 microseconds.
         :param fps:
         :return:
         """
@@ -278,8 +283,8 @@ class NIFPGADevice:
         if desired_off_time < self._ReadOutTimeLimit:
             self.ONTime = int(cycle_time - self._ReadOutTimeLimit)
             self.OFFTime = self._ReadOutTimeLimit
-            warnings.warn('Need more time for image reading out, the exposure time is set to %.2f ms.'
-                          % (self._ONTime / 1000))
+            warnings.warn(f'Need more time for image reading out, the exposure time is set to '
+                          f'{"%.2f" %(self._ONTime / 1000)} ms.')
         else:
             self.OFFTime = int(desired_off_time)
 
@@ -316,6 +321,7 @@ class NIFPGADevice:
 
     def trigger_continuously(self):
         self.fpga_session.registers['PulseNumberperLoop'].write(-1)
+        self.fpga_session.registers['BreakinLoop'].write(False)
         self._trigger.write(self._trigger_value)
         return None
 
@@ -331,10 +337,11 @@ class NIFPGADevice:
         """
         Close the session of NI FPGA,
         """
+        self.initialMyRIO()
         self.fpga_session.close()
 
 
 # %%
 if __name__ == '__main__':
     # %%
-    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v5.lvbitx', resource='rio://172.22.11.2/RIO0')
+    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v6.lvbitx', resource='rio://172.22.11.2/RIO0')

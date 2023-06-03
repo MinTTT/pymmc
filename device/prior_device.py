@@ -40,6 +40,9 @@ class PriorScan(object):
         self.device_list = ['xystage', 'filter']
         self.initialize()
 
+    def __del__(self):
+        self.close_session()
+
     def initialize(self):
         self.ret = self.SDKPrior.PriorScientificSDK_Initialise()
         if self.ret:
@@ -172,7 +175,7 @@ class PriorScan(object):
 if __name__ == '__main__':
 
     # %%
-    conncet = PriorScan(com=8)
+    conncet = PriorScan(com=4)
     # %%
 
     stage = PriorScan(com=8)

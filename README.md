@@ -71,5 +71,5 @@ This package needs python packages followed,
 
 ## Appendix
    ![NIFPGA_Camera_trigger_diagram](README.assets/image-20220619132225733.png)
-
    ![NI_FPGA_output](README.assets/image-20220619132314051.png)
+   ![NI_FPGA_UI](README.assets/image-2023-05-24-193838.png)

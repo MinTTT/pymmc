@@ -11,9 +11,12 @@ import numpy as np
 import time
 import threading
 from napari.qt.threading import thread_worker
-
+from typing import Optional
 import tifffile as tif
+from tqdm import tqdm
 
+
+# from Acq_test import AcqTrigger
 
 class Rand_camera:
 
@@ -21,8 +24,9 @@ class Rand_camera:
         self._image_size = imsize
         self._depth = depth
         self._flag = None
-        self.napari_viewer = None
+        self.napari_viewer = None  # type: Optional[napari.Viewer]
         self._img_gen = None
+        self.colormap_set = {'green': 'green', 'red': 'red', 'bf': 'gray'}
 
     def open_viewer(self):
         try:
@@ -34,23 +38,66 @@ class Rand_camera:
             self.napari_viewer.show()
         return None
 
-    def start_live(self):
+    def start_live(self, obj, channel_name):
         self._flag = True
         if self.napari_viewer is None:
             self.napari_viewer = napari.Viewer()
 
-        self.large_random_images()
+        self.camera_live(obj, channel_name)
 
     def stop_live(self):
         self._flag = False
 
-    def update_layer(self, new_image):
+    def update_layer(self, args):
+        """
+        Parameters:
+            args: tuple
+                (new_image, layerName)
+        """
+        new_image, layerName = args
         try:
             # if the layer exists, update the data
-            self.napari_viewer.layers['Live camera'].data = new_image
+            self.napari_viewer.layers[layerName].data = new_image
         except KeyError:
             # otherwise add it to the viewer
-            self.napari_viewer.add_image(new_image, name='Live camera')
+            try:
+                cmap = self.colormap_set[layerName]
+            except KeyError:
+                cmap = 'gray'
+            self.napari_viewer.add_image(new_image,
+                                         name=layerName,
+                                         blending='additive',
+                                         colormap=cmap)
+
+    def camera_live(self, obj, layer_name):
+        @thread_worker(connect={'yielded': self.update_layer})
+        def _camera_image(obj, layer_name):
+            if self._flag is None:
+                self._flag = True
+            while obj.live_flag:
+                # time.sleep(0.0001)
+
+                while obj.mmCore.get_remaining_image_count() == 0:
+                    time.sleep(0.1)
+                    pass
+                if obj.mmCore.get_remaining_image_count() > 0:
+                    # obj.img_buff[im_count] = obj.mmCore.pop_next_image().reshape(obj.img_shape)
+                    obj.img_buff = obj.mmCore.get_last_image().reshape(obj.img_shape)
+                    # print(im_count)
+                    yield obj.img_buff, layer_name
+            obj.napari.stop_live()
+            obj.trigger.stop_trigger_continuously()
+            obj.mmCore.stop_sequence_acquisition()
+            obj.stopAcq()
+            return None
+
+        if not obj.acq_state:
+            obj.initAcq()
+        print('start live!')
+        obj.trigger.trigger_continuously()
+        obj.live_flag = True
+        _camera_image(obj, layer_name)
+        return None
 
     def large_random_images(self):
         @thread_worker(connect={'yielded': self.update_layer})
@@ -68,6 +115,11 @@ class Rand_camera:
         _large_random_images()
 
     def update_vedio_layers(self, args):
+        """
+
+        :param args: (new_imgs, layerindex, layername)
+        :return:
+        """
         new_imgs, layerindex, layername = args
         try:
             # if the layer exists, update the data
@@ -76,6 +128,43 @@ class Rand_camera:
             # otherwise add it to the viewer
             self.napari_viewer.add_image(new_imgs, name=layername)
         self.napari_viewer.dims.set_point(0, layerindex)
+        return None
+
+    def update_index_from_AcqTrigger(self, obj):
+        @thread_worker(connect={'yielded': self.update_layer})
+        def _update_index(obj):
+            im_count = 0
+            obj.current_index = 0
+            pbar = tqdm(total=len(obj.img_buff))  # create progress bar
+            while im_count < len(obj.img_buff):
+                _time_cur = time.time()
+                while obj.mmCore.get_remaining_image_count() == 0:
+                    pass
+                if obj.mmCore.get_remaining_image_count() > 0:
+                    obj.img_buff[im_count, ...] = obj.mmCore.pop_next_image().reshape(obj.img_shape)
+                    yield obj.img_buff[im_count, ...], obj.current_channel
+                    obj.current_index = im_count
+                    im_count += 1
+                    pbar.update(1)
+
+            obj.trigger.stop_trigger_continuously()
+            obj.stopAcq()
+            pbar.close()
+            yield obj.img_buff, obj.current_channel
+            return None
+
+        _update_index(obj)
+
+        return None
+
+    def update_index(self, args):
+        """
+        update image index
+        :param args: (axis, index)
+        :return:
+        """
+        axis, index = args
+        self.napari_viewer.dims.set_point(axis, index)
         return None
 
     def acq_random_images(self, duration_time, step, im_name, dir):
@@ -99,10 +188,10 @@ class Rand_camera:
 
 
 # %%
-
-camera = Rand_camera()
-for i in range(3):
-    imgs = camera.acq_random_images(5, 0.1, f'random vedio{i}', r'./')
+if __name__ == '__main__':
+    camera = Rand_camera()
+    for i in range(3):
+        imgs = camera.acq_random_images(20, 0.1, f'random vedio{i}', r'./')
 
 # flag = [True]
 #
