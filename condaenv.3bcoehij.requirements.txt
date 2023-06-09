@@ -1,0 +1,3 @@
+pycromanager
+napari[pyside2]
+tifffile

@@ -1,182 +1,147 @@
+# -*- coding: utf-8 -*-
 
-################################################################################
-## Form generated from reading UI file 'pymmc_ND_pad.ui'
-##
-## Created by: Qt User Interface Compiler version 6.1.2
-##
-## WARNING! All changes made in this file will be lost when recompiling UI file!
-################################################################################
+# Form implementation generated from reading ui file './pymmc_ND_pad.ui',
+# licensing of './pymmc_ND_pad.ui' applies.
+#
+# Created: Wed Jun  7 23:04:49 2023
+#      by: pyside2-uic  running on PySide2 5.13.2
+#
+# WARNING! All changes made in this file will be lost!
 
-from PySide6.QtCore import *  # type: ignore
-from PySide6.QtGui import *  # type: ignore
-from PySide6.QtWidgets import *  # type: ignore
-
+from PySide2 import QtCore, QtGui, QtWidgets
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
-        if not MainWindow.objectName():
-            MainWindow.setObjectName(u"MainWindow")
+        MainWindow.setObjectName("MainWindow")
         MainWindow.resize(519, 781)
-        self.centralwidget = QWidget(MainWindow)
-        self.centralwidget.setObjectName(u"centralwidget")
-        self.verticalLayoutWidget = QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
-        self.verticalLayoutWidget.setGeometry(QRect(200, 50, 77, 131))
-        self.move_region = QVBoxLayout(self.verticalLayoutWidget)
-        self.move_region.setObjectName(u"move_region")
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.centralwidget.setObjectName("centralwidget")
+        self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(200, 50, 77, 131))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.move_region = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.move_region.setContentsMargins(0, 0, 0, 0)
-        self.move_up = QPushButton(self.verticalLayoutWidget)
-        self.move_up.setObjectName(u"move_up")
-
+        self.move_region.setObjectName("move_region")
+        self.move_up = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.move_up.setObjectName("move_up")
         self.move_region.addWidget(self.move_up)
-
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.move_region.addItem(self.verticalSpacer_2)
-
-        self.move_down = QPushButton(self.verticalLayoutWidget)
-        self.move_down.setObjectName(u"move_down")
-
+        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.move_region.addItem(spacerItem)
+        self.move_down = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.move_down.setObjectName("move_down")
         self.move_region.addWidget(self.move_down)
-
-        self.verticalLayoutWidget_2 = QWidget(self.centralwidget)
-        self.verticalLayoutWidget_2.setObjectName(u"verticalLayoutWidget_2")
-        self.verticalLayoutWidget_2.setGeometry(QRect(20, 260, 461, 421))
-        self.ND_table_region = QVBoxLayout(self.verticalLayoutWidget_2)
-        self.ND_table_region.setObjectName(u"ND_table_region")
+        self.verticalLayoutWidget_2 = QtWidgets.QWidget(self.centralwidget)
+        self.verticalLayoutWidget_2.setGeometry(QtCore.QRect(20, 260, 461, 421))
+        self.verticalLayoutWidget_2.setObjectName("verticalLayoutWidget_2")
+        self.ND_table_region = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_2)
         self.ND_table_region.setContentsMargins(0, 0, 0, 0)
-        self.ND_table = QTableWidget(self.verticalLayoutWidget_2)
-        if (self.ND_table.columnCount() < 5):
-            self.ND_table.setColumnCount(5)
-        __qtablewidgetitem = QTableWidgetItem()
-        self.ND_table.setHorizontalHeaderItem(0, __qtablewidgetitem)
-        __qtablewidgetitem1 = QTableWidgetItem()
-        self.ND_table.setHorizontalHeaderItem(1, __qtablewidgetitem1)
-        __qtablewidgetitem2 = QTableWidgetItem()
-        self.ND_table.setHorizontalHeaderItem(2, __qtablewidgetitem2)
-        __qtablewidgetitem3 = QTableWidgetItem()
-        self.ND_table.setHorizontalHeaderItem(3, __qtablewidgetitem3)
-        __qtablewidgetitem4 = QTableWidgetItem()
-        self.ND_table.setHorizontalHeaderItem(4, __qtablewidgetitem4)
-        self.ND_table.setObjectName(u"ND_table")
+        self.ND_table_region.setObjectName("ND_table_region")
+        self.ND_table = QtWidgets.QTableWidget(self.verticalLayoutWidget_2)
+        self.ND_table.setObjectName("ND_table")
+        self.ND_table.setColumnCount(5)
+        self.ND_table.setRowCount(0)
+        item = QtWidgets.QTableWidgetItem()
+        self.ND_table.setHorizontalHeaderItem(0, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.ND_table.setHorizontalHeaderItem(1, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.ND_table.setHorizontalHeaderItem(2, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.ND_table.setHorizontalHeaderItem(3, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.ND_table.setHorizontalHeaderItem(4, item)
         self.ND_table.horizontalHeader().setDefaultSectionSize(80)
-
         self.ND_table_region.addWidget(self.ND_table)
-
-        self.horizontalLayoutWidget = QWidget(self.centralwidget)
-        self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
-        self.horizontalLayoutWidget.setGeometry(QRect(20, 220, 461, 31))
-        self.function_region = QHBoxLayout(self.horizontalLayoutWidget)
-        self.function_region.setObjectName(u"function_region")
+        self.horizontalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
+        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(20, 220, 461, 31))
+        self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
+        self.function_region = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
         self.function_region.setContentsMargins(0, 0, 0, 0)
-        self.checkBox_2 = QCheckBox(self.horizontalLayoutWidget)
-        self.checkBox_2.setObjectName(u"checkBox_2")
-
+        self.function_region.setObjectName("function_region")
+        self.checkBox_2 = QtWidgets.QCheckBox(self.horizontalLayoutWidget)
+        self.checkBox_2.setObjectName("checkBox_2")
         self.function_region.addWidget(self.checkBox_2)
-
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.function_region.addItem(self.horizontalSpacer)
-
-        self.delete_pos = QPushButton(self.horizontalLayoutWidget)
-        self.delete_pos.setObjectName(u"delete_pos")
-
+        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.function_region.addItem(spacerItem1)
+        self.delete_pos = QtWidgets.QPushButton(self.horizontalLayoutWidget)
+        self.delete_pos.setObjectName("delete_pos")
         self.function_region.addWidget(self.delete_pos)
-
-        self.horizontalLayoutWidget_2 = QWidget(self.centralwidget)
-        self.horizontalLayoutWidget_2.setObjectName(u"horizontalLayoutWidget_2")
-        self.horizontalLayoutWidget_2.setGeometry(QRect(400, 690, 77, 31))
-        self.horizontalLayout = QHBoxLayout(self.horizontalLayoutWidget_2)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalLayoutWidget_2 = QtWidgets.QWidget(self.centralwidget)
+        self.horizontalLayoutWidget_2.setGeometry(QtCore.QRect(400, 690, 77, 31))
+        self.horizontalLayoutWidget_2.setObjectName("horizontalLayoutWidget_2")
+        self.horizontalLayout = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget_2)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.record_position = QPushButton(self.horizontalLayoutWidget_2)
-        self.record_position.setObjectName(u"record_position")
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.record_position = QtWidgets.QPushButton(self.horizontalLayoutWidget_2)
         self.record_position.setEnabled(True)
-
+        self.record_position.setObjectName("record_position")
         self.horizontalLayout.addWidget(self.record_position)
-
-        self.horizontalLayoutWidget_3 = QWidget(self.centralwidget)
-        self.horizontalLayoutWidget_3.setObjectName(u"horizontalLayoutWidget_3")
-        self.horizontalLayoutWidget_3.setGeometry(QRect(310, 690, 77, 31))
-        self.update_layout = QHBoxLayout(self.horizontalLayoutWidget_3)
-        self.update_layout.setObjectName(u"update_layout")
+        self.horizontalLayoutWidget_3 = QtWidgets.QWidget(self.centralwidget)
+        self.horizontalLayoutWidget_3.setGeometry(QtCore.QRect(310, 690, 77, 31))
+        self.horizontalLayoutWidget_3.setObjectName("horizontalLayoutWidget_3")
+        self.update_layout = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget_3)
         self.update_layout.setContentsMargins(0, 0, 0, 0)
-        self.update = QPushButton(self.horizontalLayoutWidget_3)
-        self.update.setObjectName(u"update")
+        self.update_layout.setObjectName("update_layout")
+        self.update = QtWidgets.QPushButton(self.horizontalLayoutWidget_3)
         self.update.setEnabled(True)
-
+        self.update.setObjectName("update")
         self.update_layout.addWidget(self.update)
-
-        self.horizontalLayoutWidget_4 = QWidget(self.centralwidget)
-        self.horizontalLayoutWidget_4.setObjectName(u"horizontalLayoutWidget_4")
-        self.horizontalLayoutWidget_4.setGeometry(QRect(130, 70, 211, 81))
-        self.horizontalLayout_2 = QHBoxLayout(self.horizontalLayoutWidget_4)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.horizontalLayoutWidget_4 = QtWidgets.QWidget(self.centralwidget)
+        self.horizontalLayoutWidget_4.setGeometry(QtCore.QRect(130, 70, 211, 81))
+        self.horizontalLayoutWidget_4.setObjectName("horizontalLayoutWidget_4")
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget_4)
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
-        self.move_left = QPushButton(self.horizontalLayoutWidget_4)
-        self.move_left.setObjectName(u"move_left")
-
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.move_left = QtWidgets.QPushButton(self.horizontalLayoutWidget_4)
+        self.move_left.setObjectName("move_left")
         self.horizontalLayout_2.addWidget(self.move_left)
-
-        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout_2.addItem(self.horizontalSpacer_3)
-
-        self.move_right = QPushButton(self.horizontalLayoutWidget_4)
-        self.move_right.setObjectName(u"move_right")
-
+        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_2.addItem(spacerItem2)
+        self.move_right = QtWidgets.QPushButton(self.horizontalLayoutWidget_4)
+        self.move_right.setObjectName("move_right")
         self.horizontalLayout_2.addWidget(self.move_right)
-
-        self.left_step = QDoubleSpinBox(self.centralwidget)
-        self.left_step.setObjectName(u"left_step")
-        self.left_step.setGeometry(QRect(40, 100, 81, 22))
-        self.left_step.setMaximum(9999.000000000000000)
-        self.right_step = QDoubleSpinBox(self.centralwidget)
-        self.right_step.setObjectName(u"right_step")
-        self.right_step.setGeometry(QRect(360, 100, 91, 22))
-        self.right_step.setMaximum(9999.000000000000000)
-        self.down_step = QDoubleSpinBox(self.centralwidget)
-        self.down_step.setObjectName(u"down_step")
-        self.down_step.setGeometry(QRect(191, 190, 91, 22))
-        self.down_step.setMaximum(9999.000000000000000)
-        self.down_step.setStepType(QAbstractSpinBox.AdaptiveDecimalStepType)
-        self.up_step = QDoubleSpinBox(self.centralwidget)
-        self.up_step.setObjectName(u"up_step")
-        self.up_step.setGeometry(QRect(210, 20, 81, 22))
-        self.up_step.setMaximum(9999.000000000000000)
+        self.left_step = QtWidgets.QDoubleSpinBox(self.centralwidget)
+        self.left_step.setGeometry(QtCore.QRect(40, 100, 81, 22))
+        self.left_step.setMaximum(9999.0)
+        self.left_step.setObjectName("left_step")
+        self.right_step = QtWidgets.QDoubleSpinBox(self.centralwidget)
+        self.right_step.setGeometry(QtCore.QRect(360, 100, 91, 22))
+        self.right_step.setMaximum(9999.0)
+        self.right_step.setObjectName("right_step")
+        self.down_step = QtWidgets.QDoubleSpinBox(self.centralwidget)
+        self.down_step.setGeometry(QtCore.QRect(191, 190, 91, 22))
+        self.down_step.setMaximum(9999.0)
+        self.down_step.setStepType(QtWidgets.QAbstractSpinBox.AdaptiveDecimalStepType)
+        self.down_step.setObjectName("down_step")
+        self.up_step = QtWidgets.QDoubleSpinBox(self.centralwidget)
+        self.up_step.setGeometry(QtCore.QRect(210, 20, 81, 22))
+        self.up_step.setMaximum(9999.0)
+        self.up_step.setObjectName("up_step")
         MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QMenuBar(MainWindow)
-        self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 519, 22))
+        self.menubar = QtWidgets.QMenuBar(MainWindow)
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 519, 22))
+        self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QStatusBar(MainWindow)
-        self.statusbar.setObjectName(u"statusbar")
+        self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-
-        QMetaObject.connectSlotsByName(MainWindow)
-    # setupUi
+        QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.move_up.setText(QCoreApplication.translate("MainWindow", u"UP", None))
-        self.move_down.setText(QCoreApplication.translate("MainWindow", u"DOWN", None))
-        ___qtablewidgetitem = self.ND_table.horizontalHeaderItem(0)
-        ___qtablewidgetitem.setText(QCoreApplication.translate("MainWindow", u"x_pos", None));
-        ___qtablewidgetitem1 = self.ND_table.horizontalHeaderItem(1)
-        ___qtablewidgetitem1.setText(QCoreApplication.translate("MainWindow", u"y_pos", None));
-        ___qtablewidgetitem2 = self.ND_table.horizontalHeaderItem(2)
-        ___qtablewidgetitem2.setText(QCoreApplication.translate("MainWindow", u"z_pos", None));
-        ___qtablewidgetitem3 = self.ND_table.horizontalHeaderItem(3)
-        ___qtablewidgetitem3.setText(QCoreApplication.translate("MainWindow", u"pfs", None));
-        ___qtablewidgetitem4 = self.ND_table.horizontalHeaderItem(4)
-        ___qtablewidgetitem4.setText(QCoreApplication.translate("MainWindow", u"select", None));
-        self.checkBox_2.setText(QCoreApplication.translate("MainWindow", u"goto selected", None))
-        self.delete_pos.setText(QCoreApplication.translate("MainWindow", u"Delete", None))
-        self.record_position.setText(QCoreApplication.translate("MainWindow", u"Record", None))
-        self.update.setText(QCoreApplication.translate("MainWindow", u"Update", None))
-        self.move_left.setText(QCoreApplication.translate("MainWindow", u"LEFT", None))
-        self.move_right.setText(QCoreApplication.translate("MainWindow", u"RIGHT", None))
-    # retranslateUi
+        MainWindow.setWindowTitle(QtWidgets.QApplication.translate("MainWindow", "MainWindow", None, -1))
+        self.move_up.setText(QtWidgets.QApplication.translate("MainWindow", "UP", None, -1))
+        self.move_down.setText(QtWidgets.QApplication.translate("MainWindow", "DOWN", None, -1))
+        self.ND_table.horizontalHeaderItem(0).setText(QtWidgets.QApplication.translate("MainWindow", "x_pos", None, -1))
+        self.ND_table.horizontalHeaderItem(1).setText(QtWidgets.QApplication.translate("MainWindow", "y_pos", None, -1))
+        self.ND_table.horizontalHeaderItem(2).setText(QtWidgets.QApplication.translate("MainWindow", "z_pos", None, -1))
+        self.ND_table.horizontalHeaderItem(3).setText(QtWidgets.QApplication.translate("MainWindow", "pfs", None, -1))
+        self.ND_table.horizontalHeaderItem(4).setText(QtWidgets.QApplication.translate("MainWindow", "select", None, -1))
+        self.checkBox_2.setText(QtWidgets.QApplication.translate("MainWindow", "goto selected", None, -1))
+        self.delete_pos.setText(QtWidgets.QApplication.translate("MainWindow", "Delete", None, -1))
+        self.record_position.setText(QtWidgets.QApplication.translate("MainWindow", "Record", None, -1))
+        self.update.setText(QtWidgets.QApplication.translate("MainWindow", "Update", None, -1))
+        self.move_left.setText(QtWidgets.QApplication.translate("MainWindow", "LEFT", None, -1))
+        self.move_right.setText(QtWidgets.QApplication.translate("MainWindow", "RIGHT", None, -1))
 

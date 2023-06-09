@@ -29,6 +29,9 @@ class colors:
 # %%
 
 class NDRecorder:
+    """
+    This class responses to store & manipulate the position data
+    """
     def __init__(self, positions: list = []):
         self._positions = positions  # type: list
         self._pos_num = None
@@ -210,3 +213,4 @@ def h5_image_saver(image_ps, image_data:dict):
         h5_imag.create_dataset(kws, data)
     h5_imag.close()
     return None
+

@@ -12,12 +12,10 @@ import sys
 # […]
 
 # Libs
-import pandas as pd
-import numpy as np  # Or any other
 # […]
 
 # Own modules
-import PySide6.QtWidgets as QtWidgets
+
 from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QCheckBox
 from PySide6.QtCore import QFile, Qt, QTranslator
 from PySide6.QtGui import QKeySequence, QShortcut, QKeyEvent, QAction
@@ -119,7 +117,7 @@ class FakeAcq:
         threading.Thread(target=open_in_subprocess, args=(self,)).start()
 
 
-class NDRecorderUI(QMainWindow):
+class NDRecorderUI(QMainWindow, Ui_MainWindow):
     def __init__(self, acq_obj: FakeAcq, test: bool = False):
         self.acq_obj = acq_obj
         super(NDRecorderUI, self).__init__()

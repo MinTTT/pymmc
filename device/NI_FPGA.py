@@ -121,6 +121,7 @@ class NIFPGADevice:
         for key, values in self._DefaultParameters.items():
             self.fpga_session.registers[key].write(values[-1])
         self.stop_trigger_continuously()
+        return None
 
     def open_session(self):
         self.fpga_session = Session(self.bifile, self.resource)

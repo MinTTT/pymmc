@@ -1,3 +1,5 @@
+
+#%%
 import os
 import sys
 import time
@@ -10,7 +12,7 @@ import tifffile as tiff
 import threading as thread
 from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse_position, NDRecorder, h5_image_saver
 import h5py
-from pymmc_UI.napari_ui import Rand_camera
+from pymmc_UI.napari_ui import Rand_camera, FakeAcq
 from device.prior_device import PriorScan
 from pycromanager import Bridge
 from pycromanager import Core
@@ -18,7 +20,7 @@ from pycromanager import Studio
 from device.NI_FPGA import NIFPGADevice
 from typing import Optional, Callable
 import json
-
+from PySide2 import QtWidgets
 
 thread_lock = thread.Lock()
 bridge = Bridge()
@@ -361,16 +363,19 @@ class AcqControl:
         self.z = None  # type: Optional[mmDevice]
         self.pfs_state = None  # type: Optional[mmDevice]
         self.pfs_offset = None  # type: Optional[mmDevice]
-        self.xy = PriorScan(com=4)
+        self.xy = FakeAcq() # PriorScan(com=4)
 
         self.xy_num = None
         self.z_num = None
         self.c_num = None
         self.t_num = None
-
+        
         self.acqTrigger = AcqTrigger(mmCore=mmCore)
+        self.nd_recorder = NDRecorder()
+        self.napari = Rand_camera(self)
+        self.acqTrigger.napari = self.napari  # rewrite Napari of trigger
         self.mmCore = mmCore
-
+        self._current_position = 0
         for key, name in mmDeviceName.items():
             self.__dict__[key] = mmDevice(name, mmCore)
 
@@ -423,17 +428,91 @@ class AcqControl:
                     else:
                         pos[key] = value
         return pos
+    
+    @property
+    def current_position(self) -> Optional[int]:
+        return self._current_position
+
+
+    def record_current_position(self):
+        pos = self.get_position_dict()
+        self.nd_recorder.add_position(self.get_position_dict())
+        self._current_position = self.nd_recorder.position_number - 1
+        return pos
+
+    def update_current_position(self):
+        current_pos = self.get_position_dict()
+        self.nd_recorder.update_position(self._current_position, self.get_position_dict())
+        return current_pos
+
+    def remove_positions(self, pos_index):
+        for i in sorted(pos_index, reverse=True):
+            del self.nd_recorder.positions[i]
+
+    def move_right(self, dist=127, convert=False):
+        pos = self.get_position_dict()
+        if convert:
+            pos['xy'][0] -= dist
+        else:
+            pos['xy'][0] += dist
+        self.move_xyz_pfs(pos, step=0)
+
+    def move_left(self, dist=127, convert=False):
+        pos = self.get_position_dict()
+        if convert:
+            pos['xy'][0] += dist
+        else:
+            pos['xy'][0] -= dist
+        self.move_xyz_pfs(pos, step=0)
+
+    def move_up(self, dist=127, convert=False):
+        pos = self.get_position_dict()
+        if convert:
+            pos['xy'][1] -= dist
+        else:
+            pos['xy'][1] += dist
+        self.move_xyz_pfs(pos, step=0)
+
+    def move_down(self, dist=127, convert=False):
+        pos = self.get_position_dict()
+        if convert:
+            pos['xy'][1] += dist
+        else:
+            pos['xy'][1] -= dist
+        self.move_xyz_pfs(pos, step=0)
+
+    def go_to_position(self, index):
+        pos = self.nd_recorder.positions[index]
+        self.move_xyz_pfs(pos, step=0)
+        self._current_position = self.nd_recorder.positions.index(pos)
+
+    def go_to_next_position(self):
+        if self._current_position + 1 >= self.nd_recorder.position_number:
+            print("Here is the last position.")
+            return None
+        self._current_position += 1
+        self.go_to_position(self._current_position)
+
+    def go_to_previous_position(self):
+        if self._current_position <= 0:
+            print("Here is the first position.")
+            return None
+        self._current_position -= 1
+        self.go_to_position(self._current_position)
+
 
 
 # %%
-# scopeControl = AcqControl(mmCore=core)
-img_acq = AcqTrigger(mmCore=core)
-img_acq.set_channel('red')
+scopeControl = AcqControl(mmCore=core)
+scopeControl.napari.open_xyz_control_panel()
+img_acq = scopeControl.acqTrigger
+
 # img_acq.trigger.stop_trigger_continuously()
 # img_acq.trigger.trigger_continuously()
 # img_acq.napari.open_viewer()
 
 # ================ Only Live =============#
+img_acq.set_channel('bf')
 img_acq.show_live()
 img_acq.live_flag = False
 # ================ Only Snap =============#
