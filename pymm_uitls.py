@@ -132,7 +132,7 @@ def countdown(t, step=1, trigger=[False], msg='sleeping'):
         time.sleep(step)
         if trigger[0]:
             print(CGRE + 'Stop Acq.' + CEND)
-            return None
+            return 1
     # while t > 0:
     #     mins, secs = divmod(t, 60)
     #     print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')

@@ -394,44 +394,11 @@ class Rand_camera:
         if self.xyz_controller:
 
             self.open_viewer()
-            
-            
-            # self.xyzPanelwindow = NDRecorderUI(self.xyz_controller, test=False)
-            # all_widges = []
-            # for key, widge in self.xyzPanelwindow.__dict__.items():
-            #     if isinstance(widge, QWidget):
-            #         all_widges.append(self.xyzPanelwindow.__dict__[key])
-            # self.napari_viewer.window.add_dock_widget(all_widges, area='right', name='ND')
-            # all_widges_2 = []
-            # for key, widge in self.xyzPanelwindow.ui.__dict__.items():
-            #     if isinstance(widge, QWidget) and (widge not in all_widges):
-            #         all_widges_2.append(self.xyzPanelwindow.ui.__dict__[key])
-            # self.napari_viewer.window.add_dock_widget(all_widges_2, area='right', name='XYZControl') 
-
-            # if not QApplication.instance():
-            #         app = QApplication([])
-            # else:
-            #         app = QApplication.instance()
-            
+        
             self.xyzPanelwindow = NDRecorderUI(self.xyz_controller, test=False)
             self.xyzPanelwindow.show()
             napari.run()
-            # self.napari_viewer.window.add_dock_widget(self.xyzPanelwindow, area='right', name='XYZControl') 
-            # napari.Viewer()
-            # app.exec_()
-            # def open_in_subprocess(obj):
-            #     if not QApplication.instance():
-            #         app = QApplication(sys.argv)
-            #     else:
-            #         app = QApplication.instance()
-            #     ui = NDRecorderUI(obj)
-            #     # ui.show()
-            #     app.exec_()
-            # threading.Thread(target=open_in_subprocess, args=(self.xyz_controller,)).start()
-            # self.open_viewer()            
-            # self.xyzPanelwindow = NDRecorderUI(self.xyz_controller, test=False)
-            # self.napari_viewer.window.add_dock_widget(self.xyzPanelwindow, area='right', name='ND')
-            # self.open_viewer()
+
 
             
         
@@ -441,23 +408,27 @@ class Rand_camera:
     def start_live(self, obj, channel_name):
         @thread_worker(connect={'yielded': self.update_layer})
         def _camera_image(obj, layer_name):
+            
             im_count = 0
             if self._flag is None:
                 self._flag = True
-            while obj.live_flag:
-                while obj.mmCore.get_remaining_image_count() == 0:
-                    time.sleep(0.1)
-                if obj.mmCore.get_remaining_image_count() > 0:
+            try:
+                while obj.live_flag:
+                    while obj.mmCore.get_remaining_image_count() == 0:
+                        time.sleep(0.001)
 
                     img = obj.mmCore.get_last_image().reshape(obj.img_shape)
                     # obj.img_buff = obj.mmCore.pop_next_image().reshape(obj.img_shape)                    
                     im_count += 1
                     print(im_count)
-                    yield img, layer_name
-            obj.napari.stop_live()
-            obj.trigger.stop_trigger_continuously()
-            obj.mmCore.stop_sequence_acquisition()
-            obj.stopAcq()
+                    yield (img, layer_name)
+            except:
+                print('Some happen')
+                
+            # obj.napari.stop_live()
+            # obj.trigger.stop_trigger_continuously()
+            # obj.mmCore.stop_sequence_acquisition()
+            # obj.stopAcq()
             return None
         
         

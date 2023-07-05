@@ -5,6 +5,7 @@ import sys
 import time
 
 import napari
+from napari.qt import thread_worker
 import numpy as np
 import pymm as mm
 import pycromanager
@@ -14,7 +15,6 @@ from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse
 import h5py
 from pymmc_UI.napari_ui import Rand_camera, FakeAcq
 from device.prior_device import PriorScan
-from pycromanager import Bridge
 from pycromanager import Core
 from pycromanager import Studio
 from device.NI_FPGA import NIFPGADevice
@@ -23,7 +23,7 @@ import json
 from PySide2 import QtWidgets
 
 thread_lock = thread.Lock()
-bridge = Bridge()
+
 global core
 core = Core()
 
@@ -107,7 +107,7 @@ class mmDevice(object):
 
 
 class AcqTrigger:
-    def __init__(self, mmDeviceName=None,
+    def __init__(self, mmDeviceName=None, napri_inst=None,
                  NIbitfile=r'device/NI_FPGA/myRIO_v6.lvbitx', MIresource='rio://172.22.11.2/RIO0',
                  mmCore=None):
         if mmDeviceName is None:
@@ -140,7 +140,10 @@ class AcqTrigger:
         self.img_buff = None
         self.live_flag = False
         self.current_channel = 'Custom'
-        self.napari = Rand_camera()
+        if napri_inst is None:
+            self.napari = Rand_camera()
+        else: 
+            self.napari = napri_inst
         self.stopAcq()
 
     def set_channel(self, channel_name):
@@ -230,13 +233,14 @@ class AcqTrigger:
                 break
             time.sleep(0.001)
         jv_img = self.mmCore.pop_next_tagged_image()
-        self.img_buff = jv_img.pix.reshape(self.img_shape)
+        image = jv_img.pix.reshape(self.img_shape)
         imgtag = jv_img.tags
         if show:
+            self.img_buff = jv_img.pix.reshape(self.img_shape)
             self.napari.open_viewer()
             self.napari.update_layer((self.img_buff, self.current_channel))
 
-        return self.img_buff, imgtag
+        return image, imgtag
 
     def continuous_acq(self, duration_time: float, step: float, live=False):
         """
@@ -302,7 +306,49 @@ class AcqTrigger:
 
     def show_live(self):
         # self.img_shape = [np.zeros(self.img_shape, self.img_depth)]
-        self.napari.start_live(self, channel_name='Live')
+        # @thread_worker(connect={'yielded': self.napari.update_layer})
+        @thread_worker
+        def _camera_image(obj, layer_name, verbose=False):
+            print('start live!')
+            if verbose:
+                im_count = 0
+            if self.napari._flag is None:
+                self.napari._flag = True
+
+            while obj.live_flag:
+                while obj.mmCore.get_remaining_image_count() == 0:
+                    time.sleep(0.0001)
+                img = obj.mmCore.get_last_image().reshape(obj.img_shape)
+                # obj.img_buff = obj.mmCore.pop_next_image().reshape(obj.img_shape)                    
+                if verbose:
+                    im_count += 1
+                    print(im_count)
+                yield (img, layer_name)
+            print('Stop Live!')
+            return None
+     
+        self.napari._flag = True
+        if self.napari.napari_viewer is None:
+            self.napari.napari_viewer = napari.Viewer()
+            
+        if not self.acq_state:
+            self.initAcq()
+        
+        self.trigger.trigger_continuously()
+        self.live_flag = True
+        # _camera_image(self, 'Live')
+        
+        worker = _camera_image(self, 'Live', False)
+        worker.yielded.connect(self.napari.update_layer)
+        worker.start()
+        # self.napari.start_live(self, channel_name='Live')
+        return None
+    
+    
+    def stop_live(self):
+        self.live_flag = False
+        self.napari._flag = False
+        self.stopAcq()
         return None
 
 
@@ -350,7 +396,9 @@ class imgSave:
 
         self.file_name = os.path.join(self.dir, f'{self.main_name}_{self.index}.{self.suffix}')
         self.meta['axes'] = self.axes
-        tiff.imwrite(self.file_name, data=self.data, photometric='minisblack', metadata=self.meta)
+        tiff.imwrite(self.file_name, data=self.data, 
+                     photometric='minisblack', 
+                     metadata=self.meta, imagej=True)
 
         self.index += 1
         return None
@@ -363,17 +411,18 @@ class AcqControl:
         self.z = None  # type: Optional[mmDevice]
         self.pfs_state = None  # type: Optional[mmDevice]
         self.pfs_offset = None  # type: Optional[mmDevice]
-        self.xy = FakeAcq() # PriorScan(com=4)
+        self.xy = PriorScan(com=4) # PriorScan(com=4) FakeAcq()
 
         self.xy_num = None
         self.z_num = None
         self.c_num = None
         self.t_num = None
         
-        self.acqTrigger = AcqTrigger(mmCore=mmCore)
+        
         self.nd_recorder = NDRecorder()
         self.napari = Rand_camera(self)
-        self.acqTrigger.napari = self.napari  # rewrite Napari of trigger
+        self.acqTrigger = AcqTrigger(mmCore=mmCore, napri_inst=self.napari)
+        # self.acqTrigger.napari = self.napari  # rewrite Napari of trigger
         self.mmCore = mmCore
         self._current_position = 0
         for key, name in mmDeviceName.items():
@@ -501,86 +550,86 @@ class AcqControl:
         self.go_to_position(self._current_position)
 
 
-
+if __name__ == '__main__':
 # %%
-scopeControl = AcqControl(mmCore=core)
-scopeControl.napari.open_xyz_control_panel()
-img_acq = scopeControl.acqTrigger
+    scopeControl = AcqControl(mmCore=core)
+    scopeControl.napari.open_xyz_control_panel()
+    img_acq = scopeControl.acqTrigger
 
-# img_acq.trigger.stop_trigger_continuously()
-# img_acq.trigger.trigger_continuously()
-# img_acq.napari.open_viewer()
+    # img_acq.trigger.stop_trigger_continuously()
+    # img_acq.trigger.trigger_continuously()
+    # img_acq.napari.open_viewer()
 
-# ================ Only Live =============#
-img_acq.set_channel('bf')
-img_acq.show_live()
-img_acq.live_flag = False
-# ================ Only Snap =============#
-img_acq.set_channel('red')
-img_acq.snap(show=True)
-img_acq.set_channel('green')
-img_acq.snap(show=True)
-img_acq.set_channel('bf')
-img_acq.snap(show=True)
-# ================ Acq Video ==========#
-img_acq.set_channel('bf')
-_ = img_acq.continuous_acq(1000 * 20, 40, live=True)
+    # ================ Only Live =============#
+    img_acq.set_channel('bf')
+    img_acq.show_live()
+    img_acq.stop_live()
+    # ================ Only Snap =========#
+    img_acq.set_channel('red')
+    img_acq.snap(show=True)
+    img_acq.set_channel('green')
+    img_acq.snap(show=True)
+    img_acq.set_channel('bf')
+    img_acq.snap(show=True)
+    # ================ Acq Video ==========#
+    img_acq.set_channel('bf')
+    _ = img_acq.continuous_acq(1000 * 20, 40, live=True)
 
-img_save = imgSave()
-# vedio = img_acq.live(30)
-images = []
-for color in img_acq.triggerMap.keys():
-    img_acq.exciterSate = color
-    img, tag = img_acq.snap()
-    images.append(img)
-img_save.save(dir=r'./', name='temp.tiff', data=np.array(images), axes='CYX', meta=tag)
+    img_save = imgSave()
+    # vedio = img_acq.live(30)
+    images = []
+    for color in img_acq.triggerMap.keys():
+        img_acq.exciterSate = color
+        img, tag = img_acq.snap()
+        images.append(img)
+    img_save.save(dir=r'./', name='temp.tiff', data=np.array(images), axes='CYX', meta=tag)
 
-allDevice = javaList(core.get_loaded_devices())
-cameraName = core.get_camera_device()
-FluoresceDeviceName = 'Spectra'
-phaseLightSourceName = 'TIDiaLamp'
-ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v6.lvbitx', resource='rio://172.22.11.2/RIO0')
-camera = mmDevice(cameraName, core)
-spectraX = mmDevice(FluoresceDeviceName, core)
-dia = mmDevice(phaseLightSourceName, core)
+    allDevice = javaList(core.get_loaded_devices())
+    cameraName = core.get_camera_device()
+    FluoresceDeviceName = 'Spectra'
+    phaseLightSourceName = 'TIDiaLamp'
+    ni_fpga = NIFPGADevice(bitfile=r'device/NI_FPGA/myRIO_v6.lvbitx', resource='rio://172.22.11.2/RIO0')
+    camera = mmDevice(cameraName, core)
+    spectraX = mmDevice(FluoresceDeviceName, core)
+    dia = mmDevice(phaseLightSourceName, core)
 
-spectraX.load_device_property(r'./cfg_folder/Spectra_cfg_2023-05-26-14-10.json')
-camera.load_device_property(r'./cfg_folder/TUCam_cfg_2023-05-26-14-27.json')
+    spectraX.load_device_property(r'./cfg_folder/Spectra_cfg_2023-05-26-14-10.json')
+    camera.load_device_property(r'./cfg_folder/TUCam_cfg_2023-05-26-14-27.json')
 
-ni_fpga.ONTime = 100000
-ni_fpga.OFFTime = 10000
+    ni_fpga.ONTime = 100000
+    ni_fpga.OFFTime = 10000
 
-# ni_fpga.set_outputpinmap(0b00000100)  # blue light
-# ni_fpga.set_outputpinmap(0b00000010)  # yellow light
+    # ni_fpga.set_outputpinmap(0b00000100)  # blue light
+    # ni_fpga.set_outputpinmap(0b00000010)  # yellow light
 
-ni_fpga.set_outputpinmap(0b01000000)  # phase
-# ni_fpga.SequenceSize = 2
-# ni_fpga.PinArray = [int(0b01000000), int(0b00000100), 0, 0, 0, 0, 0, 0]
-# ni_fpga.Sequence = True
-ni_fpga.Synchronization = True
-# ni_fpga.trigger_continuously()
-# ni_fpga.FrameRate = 20
-
-
-# about image acq
-if core.is_sequence_running():
-    core.stop_sequence_acquisition()
-core.clear_circular_buffer()
-core.prepare_sequence_acquisition(camera.device_name)
-core.start_continuous_sequence_acquisition(0)
-ni_fpga.trigger_continuously()
-disp = studio.live()
-
-if not disp.is_live_mode_on():
-    disp.set_live_mode_on(True)
-    window = disp.get_display()
-window.show()
-# ni_fpga.trigger_one_pulse()
+    ni_fpga.set_outputpinmap(0b01000000)  # phase
+    # ni_fpga.SequenceSize = 2
+    # ni_fpga.PinArray = [int(0b01000000), int(0b00000100), 0, 0, 0, 0, 0, 0]
+    # ni_fpga.Sequence = True
+    ni_fpga.Synchronization = True
+    # ni_fpga.trigger_continuously()
+    # ni_fpga.FrameRate = 20
 
 
-# ni_fpga.stop_trigger_continuously()
-if core.is_sequence_running():
-    core.stop_sequence_acquisition()
+    # about image acq
+    if core.is_sequence_running():
+        core.stop_sequence_acquisition()
     core.clear_circular_buffer()
-ni_fpga.stop_trigger_continuously()
-disp.set_live_mode(False)
+    core.prepare_sequence_acquisition(camera.device_name)
+    core.start_continuous_sequence_acquisition(0)
+    ni_fpga.trigger_continuously()
+    disp = studio.live()
+
+    if not disp.is_live_mode_on():
+        disp.set_live_mode_on(True)
+        window = disp.get_display()
+    window.show()
+    # ni_fpga.trigger_one_pulse()
+
+
+    # ni_fpga.stop_trigger_continuously()
+    if core.is_sequence_running():
+        core.stop_sequence_acquisition()
+        core.clear_circular_buffer()
+    ni_fpga.stop_trigger_continuously()
+    disp.set_live_mode(False)
