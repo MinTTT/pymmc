@@ -110,6 +110,7 @@ stop_flag[0] = True
 
 from OME_TIFF_Exporter import getImageData
 import tifffile as tif
+
 save_dir = r"D:\zjw\20230704_3_60XRedInit_L3strins_TimeLapse"
 target_dirt = r'Y:\fulab_zc_6\AGAR_PAD'
 dir_base_name = os.path.basename(save_dir)
@@ -120,17 +121,18 @@ fov_dir = fov_dirs[0]
 img_list = [img.name for img in os.scandir(os.path.join(save_dir, fov_dirs[0]))
             if img.name.split('.')[-1] == 'tif']
 img_list.sort(key=lambda name: int(name.split('.')[0].split('_')[-1]))
-image_data = [tif.TiffFile(os.path.join(save_dir, fov_dir, img_name))  for img_name in img_list]
-# time_data = []
+image_data = [tif.TiffFile(os.path.join(save_dir, fov_dir, img_name)) for img_name in img_list]
+#
 # for img_name in img_list:
 #     img = tif.TiffFile(os.path.join(save_dir, fov_dir, img_name))
-    
+
 
 first_image = image_data[0]
 image_data, cust_description, axes = getImageData(first_image)
 image_shape = image_data.shape
-
+time_data = []
 image_buffer = np.empty((len(image_data), *image_shape), dtype=image_data.dtype)
+for image in img_list:
 
 
 
