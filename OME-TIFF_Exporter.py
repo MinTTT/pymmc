@@ -19,7 +19,6 @@ import numpy as np
 from lxml import etree
 import warnings
 from typing import Tuple
-import json
 
 
 def getCOMETiffCustomDescription2dict(image_obj: TiffFile):
