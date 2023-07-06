@@ -19,7 +19,7 @@ trigger = device_ctrl.acqTrigger
 time_duration = 3600 * 5
 time_step = 5 * 60
 # save dir 
-save_dir = r"D:\zjw\20230704_3_60XRedInit_L3strins_TimeLapse"
+save_dir = r"D:\zjw\20230704_4_60XRedInit_L3strins_TimeLapse"
 # Channel
 channels_set = {'red': {'exciterSate': 'green', 'exposure': 200, 'intensity': {'Green_Level': 50}},
                 'green': {'exciterSate': 'cyan', 'exposure': 40, 'intensity': {'Cyan_Level': 20}},
@@ -104,36 +104,8 @@ acq_thread.start()
 #         device_ctrl.napari.update_index([0, loop_i])
 #         device_ctrl.napari.update_index([1, p_i])
 #     time.sleep(5)    
-#%%
-stop_flag[0] = True
+#%%  Stop ACQ
+# stop_flag[0] = True
 # %%
 
-from OME_TIFF_Exporter import getImageData
-import tifffile as tif
 
-save_dir = r"D:\zjw\20230704_3_60XRedInit_L3strins_TimeLapse"
-target_dirt = r'Y:\fulab_zc_6\AGAR_PAD'
-dir_base_name = os.path.basename(save_dir)
-image_save_dirt = os.path.join(target_dirt, dir_base_name)
-fov_dirs = [dir.name for dir in os.scandir(save_dir) if dir.is_dir()]
-
-fov_dir = fov_dirs[0]
-img_list = [img.name for img in os.scandir(os.path.join(save_dir, fov_dirs[0]))
-            if img.name.split('.')[-1] == 'tif']
-img_list.sort(key=lambda name: int(name.split('.')[0].split('_')[-1]))
-image_data = [tif.TiffFile(os.path.join(save_dir, fov_dir, img_name)) for img_name in img_list]
-#
-# for img_name in img_list:
-#     img = tif.TiffFile(os.path.join(save_dir, fov_dir, img_name))
-
-
-first_image = image_data[0]
-image_data, cust_description, axes = getImageData(first_image)
-image_shape = image_data.shape
-time_data = []
-image_buffer = np.empty((len(image_data), *image_shape), dtype=image_data.dtype)
-for image in img_list:
-
-
-
-# %%
