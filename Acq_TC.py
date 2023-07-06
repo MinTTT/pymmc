@@ -108,7 +108,7 @@ acq_thread.start()
 stop_flag[0] = True
 # %%
 
-from OME-TIFF_Exporter import getImageData
+from OME_TIFF_Exporter import getImageData
 import tifffile as tif
 save_dir = r"D:\zjw\20230704_3_60XRedInit_L3strins_TimeLapse"
 target_dirt = r'Y:\fulab_zc_6\AGAR_PAD'
