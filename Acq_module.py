@@ -396,9 +396,12 @@ class imgSave:
 
         self.file_name = os.path.join(self.dir, f'{self.main_name}_{self.index}.{self.suffix}')
         self.meta['axes'] = self.axes
-        tiff.imwrite(self.file_name, data=self.data, 
-                     photometric='minisblack', 
-                     metadata=self.meta, imagej=True)
+        # self.meta['']
+        # tiff.imwrite(self.file_name, data=self.data, 
+        #              photometric='minisblack', 
+        #              metadata=self.meta, ome=True, bigtiff=True)
+        with tiff.TiffWriter(self.file_name, bigtiff=True, ome=True) as tif:
+            tif.write(self.data, metadata=self.meta)
 
         self.index += 1
         return None
