@@ -99,52 +99,17 @@ acq_thread.start()
 #         print(f'Move to Pos {p_i}, {pos}')
 #         for c_i, c_name in enumerate(channels_name):
 #             trigger.set_channel(c_name)
-#             img, meta = trigger.snap(show=False)
-#             trigger.img_buff[loop_i, p_i, c_i, ...] = img
+#             image_obj, meta = trigger.snap(show=False)
+#             trigger.img_buff[loop_i, p_i, c_i, ...] = image_obj
 #         device_ctrl.napari.update_index([0, loop_i])
 #         device_ctrl.napari.update_index([1, p_i])
 #     time.sleep(5)    
 #%%
 stop_flag[0] = True
 # %%
-import tifffile
-from tifffile import TiffFile
-from lxml import etree
-def getOMETiffDescription2dict(img: TiffFile):
-    parser = etree.XMLParser(ns_clean=True, recover=True, encoding='utf-8')
-    node = etree.fromstring(img.pages[0].description.encode('utf-8'), parser=parser)
-    desc = elem2dict(node)['Image']['Description']
 
-    return eval(desc)
-
-
-def elem2dict(node, attributes=True):
-    """
-    Convert an lxml.etree node tree into a dict.
-    """
-    result = {}
-    if attributes:
-        for item in node.attrib.items():
-            key, result[key] = item
-
-    for element in node.iterchildren():
-        # Remove namespace prefix
-        key = etree.QName(element).localname
-
-        # Process element as tree element if the inner XML contains non-whitespace content
-        if element.text and element.text.strip():
-            value = element.text
-        else:
-            value = elem2dict(element)
-        if key in result:
-            if type(result[key]) is list:
-                result[key].append(value)
-            else:
-                result[key] = [result[key], value]
-        else:
-            result[key] = value
-    return result
-
+from OME-TIFF_Exporter import getImageData
+import tifffile as tif
 save_dir = r"D:\zjw\20230704_3_60XRedInit_L3strins_TimeLapse"
 target_dirt = r'Y:\fulab_zc_6\AGAR_PAD'
 dir_base_name = os.path.basename(save_dir)
@@ -155,21 +120,17 @@ fov_dir = fov_dirs[0]
 img_list = [img.name for img in os.scandir(os.path.join(save_dir, fov_dirs[0]))
             if img.name.split('.')[-1] == 'tif']
 img_list.sort(key=lambda name: int(name.split('.')[0].split('_')[-1]))
-image_data = []
-time_data = []
-for img_name in img_list:
-    img = tifffile.TiffFile(os.path.join(save_dir, fov_dir, img_name))
+image_data = [tif.TiffFile(os.path.join(save_dir, fov_dir, img_name))  for img_name in img_list]
+# time_data = []
+# for img_name in img_list:
+#     img = tif.TiffFile(os.path.join(save_dir, fov_dir, img_name))
     
-    description = getOMETiffDescription2dict(img)
-    time_data += description['Times']
-image_shape = img.pages[0].shape
-image_data_type = img.pages[0].dtype
-image_buffer = np.empty((len(time_data), *image_shape), dtype=image_data_type)
-        # if isinstance(value, str):
-            # print(value.split('=')[0])
-        # print(value.split('=')[0])
-        # if value.split('=')[0] == 'datetime':
-        #     time_data.append(value.split('=')[-1])
+
+first_image = image_data[0]
+image_data, cust_description, axes = getImageData(first_image)
+image_shape = image_data.shape
+
+image_buffer = np.empty((len(image_data), *image_shape), dtype=image_data.dtype)
 
 
 

@@ -13,7 +13,7 @@ import matplotlib
 img_ps = r'C:\Users\pc\Desktop\streads\HDR_random_exp'
 img_names = os.listdir(img_ps)
 
-# img_hist = histogram(img, 0, 2**8, 1000)
+# img_hist = histogram(image_obj, 0, 2**8, 1000)
 
 
 fig1, ax = plt.subplots(1, 1)

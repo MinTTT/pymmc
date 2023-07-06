@@ -220,7 +220,7 @@ class AcqTrigger:
 
         Returns
         --------------
-        img, imgtag: np.ndarray, dict
+        image_obj, imgtag: np.ndarray, dict
             (snape image, image info)
         """
         if not self.acq_state:
