@@ -6,3 +6,4 @@ test_data
 ./cfg_folder/test
 *.tiff
 *.xml
+*.tif
