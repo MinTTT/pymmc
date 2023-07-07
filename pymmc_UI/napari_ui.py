@@ -398,10 +398,6 @@ class Rand_camera:
             self.xyzPanelwindow = NDRecorderUI(self.xyz_controller, test=False)
             self.xyzPanelwindow.show()
             napari.run()
-
-
-            
-        
         else:
             warnings.warn("XYZ Controller isn't detected.")
 

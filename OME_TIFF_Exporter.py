@@ -11,7 +11,7 @@
 
 # Libs
 # […]
-
+#%%
 # Own modules
 import tifffile as tif
 from tifffile import TiffWriter, TiffFile
@@ -21,6 +21,10 @@ import warnings
 from typing import Tuple
 import os
 from tqdm import tqdm
+import zarr
+import  shutil
+import threading
+import time
 
 
 def getCOMETiffCustomDescription2dict(image_obj: TiffFile):
@@ -97,60 +101,118 @@ def elem2dict(node, attributes=True):
             result[key] = value
     return result
 
+# #%%
+# # %%
+# if __name__ == "__main__":
+#     save_dir = r"D:\zjw\20230704_3_60XRedInit_L3strins_TimeLapse"
+#     target_dir = r'Z:\fulab_zc_6\AGAR_PAD'
+#     dir_base_name = os.path.basename(save_dir)
+#     image_save_dirt = os.path.join(target_dir, dir_base_name)
+#     fov_dirs = [dir.name for dir in os.scandir(save_dir) if dir.is_dir()]
+
+#     save_dir_base_name = os.path.basename(save_dir)
+#     target_dir_dir = os.path.join(target_dir, save_dir_base_name)
+#     if not os.path.isdir(target_dir_dir):
+#         os.mkdir(target_dir_dir)
+#     # copy ohter files in dir
+#     file_in_dir = [dir.name for dir in os.scandir(save_dir) if dir.is_file()]
+#     for file_name in file_in_dir:
+#         shutil.copyfile(os.path.join(save_dir, file_name), os.path.join(target_dir_dir, file_name))
+
+#     # fov_dir = fov_dirs[0]
+#     for fov_dir in tqdm(fov_dirs, 'FOV#: '):
+#         img_list = [img.name for img in os.scandir(os.path.join(save_dir, fov_dir))
+#                     if img.name.split('.')[-1] in ['tif', 'tiff']]
+#         img_list.sort(key=lambda name: int(name.split('.')[0].split('_')[-1]))
+#         images_data = [tif.TiffFile(os.path.join(save_dir, fov_dir, img_name)) for img_name in img_list]
+#         # load data from files
+#         first_image = images_data[0]
+#         image_data, cust_description, axes = getImageData(first_image)
+#         image_shape = image_data.shape
+#         time_data = []
+#         # image_buffer = np.empty((len(images_data), *image_shape), dtype=image_data.dtype)
+#         for imagei, image in enumerate(images_data):
+#             # image.asarray(out=image_buffer[imagei, ...])
+#             time_data = time_data + getCOMETiffCustomDescription2dict(image)['Times']
+#         # Create a new OME TIFF
+#         with TiffWriter(os.path.join(target_dir_dir, fov_dir + '.ome.tif'), ome=True) as ome_tif:
+
+#             description_data = {'Times': time_data}
+#             for key in list(cust_description.keys()):
+#                 if key != 'Times':
+#                     description_data[key] = cust_description[key]
+#             meta_dict = {'axes': 'T' + axes,
+#                          'Description': description_data}
+#             ome_tif.write(shape=(len(images_data), *image_shape), dtype=image_data.dtype, photometric='MINISBLACK',
+#                          metadata=meta_dict)
+#         store = tif.imread(os.path.join(target_dir_dir, fov_dir + '.ome.tif'), aszarr=True, mode='r+b')
+#         z = zarr.open(store, mode='a')
+#         for imagei, image in enumerate(images_data):
+#             z[imagei, ...] = image.asarray()
+#         store.close()
+        
+
 
 # %%
 if __name__ == "__main__":
-    # data0 = np.random.randint(0, 255, (3, 3, 1024, 1024), 'uint16')
-    # AcqTime = [1, 3, 4]
-    #
-    # # data1 = np.random.randint(0, 1023, (4, 256, 256), 'uint16')
-    #
-    # with TiffWriter('temp.ome.tif', ome=True) as tif:
-    #     tif.save(data0, photometric='MINISBLACK',
-    #              metadata={'axes': 'TCYX',
-    #                        'Description': {'Times': AcqTime}},
-    #              )
-    #
-    # img = TiffFile('temp.ome.tif')
-    #
-    # data, des, axes = getImageData(img)
-
-    # from OME_TIFF_Exporter import getImageData
-    # import tifffile as tif
-
-    save_dir = r"Y:\fulab_zc_6\AGAR_PAD\20230704_4_60XRedInit_L3strins_TimeLapse"
-    target_dir = r'Y:\fulab_zc_6\AGAR_PAD'
+    save_dir = r"D:\zjw\20230704_5_60XRedInit_L3strins_TimeLapse_Test"
+    target_dir = r'Z:\fulab_zc_6\AGAR_PAD'
+    
+    def save_ome_tiff(args):
+        ome_tif_path, meta, buffer = args
+        with TiffWriter(ome_tif_path, ome=True) as ome_tif:
+            ome_tif.write(buffer, photometric='MINISBLACK', metadata=meta)
     dir_base_name = os.path.basename(save_dir)
     image_save_dirt = os.path.join(target_dir, dir_base_name)
     fov_dirs = [dir.name for dir in os.scandir(save_dir) if dir.is_dir()]
 
+    save_dir_base_name = os.path.basename(save_dir)
+    target_dir_dir = os.path.join(target_dir, save_dir_base_name)
+    if not os.path.isdir(target_dir_dir):
+        os.mkdir(target_dir_dir)
+    # copy ohter files in dir
+    file_in_dir = [dir.name for dir in os.scandir(save_dir) if dir.is_file()]
+    for file_name in file_in_dir:
+        shutil.copyfile(os.path.join(save_dir, file_name), os.path.join(target_dir_dir, file_name))
+    All_save_thread = []
     # fov_dir = fov_dirs[0]
-    for fov_dir in fov_dirs:
-        img_list = [img.name for img in os.scandir(os.path.join(save_dir, fov_dirs[0]))
+    for fov_dir in tqdm(fov_dirs, 'FOV#: '):
+        img_list = [img.name for img in os.scandir(os.path.join(save_dir, fov_dir))
                     if img.name.split('.')[-1] in ['tif', 'tiff']]
         img_list.sort(key=lambda name: int(name.split('.')[0].split('_')[-1]))
-        images_data = [tif.TiffFile(os.path.join(save_dir, fov_dir, img_name)) for img_name in tqdm(img_list)]
+        images_data = [tif.TiffFile(os.path.join(save_dir, fov_dir, img_name)) for img_name in img_list]
         # load data from files
         first_image = images_data[0]
         image_data, cust_description, axes = getImageData(first_image)
         image_shape = image_data.shape
         time_data = []
         image_buffer = np.empty((len(images_data), *image_shape), dtype=image_data.dtype)
-        for imagei, image in enumerate(tqdm(images_data)):
+        for imagei, image in enumerate(images_data):
             image.asarray(out=image_buffer[imagei, ...])
             time_data = time_data + getCOMETiffCustomDescription2dict(image)['Times']
         # Create a new OME TIFF
-        save_dir_base_name = os.path.basename(save_dir)
-        target_dir_dir = os.path.join(target_dir, save_dir_base_name)
-        if not os.path.isdir(target_dir_dir):
-            os.mkdir(target_dir_dir)
-        with TiffWriter(os.path.join(target_dir_dir, fov_dir + '.ome.tif'), ome=True) as ome_tif:
+        time_data = np.array(time_data)
+        start_time = np.min(time_data)
+        time_data = (time_data-start_time) / 3600
+        
+        ome_tif_path = os.path.join(target_dir_dir, fov_dir + '.ome.tif')
+        description_data = {'Times': time_data.tolist(), 
+                            'AcquisitionTime': start_time,
+                            'TimeUnit': 'h',
+                            'AcquisitionDate':time.strftime("%Y:%m:%d %H:%M:%S", time.gmtime(start_time)),
+                            }
+        for key in list(cust_description.keys()):
+            if key != 'Times':
+                description_data[key] = cust_description[key]
+        meta_dict = {'axes': 'T' + axes,
+                        'Description': description_data,
+                        'AcquisitionDate': time.strftime("%Y:%m:%d %H:%M:%S", time.gmtime(start_time))}
 
-            description_data = {'Times': time_data}
-            for key in list(cust_description.keys()):
-                if key != 'Times':
-                    description_data[key] = cust_description[key]
-            meta_dict = {'axes': 'T' + axes,
-                         'Description': description_data}
-            ome_tif.save(image_buffer, photometric='MINISBLACK',
-                         metadata=meta_dict)
+        save_thread = threading.Thread(target=save_ome_tiff, args=((ome_tif_path, meta_dict, image_buffer),))
+        All_save_thread.append(save_thread)
+        save_thread.start()
+
+    for save_thread in All_save_thread:
+        save_thread.join()  # waiting all save sthread stop.
+
+# %%
