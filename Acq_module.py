@@ -455,6 +455,7 @@ class AcqControl:
         if turnoffz:
             if 'pfsoffset' in fov:
                 self.mmCore.set_position(self.pfs_offset.device_name, fov['pfsoffset'][0])
+            mm.waiting_autofocus()
         else:
             if 'z' in fov:
                 self.mmCore.set_position(self.z.device_name, fov['z'][0])

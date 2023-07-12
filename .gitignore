@@ -7,3 +7,5 @@ test_data
 *.tiff
 *.xml
 *.tif
+.idea/misc.xml
+.idea/pymmc.iml

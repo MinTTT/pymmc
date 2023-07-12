@@ -118,7 +118,7 @@ if __name__ == "__main__":
     # from OME_TIFF_Exporter import getImageData
     # import tifffile as tif
 
-    save_dir = r"Y:\fulab_zc_6\AGAR_PAD\20230704_4_60XRedInit_L3strins_TimeLapse"
+    save_dir = r"Y:\fulab_zc_6\AGAR_PAD\20230704_2_60XRedInit_L3strins_TimeLapse"
     target_dir = r'Y:\fulab_zc_6\AGAR_PAD'
     dir_base_name = os.path.basename(save_dir)
     image_save_dirt = os.path.join(target_dir, dir_base_name)

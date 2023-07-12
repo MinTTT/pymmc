@@ -152,10 +152,16 @@ def waiting_device(device=None):
     return None
 
 
-def waiting_autofocus():
+def waiting_autofocus(lag=0.001):
+    """
+    make sure that the pfs is locked
+
+    :return:
+    """
     while not core.is_continuous_focus_locked():
-        time.sleep(0.5)
-    waiting_device()
+        while not core.is_continuous_focus_enabled():
+            core.enable_continuous_focus(True)
+            time.sleep(lag)
     return None
 
 
