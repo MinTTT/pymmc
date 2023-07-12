@@ -86,10 +86,8 @@ def tenengrad_score(im):
     """
     sobelx = cv2.Sobel(im, cv2.CV_64F, 1, 0, ksize=5)
     sobely = cv2.Sobel(im, cv2.CV_64F, 0, 1, ksize=5)
-    s_sqr = sobelx**2 + sobely**2
+    s_sqr = sobelx ** 2 + sobely ** 2
     return np.sum(s_sqr)
-
-
 
 
 def low_res_score(IMAGE):
@@ -209,7 +207,8 @@ def low_res_score(IMAGE):
 
     return focus_score(nleveldwt(IMAGE))
 
-#%%
+
+# %%
 im = np.empty((2048, 2048)).astype(np.uint16)
 
 
@@ -533,7 +532,7 @@ class microscope_control:
         return cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
 
     def focus_score(self, image):
-        """ Return -1*variance(image)"""
+        """ Return variance(image)"""
         # return -1*dwt.focus_score(self.get_image())
         # a = dwt.nleveldwt(3,self.get_image())
         # return -1*dwt.focus_score(a)
@@ -576,7 +575,7 @@ def naiive_autofocus(f, step_size=500):
 
 
 # moosd's simple autofocus search implementation
-def naive_autofocus(f, step_size=500, thresh=999999):
+def naive_autofocus(f: microscope_control, step_size=500, thresh=999999):
     print("Is simple better?")
     prev = f.eval_score()
 
