@@ -4,7 +4,7 @@ This code used for acq TCXY
 Micro-manager config: Fulab-TiE.cfg
 """
 
-#%%
+# %%
 from Acq_module import AcqControl, imgSave, core
 import numpy as np
 import time
@@ -12,10 +12,11 @@ import time
 import threading
 from pymm_uitls import countdown
 import os
-#% Init device
+
+# % Init device
 device_ctrl = AcqControl(mmCore=core)
 trigger = device_ctrl.acqTrigger
-#%%
+# %%
 # Time duration in Seconds
 time_duration = 3600 * 5
 time_step = 5 * 60
@@ -36,7 +37,7 @@ trigger.show_live()
 # device_ctrl.nd_recorder.import_pos(os.path.join(save_dir, 'pos.jl'))
 trigger.stop_live()
 
-#%%
+# %%
 # acq
 loops_num = int(time_duration / time_step)
 channels_num = len(list(device_ctrl.acqTrigger.channel_dict.keys()))
@@ -44,7 +45,7 @@ P_num = device_ctrl.nd_recorder.position_number
 channels_name = list(trigger.channel_dict.keys())
 
 # create image buffer
-trigger.img_buff = np.zeros((loops_num, P_num, channels_num, 
+trigger.img_buff = np.zeros((loops_num, P_num, channels_num,
                              *trigger.img_shape), dtype=trigger.img_depth)
 # crate dir
 if os.path.isdir(save_dir) is False:
@@ -57,7 +58,7 @@ for p_i in range(P_num):
 device_ctrl.nd_recorder.export_pos(save_dir)
 
 for c_i, c_name in enumerate(channels_name):
-    device_ctrl.napari.update_layer([trigger.img_buff[:,:, c_i,...], c_name])
+    device_ctrl.napari.update_layer([trigger.img_buff[:, :, c_i, ...], c_name])
 
 
 def thread_run(args):
@@ -100,6 +101,7 @@ def thread_run(args):
         if msg == 1:
             return None
     return None
+
 
 stop_flag = [False]
 
