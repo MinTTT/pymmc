@@ -1,5 +1,4 @@
-
-#%%
+# %%
 import os
 import sys
 import time
@@ -142,7 +141,7 @@ class AcqTrigger:
         self.current_channel = 'Custom'
         if napri_inst is None:
             self.napari = Rand_camera()
-        else: 
+        else:
             self.napari = napri_inst
         self.stopAcq()
 
@@ -256,7 +255,7 @@ class AcqTrigger:
         else:
             self.trigger.OFFTime = int(step * 1000 - self.trigger.ONTime)
         one_step_time = self.trigger.ONTime + self.trigger.OFFTime
-        frame_num = int(duration_time*1000 / one_step_time)
+        frame_num = int(duration_time * 1000 / one_step_time)
         # create a buffer
         self.img_buff = np.zeros((round(frame_num), *self.img_shape), dtype=self.img_depth)
 
@@ -284,29 +283,15 @@ class AcqTrigger:
                     im_count += 1
                     pbar.update(1)
             self.trigger.stop_trigger_continuously()
-            # self.mmCore.stop_sequence_acquisition()
-            # while self.mmCore.get_remaining_image_count() != 0:
-            #     self.img_buff[im_count, ...] = self.mmCore.pop_next_image().reshape(self.img_shape)
-            #     self.current_index = im_count
-            #     im_count += 1
-            #     pbar.update(1)
             pbar.close()
             self.stopAcq()
         vedio = self.img_buff  # clean the buffer
 
-        print(f'FPS: {1e6/one_step_time}')
+        print(f'FPS: {1e6 / one_step_time}')
 
         return vedio
 
-    # def live(self, step: float = 25, buffer_size=300):
-    #
-    #     live_thread = thread.Thread(target=thread_live, args=(step, buffer_size, self))
-    #     live_thread.start()
-    #     return None
-
     def show_live(self):
-        # self.img_shape = [np.zeros(self.img_shape, self.img_depth)]
-        # @thread_worker(connect={'yielded': self.napari.update_layer})
         @thread_worker
         def _camera_image(obj, layer_name, verbose=False):
             print('start live!')
@@ -318,39 +303,37 @@ class AcqTrigger:
             while obj.live_flag:
                 while obj.mmCore.get_remaining_image_count() == 0:
                     time.sleep(0.0001)
-                img = obj.mmCore.get_last_image().reshape(obj.img_shape)
+                image = obj.mmCore.get_last_image().reshape(obj.img_shape)
                 # obj.img_buff = obj.mmCore.pop_next_image().reshape(obj.img_shape)                    
                 if verbose:
                     im_count += 1
                     print(im_count)
-                yield (img, layer_name)
+                yield image, layer_name
             print('Stop Live!')
             return None
-     
+
         self.napari._flag = True
         if self.napari.napari_viewer is None:
             self.napari.napari_viewer = napari.Viewer()
-            
+
         if not self.acq_state:
             self.initAcq()
-        
+
         self.trigger.trigger_continuously()
         self.live_flag = True
         # _camera_image(self, 'Live')
-        
+
         worker = _camera_image(self, 'Live', False)
         worker.yielded.connect(self.napari.update_layer)
         worker.start()
         # self.napari.start_live(self, channel_name='Live')
         return None
-    
-    
+
     def stop_live(self):
         self.live_flag = False
         self.napari._flag = False
         self.stopAcq()
         return None
-
 
 
 class imgSave:
@@ -414,14 +397,13 @@ class AcqControl:
         self.z = None  # type: Optional[mmDevice]
         self.pfs_state = None  # type: Optional[mmDevice]
         self.pfs_offset = None  # type: Optional[mmDevice]
-        self.xy = PriorScan(com=4) # PriorScan(com=4) FakeAcq()
+        self.xy = PriorScan(com=4)  # PriorScan(com=4) FakeAcq()
 
         self.xy_num = None
         self.z_num = None
         self.c_num = None
         self.t_num = None
-        
-        
+
         self.nd_recorder = NDRecorder()
         self.napari = Rand_camera(self)
         self.acqTrigger = AcqTrigger(mmCore=mmCore, napri_inst=self.napari)
@@ -481,11 +463,10 @@ class AcqControl:
                     else:
                         pos[key] = value
         return pos
-    
+
     @property
     def current_position(self) -> Optional[int]:
         return self._current_position
-
 
     def record_current_position(self):
         pos = self.get_position_dict()
@@ -554,8 +535,81 @@ class AcqControl:
         self.go_to_position(self._current_position)
 
 
+class imageAutoFocus:
+    def __init__(self, MSPCtrl: AcqControl,
+                 image_score_func=None, z_range=(100, 2000), z_step=20,
+                 score_threshold=0,
+                 image_mask=None):
+        self.ctrl = MSPCtrl
+        if image_mask is None:
+            self.image_mask = image_mask
+        else:
+            self.image_mask = None
+        if image_score_func is None:
+            self.image_score_func = np.var
+        else:
+            self.image_score_func = image_score_func
+        self.score_threshold = score_threshold
+        self.z_max = z_range[1]
+        self.z_min = z_range[0]
+        self.z_step = z_step
+        self.z_step_threshold = 0.02
+        self.image = None
+        self.max_loops = 100
+
+    def get_image(self):
+        self.image, _ = self.ctrl.acqTrigger.snap(show=True)
+        return self.image
+
+    def eval_score(self):
+        self.get_image()
+        return self.image_score_func(self.image)
+
+    def move_motor(self, distance):
+
+        self.ctrl.mmCore.set_position(self.ctrl.z.device_name,
+                                      self.get_current_z() + distance)
+        return None
+
+    def get_current_z(self):
+        return self.ctrl.mmCore.get_position(self.ctrl.z.device_name)
+
+    def simaple_AF(self):
+        current_score = self.eval_score()
+        loop_num = 0
+        direction = 1
+        step_size = self.z_step
+        step_thresh = self.z_step_threshold
+        # climb, baby, climb!
+
+        while step_size > step_thresh:
+            while loop_num < self.max_loops:
+                prev = current_score
+                self.move_motor(direction * step_size)
+                time.sleep(1)
+                curr = self.eval_score()
+                print(curr)
+                if curr > thresh:
+                    print("tres focused")
+                    return None
+
+                diff = curr - prev
+                curdir = 1 if diff > 0 else -1
+                direction = curdir * direction
+                if curdir == -1:
+                    print("back back back")
+                    self.move_motor(direction * step_size)
+                    if thresh >= 999999:
+                        thresh = prev  # naive_autofocus(f, step_size, prev - 100)
+                        # return
+                    break
+                loop_num += 1
+            step_size = step_size / 2
+        return None
+
+
 if __name__ == '__main__':
-# %%
+    # %%
     scopeControl = AcqControl(mmCore=core)
     scopeControl.napari.open_xyz_control_panel()
     img_acq = scopeControl.acqTrigger
@@ -614,7 +668,6 @@ if __name__ == '__main__':
     # ni_fpga.trigger_continuously()
     # ni_fpga.FrameRate = 20
 
-
     # about image acq
     if core.is_sequence_running():
         core.stop_sequence_acquisition()
@@ -629,7 +682,6 @@ if __name__ == '__main__':
         window = disp.get_display()
     window.show()
     # ni_fpga.trigger_one_pulse()
-
 
     # ni_fpga.stop_trigger_continuously()
     if core.is_sequence_running():
