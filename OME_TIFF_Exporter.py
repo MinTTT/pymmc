@@ -155,8 +155,8 @@ def elem2dict(node, attributes=True):
 
 # %%
 if __name__ == "__main__":
-    save_dir = r"D:\zjw\20230704_5_60XRedInit_L3strins_TimeLapse_Test"
-    target_dir = r'Z:\fulab_zc_6\AGAR_PAD'
+    save_dir = r"D:\zjw\20230704_6_60XRedInit_L3strins_TimeLapse"
+    target_dir = r'Z:\Data_Raid\Colony_Project'
     
     def save_ome_tiff(args):
         ome_tif_path, meta, buffer = args
