@@ -644,9 +644,9 @@ def hill_climbing(f, step_size=500):
     score_history.append(f2)
     iterations = 0
 
-    while (1):
+    while 1:
         # print(f1,f2)
-        if (f2 > f1):
+        if f2 > f1:
             f0 = f1
             f1 = f2
             f2 = f.move_motor(step_size, 1).eval_score()
@@ -654,7 +654,7 @@ def hill_climbing(f, step_size=500):
             z2 += step_size
             iterations += 1
 
-        elif (iterations <= 1):
+        elif iterations <= 1:
             # print(iterations, f1, f2)
             print('Found a dip, assuming it is wrong and continuing')
             f0 = f1
@@ -664,7 +664,7 @@ def hill_climbing(f, step_size=500):
             z2 += step_size
             iterations += 1
 
-        elif (iterations <= 2):
+        elif iterations <= 2:
             print('Changing search direction')
             return hill_climbing(f, -step_size)
 
@@ -697,7 +697,7 @@ def untested_hill_climbing(f, step_size=500):
 
     while True:
         # print(f1,f2)
-        if (f2 > f1):
+        if f2 > f1:
             f0 = f1
             f1 = f2
             # f2 = f.move_motor(step_size,1).eval_score()
@@ -707,7 +707,7 @@ def untested_hill_climbing(f, step_size=500):
             z2 += step_size
             iterations += 1
 
-        elif (iterations <= 1):
+        elif iterations <= 1:
             # print(iterations, f1, f2)
             print('Found a dip, assuming it is wrong and continuing')
             f0 = f1
@@ -718,7 +718,7 @@ def untested_hill_climbing(f, step_size=500):
             z2 += step_size
             iterations += 1
 
-        elif (iterations <= 2):
+        elif iterations <= 2:
             return hill_climbing(f, -step_size)
 
         else:

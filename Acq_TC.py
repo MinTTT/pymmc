@@ -83,9 +83,9 @@ def thread_run(args):
             device_ctrl.napari.update_index([0, loop_i])
             device_ctrl.napari.update_index([1, p_i])
             # save file
-            save_img = trigger.img_buff[loop_i, p_i, ...]
+            save_image = trigger.img_buff[loop_i, p_i, ...]
             img_saver.save(os.path.join(save_dir, f'fov_{p_i}'),
-                           't.ome.tif', save_img, 'CYX', 
+                           't.ome.tif', save_image, 'CYX',
                            dict(Description={'Times': [time.time()], 'Labels': channels_name},
                                 Channel={'Name': ['GFP', 'mCherry', 'Phase']},
                                 TimeIncrement=time_step,
