@@ -134,7 +134,7 @@ class imageAutoFocus:
 
 
 
-AF = imageAutoFocus(MSPCtrl=device_ctrl, z_range=(3700, 3800), z_step=10)
+AF = imageAutoFocus(MSPCtrl=device_ctrl, z_range=(1900, 2000), z_step=10)
 AF.simaple_AF()
 # trigger.show_live()
 

@@ -21,7 +21,7 @@ trigger = device_ctrl.acqTrigger
 time_duration = 3600 * 5
 time_step = 5 * 60
 # save dir 
-save_dir = r"D:\zjw\20230704_6_60XRedInit_L3strins_TimeLapse"
+save_dir = r"D:\zjw\20230713_7_Test_60XRedInit_L3strins_TimeLapse"
 # Channel
 channels_set = {'red': {'exciterSate': 'green', 'exposure': 200, 'intensity': {'Green_Level': 50}},
                 'green': {'exciterSate': 'cyan', 'exposure': 40, 'intensity': {'Cyan_Level': 20}},
@@ -73,7 +73,7 @@ def thread_run(args):
         trigger.stop_live()  # make sure that the live is closed.
         for p_i in range(P_num):
             pos = device_ctrl.nd_recorder.positions[p_i]
-            device_ctrl.move_xyz_pfs(pos, turnoffz=False)
+            device_ctrl.move_xyz_pfs(pos)
             # device_ctrl.move_xyz_pfs(pos, turnoffz=True)
             print(f'Move to Pos {p_i}.')
             for c_i, c_name in enumerate(channels_name):
