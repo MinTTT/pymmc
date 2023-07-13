@@ -144,11 +144,11 @@ def waiting_device(device=None):
     """
     if device is not None:
         while core.device_busy(device):
-            time.sleep(0.00001)
+            time.sleep(0.0000001)
         return None
     else:
         while core.system_busy():
-            time.sleep(0.00001)
+            time.sleep(0.0000001)
     return None
 
 

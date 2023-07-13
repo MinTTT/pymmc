@@ -13,7 +13,8 @@ import pymm as mm
 import threading
 from pymm_uitls import countdown
 import os
-#%%
+
+# %%
 # % Init device
 device_ctrl = AcqControl(mmCore=core)
 trigger = device_ctrl.acqTrigger
@@ -35,6 +36,8 @@ trigger.channel_dict = channels_set
 trigger.set_channel('bf')
 device_ctrl.napari.open_xyz_control_panel()
 trigger.show_live()
+
+
 # %%
 
 
@@ -72,13 +75,14 @@ class imageAutoFocus:
             score = self.image_score_func(self.image[self.image_mask])
         else:
             score = self.image_score_func(self.image)
-        
+
         return score
 
     def move_motor(self, distance):
 
         self.ctrl.mmCore.set_position(self.ctrl.z.device_name,
                                       self.get_current_z() + distance)
+        mm.waiting_device()
         return None
 
     def get_current_z(self):
@@ -96,10 +100,10 @@ class imageAutoFocus:
         print(prev)
         while step_size > step_thresh:
             while loop_num < self.max_loops:
-                
+
                 print(direction * step_size, self.get_current_z())
                 self.move_motor(direction * step_size)
-                mm.waiting_device()
+
                 curr = self.eval_score()
                 print(curr)
                 # if curr > self.score_threshold:
@@ -110,28 +114,27 @@ class imageAutoFocus:
                 curdir = 1 if diff > 0 else -1
                 next_step = direction * step_size
                 if next_step + self.get_current_z() > self.z_max or \
-                    next_step + self.get_current_z() < self.z_min:
+                        next_step + self.get_current_z() < self.z_min:
                     curdir = -1
                 direction = curdir * direction
                 prev = curr
                 loop_num += 1
                 if curdir == -1:
-                #     print(next_step)
+                    #     print(next_step)
                     # self.move_motor(direction * step_size)
                     # mm.waiting_device()
                     # if self.score_threshold >= 999999:
                     #     self.score_threshold = prev  
                     break
-                
+
             step_size = step_size * 0.6
         print('Focus finish')
-        return None   
+        return None
+
     def simaple_AF(self):
         thread = threading.Thread(target=self.simaple_AF_func)
         thread.start()
-        return None  
-
-
+        return None
 
 
 AF = imageAutoFocus(MSPCtrl=device_ctrl, z_range=(3700, 3800), z_step=10)
