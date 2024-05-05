@@ -24,7 +24,7 @@ from threading import Thread
 from napari.qt.threading import thread_worker
 from typing import Optional, Annotated
 
-# from ND_pad_main_py import FakeAcq
+from ND_pad_main_py import FakeAcq
 # from napari_ui import NDRecorderUI
 
 def threaded(func):
@@ -53,6 +53,9 @@ class microConfigManag:
     @property
     def config_names(self):
         return list(self.config_dict.keys())
+    
+    def get_config(self, name):
+        return self.config_dict[name]
 
     def load_configs(self, config_dict: dict):
         for key, inst in config_dict.items():
@@ -141,21 +144,49 @@ def connect_triggerBottom(value):
     else:
         camera.live_stop()
 
-    print(value)
+    # print(value)
 
 
 def connect_exposureTime(value):
     camera.time_step = value
-    print(value)
+    
 
 
 def connect_triggerChoice(value):
-    print(value)
+    pass
 
 
 def connect_snapBottom(value):
-    print(value)
+    pass
 
+
+def interconnect_change_guipars(value):
+
+    microconfig = acq_config.get_config(value)
+    
+    exposureTime.value = microconfig['exposure']
+    triggerChoice.value = microconfig['exciterSate']
+    intensityBar.value = float(list(microconfig['intensity'].values())[0])
+    print(microconfig)
+
+def config_connect_change_exposure(value):
+    current_setup = acqSetUpChoice.value
+    microconfig = acq_config.get_config(current_setup)
+    microconfig['exposure'] = exposureTime.value
+    # acq_config.load_config(current_setup, microconfig)
+
+def config_connect_change_exciterSate(value):
+    current_setup = acqSetUpChoice.value
+    microconfig = acq_config.get_config(current_setup)
+    microconfig['exciterSate'] = triggerChoice.value
+    # acq_config.load_config(current_setup, microconfig)
+
+def config_connect_change_intensity(value):
+    current_setup = acqSetUpChoice.value
+    microconfig = acq_config.get_config(current_setup)
+    intensity_key = list(microconfig['intensity'].keys())[0]
+    microconfig['intensity'][intensity_key] = intensityBar.value
+    # acq_config.load_config(current_setup, microconfig)
 
 triggerMap = {'phase': 0b01000000,
               'none': 0b00000000,
@@ -172,20 +203,28 @@ acq_setup = {'bf': {'exciterSate': 'phase', 'exposure': 25, 'intensity': {'Inten
 
 acq_config = microConfigManag(config_dict=acq_setup)
 
+
 triggerChoiceList = list(triggerMap.keys())
-acqSetUpChoice = widgets.Combobox(value=triggerChoiceList[0], choices=triggerChoiceList, label='Acquisition Setup')
+acqSetUpChoice = widgets.Combobox(value=acq_config.config_names[1], choices=acq_config.config_names, 
+                                  label='Acquisition Setup')
 exposure_Time = dict(value=20., min=15., max=1000., step=1.)  # value, min, max, step
+intensityBar = widgets.FloatSlider(value=0., min=0., max=100., step=1, label='Intensity: ')
 startBottom = widgets.ToggleButton(text='Start/Stop Live', value=False)
 snapBottom = widgets.PushButton(text='Snap', value=False)
 triggerChoice = widgets.ComboBox(value=triggerChoiceList[0],
-                                 choices=triggerChoiceList, label='Trigger ype: ')
+                                 choices=triggerChoiceList, label='Trigger type: ')
 exposureTime = widgets.FloatSpinBox(**exposure_Time, label='Exposure time (ms): ')
-liveGUI = widgets.Container(widgets=[triggerChoice, exposureTime,
+configParsWidges = widgets.Container(widgets=[triggerChoice, exposureTime, intensityBar])
+liveGUI = widgets.Container(widgets=[acqSetUpChoice, configParsWidges,
                                      widgets.Container(widgets=[startBottom, snapBottom], layout='horizontal')])
+
+interconnect_change_guipars(acq_config.config_names[1])  # init all Acq parameters
+acqSetUpChoice.changed.connect(interconnect_change_guipars)
 startBottom.changed.connect(connect_triggerBottom)
-exposureTime.changed.connect(connect_exposureTime)
-triggerChoice.changed.connect(connect_triggerChoice)
 snapBottom.changed.connect(connect_snapBottom)
+triggerChoice.changed.connect(config_connect_change_exciterSate)
+exposureTime.changed.connect(config_connect_change_exposure)
+intensityBar.changed.connect(config_connect_change_intensity)
 
 # GUI 2. ND acq
 
@@ -215,13 +254,13 @@ PhaseNum.changed.connect(calcEstimateTime)
 PhaseNum.changed.connect(calcEstimateTime)
 
 # GUI 3. ND pad
-# acq_loop = FakeAcq()
+acq_loop = FakeAcq()
 # NDSelectionUI = NDRecorderUI(acq_loop, test=True)
-# def show_NDSelectionUI():
-#     NDSelectionUI.show()
+def show_NDSelectionUI():
+    acq_loop.open_NDUI(test_flag=True)
 
 NDSelectionBottom = widgets.PushButton(text='Open location selection', value=False)
-# NDSelectionBottom.changed.connect(show_NDSelectionUI)
+NDSelectionBottom.changed.connect(show_NDSelectionUI)
 
 # GUI 3. save direct
 dirSelect = widgets.FileEdit(mode='d', value=os.path.dirname(sys.path[-1]))
@@ -241,3 +280,5 @@ viewer.window.add_dock_widget(widgets.Container(widgets=[firstPhase, secondPhase
 
 napari.run()
 # %%
+
+
