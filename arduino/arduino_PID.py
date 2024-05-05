@@ -1,13 +1,15 @@
+#%%
 import serial
 import time
 from datetime import datetime
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+
 # import pandas as pd
 import csv
 import numpy as np
-
-
+import matplotlib
+matplotlib.use('TKAgg')
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 def fmt_timeNow():
     fmt_time = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H-%M-%S')
     return fmt_time
@@ -15,7 +17,7 @@ def fmt_timeNow():
 
 
 # %%
-com_port = 'COM7'
+com_port = 'COM8'
 budrate = 9600
 csvFilePath = f'./temp_hum_data_{fmt_timeNow()}.csv'
 ser = serial.Serial(com_port, budrate, timeout=5)

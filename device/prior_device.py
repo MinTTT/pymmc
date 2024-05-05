@@ -71,7 +71,7 @@ class PriorScan(object):
         # self.ret = self.SDKPrior.PriorScientificSDK_cmd(
         #     self.session_id, create_string_buffer(f"controller.stage.ss.set {self.ss}".encode()), self.rx)
         self.ret = self.cmd(f"controller.stage.ss.set {self.ss}")
-        self.initial_filter()
+        # self.initial_filter()
 
     def cmd(self, msg):
         self.ret = self._cmd(self.session_id, create_string_buffer(msg.encode()), self.rx)

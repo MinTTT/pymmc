@@ -21,17 +21,17 @@ trigger = device_ctrl.acqTrigger
 time_duration = 3600 * 5
 time_step = 5 * 60
 # save dir 
-save_dir = r"D:\zjw\20230713_7_Test_60XRedInit_L3strins_TimeLapse"
+save_dir = r"./test"
 # Channel
 channels_set = {'red': {'exciterSate': 'green', 'exposure': 200, 'intensity': {'Green_Level': 50}},
                 'green': {'exciterSate': 'cyan', 'exposure': 40, 'intensity': {'Cyan_Level': 20}},
-                'bf': {'exciterSate': 'phase', 'exposure': 30, 'intensity': {'Intensity': 24}}}
+                'bf': {'exciterSate': 'phase', 'exposure': 25, 'intensity': {'Intensity': 24}}}
 
 # Select pos
 
 trigger.channel_dict = channels_set
 trigger.set_channel('bf')
-device_ctrl.napari.open_xyz_control_panel()
+# device_ctrl.napari.open_xyz_control_panel()
 trigger.show_live()
 #%%
 # device_ctrl.nd_recorder.import_pos(os.path.join(save_dir, 'pos.jl'))
