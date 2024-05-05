@@ -1,6 +1,7 @@
 
 .idea
 .history
+.vscode
 test_data
 *.pyc
 ./cfg_folder/test
