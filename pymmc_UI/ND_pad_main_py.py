@@ -20,6 +20,7 @@ sys.path.append('../')
 from PySide2.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QShortcut
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QKeySequence
+import PySide2
 from pymmc_UI.pymmc_ND_pad_qt5 import Ui_MainWindow
 from random import random
 from typing import Optional
@@ -33,7 +34,8 @@ class FakeAcq:
                            {'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]},
                            {'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]}]
         self._current_position = len(self.positions) - 1
-
+        self.ND_ui = None
+        self.ND_app = None
         # self.nd_ui = NDRecorderUI(self)
 
     @property
@@ -107,16 +109,28 @@ class FakeAcq:
 
     def open_NDUI(self, test_flag=True):
         def open_in_subprocess(obj, testFlag):
+            # app = QApplication(sys.argv)
             if not QApplication.instance():
-                app = QApplication(sys.argv)
+                obj.ND_app = QApplication(sys.argv)
+                obj.ND_ui = NDRecorderUI(obj, test=testFlag)
+                obj.ND_ui.show()
+                obj.ND_app.exec_()
             else:
-                app = QApplication.instance()
-            ui = NDRecorderUI(obj, test=testFlag)
-            ui.show()
-            app.exec_()
+                obj.ND_ui.show()
+                obj.ND_app.exec_()
+                # app = QApplication.instance()
+                # ui = NDRecorderUI(obj, test=testFlag)
+                # ui.show()
+                # app.exec_()
+            # ui = NDRecorderUI(obj, test=testFlag)
+            # ui.show()
+            # app.exec_()
 
-        worker = threading.Thread(target=open_in_subprocess, args=(self, True))
+
+        worker = threading.Thread(target=open_in_subprocess, args=(self, test_flag))
         worker.start()
+
+
 
 
 class NDRecorderUI(QMainWindow, Ui_MainWindow):
@@ -232,7 +246,7 @@ class NDRecorderUI(QMainWindow, Ui_MainWindow):
 if __name__ == "__main__":
     # %%
     acq_loop = FakeAcq()
-    acq_loop.open_NDUI()
+    acq_loop.open_NDUI(True)
 
     # if not QApplication.instance():
     #     app = QApplication(sys.argv)

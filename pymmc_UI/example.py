@@ -24,7 +24,7 @@ from threading import Thread
 from napari.qt.threading import thread_worker
 from typing import Optional, Annotated
 
-from ND_pad_main_py import FakeAcq
+from pymmc_UI.ND_pad_main_py import FakeAcq
 # from napari_ui import NDRecorderUI
 
 def threaded(func):
