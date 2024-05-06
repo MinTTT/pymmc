@@ -9,6 +9,7 @@
 # Built-in/Generic Imports
 import os
 import sys
+sys.path.append('../')
 # […]
 
 # Libs
@@ -16,10 +17,11 @@ import sys
 
 # Own modules
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QCheckBox
-from PySide6.QtCore import QFile, Qt, QTranslator
-from PySide6.QtGui import QKeySequence, QShortcut, QKeyEvent, QAction
-from pymmc_UI.pymmc_ND_pad import Ui_MainWindow
+from PySide2.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QShortcut
+from PySide2.QtCore import Qt
+from PySide2.QtGui import QKeySequence
+import PySide2
+from pymmc_UI.pymmc_ND_pad_qt5 import Ui_MainWindow
 from random import random
 from typing import Optional
 from functools import partial
@@ -32,7 +34,8 @@ class FakeAcq:
                            {'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]},
                            {'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]}]
         self._current_position = len(self.positions) - 1
-
+        self.ND_ui = None
+        self.ND_app = None
         # self.nd_ui = NDRecorderUI(self)
 
     @property
@@ -104,17 +107,30 @@ class FakeAcq:
         for i in sorted(pos_index, reverse=True):
             del self.positions[i]
 
-    def open_NDUI(self):
-        def open_in_subprocess(obj):
+    def open_NDUI(self, test_flag=True):
+        def open_in_subprocess(obj, testFlag):
+            # app = QApplication(sys.argv)
             if not QApplication.instance():
-                app = QApplication(sys.argv)
+                obj.ND_app = QApplication(sys.argv)
+                obj.ND_ui = NDRecorderUI(obj, test=testFlag)
+                obj.ND_ui.show()
+                obj.ND_app.exec_()
             else:
-                app = QApplication.instance()
-            ui = NDRecorderUI(obj)
-            ui.show()
-            app.exec()
+                obj.ND_ui.show()
+                obj.ND_app.exec_()
+                # app = QApplication.instance()
+                # ui = NDRecorderUI(obj, test=testFlag)
+                # ui.show()
+                # app.exec_()
+            # ui = NDRecorderUI(obj, test=testFlag)
+            # ui.show()
+            # app.exec_()
 
-        threading.Thread(target=open_in_subprocess, args=(self,)).start()
+
+        worker = threading.Thread(target=open_in_subprocess, args=(self, test_flag))
+        worker.start()
+
+
 
 
 class NDRecorderUI(QMainWindow, Ui_MainWindow):
@@ -230,13 +246,21 @@ class NDRecorderUI(QMainWindow, Ui_MainWindow):
 if __name__ == "__main__":
     # %%
     acq_loop = FakeAcq()
-    if not QApplication.instance():
-        app = QApplication(sys.argv)
-    else:
-        app = QApplication.instance()
+    acq_loop.open_NDUI(True)
 
-    window = NDRecorderUI(acq_loop, test=True)
-    window.show()
-    app.exec()
-    # sys.exit(app.exec())
+    # if not QApplication.instance():
+    #     app = QApplication(sys.argv)
+    # else:
+    #     app = QApplication.instance()
 
+
+    # window = NDRecorderUI(acq_loop, test=True)
+
+
+
+    # window.show()
+    # app.exec()
+
+
+
+# %%

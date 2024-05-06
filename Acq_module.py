@@ -17,9 +17,9 @@ from device.prior_device import PriorScan
 from pycromanager import Core
 from pycromanager import Studio
 from device.NI_FPGA import NIFPGADevice
-from typing import Optional, Callable
+from typing import Optional
 import json
-from PySide2 import QtWidgets
+
 
 thread_lock = thread.Lock()
 

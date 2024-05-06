@@ -1,0 +1,6 @@
+pycromanager
+napari[all]
+tifffile
+h5py
+nifpga
+joblib
