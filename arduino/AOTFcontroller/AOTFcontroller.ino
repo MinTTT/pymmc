@@ -118,7 +118,7 @@ int clockPin = 4;
 // pin connected to CS of TLV5618
 int latchPin = 5;
 
-const int SEQUENCELENGTH = 12; // this should be good enough for everybody;)
+const int SEQUENCELENGTH = 12; // this should be good enough for everybody;
 byte triggerPattern_[SEQUENCELENGTH] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned int triggerDelay_[SEQUENCELENGTH] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int patternLength_ = 0;

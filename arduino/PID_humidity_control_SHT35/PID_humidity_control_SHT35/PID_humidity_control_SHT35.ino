@@ -41,7 +41,7 @@ int tempPWM_pin = 12; // Pin for temperature
 
 //Variables
 float set_humidity = 60.0;
-float set_temperature = 30.0;
+float set_temperature = 37.0;
 
 float Hum_read = 0.0;
 float Temp_read = 0.0;
@@ -110,7 +110,7 @@ void loop() {
   }
 
   else {
-    Serial.println("Sensor READING ERROR");
+    Serial.println("Sensor READING ERROR\n");
   }
   if ((millis()-timeDisp) > updateTime){
     transmissionData(set_humidity, set_temperature,
@@ -224,7 +224,7 @@ float getTemp(SHT35* psensor) {
 
 int getTempandHum(float* pTemp, float* pHum, SHT35* psensor) {
   if (NO_ERROR != psensor->read_meas_data_single_shot(HIGH_REP_WITH_STRCH, pTemp, pHum)) {
-    Serial.println("read temp failed!!");
+    Serial.println("read temp failed!");
     return -1;
   }
   *pTemp += Temp_corrt;
@@ -272,9 +272,11 @@ bool Read_serial() {
               // getAvgTempHum(avgSize, &Temp_read, &Hum_read, &sensor);
               if (str[0] == 'T'){
                 Serial.print(Temp_read);
+                Serial.println();
               }
               else if (str[0] == 'H'){
                 Serial.print(Hum_read);
+                Serial.println();
               }
               else if (str[0] == 'X'){
                 str = str.c_str();
@@ -303,7 +305,8 @@ bool Read_serial() {
                     Serial.print(" ");
                     // Serial.print("HumSV: ");
                     Serial.print(set_humidity);
-                    Serial.print(" \n");
+                    Serial.print(" ");
+                    Serial.println();
               }
               return true;
         }

@@ -1,3 +1,4 @@
+#%%
 import serial  # pyserial
 import struct
 from typing import Union, Optional
@@ -10,14 +11,15 @@ from typing import Union, Optional
 
 
 class ARDUINO:
-    def __init__(self, com='COM7', baud=57600, time_out=0.01):
+    def __init__(self, com='COM7', baud=9600, time_out=0.01):
         if com is None:
             raise ValueError('No COM port')
         self.com_port = com
         self.baud = baud
         self.time_out = time_out
         self._trigger_pattern = None
-        self.ret = None
+        self.ret = None  # type: Optional[list]
+
         self._series = None  # type: Optional[serial.Serial]
 
         self.connect()
@@ -70,46 +72,51 @@ class ARDUINO:
         else:
             self.cmd((22, 1))
 
-    def trigger(self,):
+    def trigger(self, map=0b10000000):
         """
         This method trigger the port 4 in arduino. It used to trigger camera when it sates in external trigger mode.
 
         :return:
         """
-        self.cmd((3, 1, 0, 0))
+        
+        self.cmd((3, int(map)))
 
     def close_session(self):
         self._series.close()
 
 #%%
 if __name__ == '__mian__':
-
+#%%
     import time
-    arduino = ARDUINO('COM7')
+    arduino = ARDUINO('COM12')
     from math import floor
-    # arduino.trigger_pattern = 0b00110000
-    arduino.cmd(1)
+    arduino.trigger_pattern = 0b10000001
+    arduino.start_blanking_mode()
+    arduino.trigger()
+    # arduino.cmd(1)
 
 
-    while True:
-        exposure = 21
+    # while True:
+    #     exposure = 21
 
-        freq = floor(1000/exposure)  # req
-        if freq < 200:
-            cycle_time = 1000./freq
-            off_duty_cycle = cycle_time - exposure
-            one_step_time = cycle_time / 255.
-            on_step_num = 255 - int(off_duty_cycle / one_step_time)  # intensity
-        else:
-            freq = 200
-            cycle_time = 1000./freq
-            off_duty_cycle = cycle_time - exposure
-            one_step_time = cycle_time / 255.
-            on_step_num = 255 - int(off_duty_cycle / one_step_time)  # intensity
+    #     freq = floor(1000/exposure)  # req
+    #     if freq < 200:
+    #         cycle_time = 1000./freq
+    #         off_duty_cycle = cycle_time - exposure
+    #         one_step_time = cycle_time / 255.
+    #         on_step_num = 255 - int(off_duty_cycle / one_step_time)  # intensity
+    #     else:
+    #         freq = 200
+    #         cycle_time = 1000./freq
+    #         off_duty_cycle = cycle_time - exposure
+    #         one_step_time = cycle_time / 255.
+    #         on_step_num = 255 - int(off_duty_cycle / one_step_time)  # intensity
 
 
-        real_time = one_step_time * on_step_num
-        print(real_time, freq, on_step_num)
-        arduino.cmd((2, freq, on_step_num))
-        time.sleep(0.01)
+    #     real_time = one_step_time * on_step_num
+    #     print(real_time, freq, on_step_num)
+    #     arduino.cmd((2, freq, on_step_num))
+    #     time.sleep(0.01)
 
+
+# %%

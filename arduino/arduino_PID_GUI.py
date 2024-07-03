@@ -7,11 +7,12 @@ from typing import List
 import csv
 import numpy as np
 import matplotlib
-# from matplotlib.backends.backend_qt import FigureCanvas
+# from matplotlib.backends.backend_qtagg import FigureCanvas
+# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 # matplotlib.use('TKAgg')
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 # from matplotlib.animation import FuncAnimation
-# from magicgui import widgets
+from magicgui import widgets
 from magicgui.widgets import FloatRangeSlider, Container, FloatSpinBox, Label
 from threading import Thread, Lock
 
@@ -70,6 +71,7 @@ class ArduinoPID:
         # waiting_comm()
         time.sleep(2)
         msg = self.serial_arduino.read_until()
+        print(msg.decode())
         while self.serial_arduino.in_waiting:
             time.sleep(.001)
         # comm_close()
@@ -119,11 +121,15 @@ class ArduinoPID:
     def getArduinoMsg(self):
         self.serial_arduino.flushOutput()
         while True:
+            # print('Sending M')
             self.serial_arduino.write('M'.encode())
-            line = self.serial_arduino.readline()
-            line_split = line.decode().strip(' \n').split(' ')
+            time.sleep(.1)
+            line = self.serial_arduino.read_until()
+            line_split = line.decode().strip(' \r\n').split(' ')
+            print(line_split)
             if len(line_split) == 6:
                 break
+
         if len(line_split) >= 3:
             line_split = [float(val) for val in line_split]
             if len(line_split) == 6:
