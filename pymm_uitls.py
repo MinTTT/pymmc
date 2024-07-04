@@ -7,9 +7,12 @@
 import os
 import time
 import json
+# from tkinter import N
+
 from joblib import dump, load
 from threading import Lock
 import h5py
+from typing import Optional, List
 thread_lock = Lock()
 
 
@@ -152,7 +155,7 @@ def parse_second(time_list):
     return sum([x * y for x, y in zip(time_list, weight)])
 
 
-def parse_position(fp, device=None):
+def parse_position(fp, device):
     """
     Parse the multiple positions in file. now, this function support files exported
     from micro-manager and Nikon NS.

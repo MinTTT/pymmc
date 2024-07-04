@@ -8,23 +8,49 @@ import numpy as np
 # from pycromanager import Acquisition, multi_d_acquisition_events
 import tifffile as tiff
 import threading as thread
-from device.arduino import ARDUINO
-import h5py
-from typing import Callable
+
 from pycromanager import Core
 from pycromanager import Studio
-from device.NI_FPGA import NIFPGADevice
+# from device.NI_FPGA import NIFPGADevice
 from typing import Optional, Callable
 
 thread_lock = thread.Lock()
 
-global core
 core = Core()
 
 studio = Studio()
 
 
 # %%
+
+def get_device_property_names(device_name: str) -> list:
+    """
+    Get device property names
+    :param device_name:
+    :return:
+    """
+
+    core_vector = core.get_device_property_names(device_name)
+    return [core_vector.get(i) for i in range(core_vector.size())]
+
+
+def get_loaded_devices() -> list:
+    """
+    Get a list of all loaded devices
+    :return:
+    """
+    core_vector = core.get_loaded_devices()
+    return [core_vector.get(i) for i in range(core_vector.size())]
+
+
+def get_loaded_devices_property() -> dict:
+    devices = get_loaded_devices()
+    all_prop = {}
+    for dev in devices:
+        all_prop[dev] = get_device_property_names(dev)
+    return all_prop
+
+
 def get_current_time():
     """
     get current time.
@@ -37,9 +63,9 @@ def get_current_time():
 def mm_set_camer_roi(roi: list, camera: int = 0) -> None:
     """
 
-    :param roi: list, [x, y, Xsize, Ysize]; x	coordinate of the top left corner; y	coordinate of the top left corner; xSize	number of horizontal pixels; ySize	number of horizontal pixels;
-    :param camera: int 0 , if set to 0, use current camera
-    :return: None
+    :param roi: list, [x, y, Xsize, Ysize]; x	coordinate of the top left corner; y	coordinate of the top left
+    corner; xSize	number of horizontal pixels; ySize	number of horizontal pixels; :param camera: int 0 ,
+    if set to 0, use current camera :return: None
     """
     if camera == 0:
         if core.is_sequence_running():
@@ -206,63 +232,64 @@ def autofocus():
     return None
 
 
-class ImageGrabber:
-    """
-    This class create a wrap of NI_FPGA and MMCore for image acquisition.
-    """
-
-    def __init__(self, mm_core=None, fgba_core: Optional[NIFPGADevice] = None):
-        self.core = mm_core
-        self.fgba_core = fgba_core
-        self.image_names = []
-        self.sequence_state = False
-        self.thread_image_auto_save = None
-
-    def append(self, file_name):
-        self.image_names.append(file_name)
-
-    def save_from_buffer(self, img_bum_in_buffer=0):
-        while self.sequence_state:
-            if self.image_names and (self.core.get_remaining_image_count() > img_bum_in_buffer):
-                tagged_image = self.core.pop_next_tagged_image()
-                im = np.reshape(tagged_image.pix,
-                                newshape=[tagged_image.tags["Height"], tagged_image.tags["Width"]])
-                img_name = self.image_names.pop(0)
-                thread.Thread(target=save_image,
-                              kwargs=dict(im=im, name=img_name, meta=tagged_image.tags)).start()
-                return None
-            time.sleep(0.05)
-        raise IOError('Sequencing acquisition does not start.')
-
-    def auto_acq_save(self, im_dir: str, name: str, exposure: float = None, shutter=None):
-        """
-        Trigger the camera and save the image.
-        :param im_dir: The directory to save image.
-        :param name: image name
-        :param exposure: exposure time in milliseconds.
-        :param shutter: the callable for trigger camera
-        :return:
-        """
-        self.append(f'{os.path.join(im_dir, name)}.tiff')
-        if exposure:
-            # self.core.set_exposure(exposure)
-            self.fgba_core.set_exposure(exposure)
-        if not self.core.is_sequence_running():
-            self.init_process()
-        img_bum_in_buffer = self.core.get_remaining_image_count()
-        shutter()
-        self.save_from_buffer(img_bum_in_buffer)
-        return None
-
-    def init_process(self):
-        # start acq loop
-        if not self.core.is_sequence_running():
-            self.core.prepare_sequence_acquisition(self.core.get_camera_device())
-            self.core.start_continuous_sequence_acquisition(0)
-        if self.core.is_sequence_running():
-            self.sequence_state = True
-        else:
-            self.sequence_state = False
+#
+# class ImageGrabber:
+#     """
+#     This class create a wrap of NI_FPGA and MMCore for image acquisition.
+#     """
+#
+#     def __init__(self, mm_core=None, fgba_core: Optional[NIFPGADevice] = None):
+#         self.core = mm_core
+#         self.fgba_core = fgba_core
+#         self.image_names = []
+#         self.sequence_state = False
+#         self.thread_image_auto_save = None
+#
+#     def append(self, file_name):
+#         self.image_names.append(file_name)
+#
+#     def save_from_buffer(self, img_bum_in_buffer=0):
+#         while self.sequence_state:
+#             if self.image_names and (self.core.get_remaining_image_count() > img_bum_in_buffer):
+#                 tagged_image = self.core.pop_next_tagged_image()
+#                 im = np.reshape(tagged_image.pix,
+#                                 newshape=[tagged_image.tags["Height"], tagged_image.tags["Width"]])
+#                 img_name = self.image_names.pop(0)
+#                 thread.Thread(target=save_image,
+#                               kwargs=dict(im=im, name=img_name, meta=tagged_image.tags)).start()
+#                 return None
+#             time.sleep(0.05)
+#         raise IOError('Sequencing acquisition does not start.')
+#
+#     def auto_acq_save(self, im_dir: str, name: str, exposure: float = None, shutter=None):
+#         """
+#         Trigger the camera and save the image.
+#         :param im_dir: The directory to save image.
+#         :param name: image name
+#         :param exposure: exposure time in milliseconds.
+#         :param shutter: the callable for trigger camera
+#         :return:
+#         """
+#         self.append(f'{os.path.join(im_dir, name)}.tiff')
+#         if exposure:
+#             # self.core.set_exposure(exposure)
+#             self.fgba_core.set_exposure(exposure)
+#         if not self.core.is_sequence_running():
+#             self.init_process()
+#         img_bum_in_buffer = self.core.get_remaining_image_count()
+#         shutter()
+#         self.save_from_buffer(img_bum_in_buffer)
+#         return None
+#
+#     def init_process(self):
+#         # start acq loop
+#         if not self.core.is_sequence_running():
+#             self.core.prepare_sequence_acquisition(self.core.get_camera_device())
+#             self.core.start_continuous_sequence_acquisition(0)
+#         if self.core.is_sequence_running():
+#             self.sequence_state = True
+#         else:
+#             self.sequence_state = False
 
 
 # # %%

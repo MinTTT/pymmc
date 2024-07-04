@@ -24,6 +24,7 @@ from random import random
 from functools import partial
 from typing import Optional
 
+
 class FakeAcq:
     def __init__(self):
         self._positions = [{'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]},
@@ -49,11 +50,11 @@ class FakeAcq:
         self._current_position = len(self.positions) - 1
         return pos
 
-    def record_current_position(self):
-        pos = {'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]}
-        self.positions.append(pos)
-        self._current_position = len(self.positions) - 1
-        return pos
+    # def record_current_position(self):
+    #     pos = {'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]}
+    #     self.positions.append(pos)
+    #     self._current_position = len(self.positions) - 1
+    #     return pos
 
     def update_current_position(self):
         pos = {'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]}
@@ -99,18 +100,18 @@ class FakeAcq:
     def remove_positions(self, pos_index):
         for i in sorted(pos_index, reverse=True):
             del self.positions[i]
-            
+
     def get_xy_position(self, ):
         return [random(), random()]
-    
+
     def set_xy_position(self, xy):
         print(f'Go to xy {xy}')
-        
+
     def device_busy(self, ):
-        
+
         time.sleep(.1)
         return False
-    
+
     def open_NDUI(self):
         def open_in_subprocess(obj):
             if not QApplication.instance():
@@ -197,16 +198,16 @@ class FakeAcq:
 #         check_box = QTableWidgetItem('select')
 #         check_box.setCheckState(Qt.Unchecked)
 #         self.pos_table.setItem(row_index, 4, check_box)
-    
+
 
 #     def do_record_pos(self):
-        
+
 #         @thread_worker
 #         def recored_pos(obj):
 #             pos = obj.acq_obj.record_current_position()
 #             print(pos)
 #             obj.edit_row(obj.acq_obj.current_position, pos)
-            
+
 #         worker = recored_pos(self)
 #         worker.start()
 #         # pos = self.acq_obj.record_current_position()
@@ -243,7 +244,7 @@ class FakeAcq:
 
 #         self.pos_table.clear()
 #         self.write_table()
-        
+
 
 class NDRecorderUI(QMainWindow, Ui_MainWindow):
     def __init__(self, acq_obj, test: bool = False):
@@ -252,7 +253,7 @@ class NDRecorderUI(QMainWindow, Ui_MainWindow):
         """
         self.acq_obj = acq_obj
         super(NDRecorderUI, self).__init__()
-        
+
         self.setupUi(self)
         if test:
             self.positions = self.acq_obj.positions
@@ -275,7 +276,6 @@ class NDRecorderUI(QMainWindow, Ui_MainWindow):
         self.move_right.clicked.connect(partial(self.move_xy, 'right'))
         self.move_left.clicked.connect(partial(self.move_xy, 'left'))
         self.delete_pos.clicked.connect(self.del_pos)
-
 
         keydict = dict(right=["Right", partial(self.move_xy, 'right')],
                        left=["Left", partial(self.move_xy, 'left')],
@@ -319,23 +319,21 @@ class NDRecorderUI(QMainWindow, Ui_MainWindow):
         check_box = QTableWidgetItem('select')
         check_box.setCheckState(Qt.Unchecked)
         self.pos_table.setItem(row_index, 4, check_box)
-    
 
     def do_record_pos(self):
-        
+
         # @thread_worker
         # def recored_pos(obj):
         #     pos = obj.acq_obj.record_current_position()
         #     print(pos)
         #     obj.edit_row(obj.acq_obj.current_position, pos)
-            
+
         # worker = recored_pos(self)
         # worker.start()
         pos = self.acq_obj.record_current_position()
         print(pos)
         self.edit_row(self.acq_obj.current_position, pos)
         return None
-
 
     def do_update_pos(self):
         pos = self.acq_obj.update_current_position()
@@ -394,7 +392,7 @@ class Rand_camera:
         if self.xyz_controller:
 
             self.open_viewer()
-        
+
             self.xyzPanelwindow = NDRecorderUI(self.xyz_controller, test=False)
             self.xyzPanelwindow.show()
             napari.run()
@@ -404,7 +402,7 @@ class Rand_camera:
     def start_live(self, obj, channel_name):
         @thread_worker(connect={'yielded': self.update_layer})
         def _camera_image(obj, layer_name):
-            
+
             im_count = 0
             if self._flag is None:
                 self._flag = True
@@ -420,30 +418,26 @@ class Rand_camera:
                     yield (img, layer_name)
             except:
                 print('Some happen')
-                
+
             # obj.napari.stop_live()
             # obj.trigger.stop_trigger_continuously()
             # obj.mmCore.stop_sequence_acquisition()
             # obj.stopAcq()
             return None
-        
-        
+
         self._flag = True
         if self.napari_viewer is None:
             self.napari_viewer = napari.Viewer()
-            
+
         if not obj.acq_state:
             obj.initAcq()
         print('start live!')
         obj.trigger.trigger_continuously()
         obj.live_flag = True
         _camera_image(obj, channel_name)
-            
 
         # self.camera_live(obj, channel_name)
         return None
-
-
 
     def update_layer(self, args):
         """
@@ -467,10 +461,8 @@ class Rand_camera:
                                          colormap=cmap)
         return None
 
-
-    
     def stop_live(self):
-        self._flag = False    
+        self._flag = False
 
     def large_random_images(self):
         @thread_worker(connect={'yielded': self.update_layer})

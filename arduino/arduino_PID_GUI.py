@@ -6,17 +6,15 @@ from typing import List
 # import pandas as pd
 import csv
 import numpy as np
-import matplotlib
-# from matplotlib.backends.backend_qtagg import FigureCanvas
-# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-# matplotlib.use('TKAgg')
-# import matplotlib.pyplot as plt
-# from matplotlib.animation import FuncAnimation
+# import matplotlib
+
 from magicgui import widgets
 from magicgui.widgets import FloatRangeSlider, Container, FloatSpinBox, Label
 from threading import Thread, Lock
 
 ThreadLock = Lock()
+
+
 
 
 def fmt_timeNow():
@@ -391,3 +389,5 @@ if __name__ == "__main__":
 # # data_df = pd.DataFrame(data=dict(time=times, temperature=temps, humidity=humds))
 # #
 # # data_df.to_csv(r'./temp_hum_data.csv')
+
+# %%

@@ -11,19 +11,21 @@ import pycromanager
 import tifffile as tiff
 import threading as thread
 from pymm_uitls import colors, get_filenameindex, countdown, parse_second, parse_position, NDRecorder, h5_image_saver
-import h5py
+# import h5py
 from pymmc_UI.napari_ui import Rand_camera, FakeAcq
 from device.prior_device import PriorScan
 from pycromanager import Core
 from pycromanager import Studio
-from device.NI_FPGA import NIFPGADevice
+# from device.NI_FPGA import NIFPGADevice
+from device.arduino import ARDUINO
 from typing import Optional
 import json
 
+import Acq_parameters as acq_paras
 
 thread_lock = thread.Lock()
 
-global core
+
 core = Core()
 
 studio = Studio()
@@ -36,6 +38,9 @@ def javaList(strVector):
 
 
 class mmDevice(object):
+    """
+    This is a wrapper for device that controlled by micromanager.
+    """
     device_name = None
     MMCore = None
     property_list = []
@@ -110,29 +115,23 @@ class AcqTrigger:
                  NIbitfile=r'device/NI_FPGA/myRIO_v6.lvbitx', MIresource='rio://172.22.11.2/RIO0',
                  mmCore=None):
         if mmDeviceName is None:
-            mmDeviceName = {'camera': 'TUCam', 'flu': 'Spectra', 'dia': 'TIDiaLamp'}
-        self.camera = None
-        self.dia = None
-        self.flu = None
+            mmDeviceName = acq_paras.trigger_device  # this depends on the devices of microscopes
+        self.camera = None  # type: Optional[mmDevice] # wrapper for controlling camera
+        self.dia = None  # type: Optional[mmDevice] # wrapper for controlling phase light
+        self.flu = None  # type: Optional[mmDevice] # wrapper for controlling LED light
+        self.filter = None
         self.mmCore = mmCore
-        self.trigger = NIFPGADevice(bitfile=NIbitfile, resource=MIresource)
-        self.triggerMap = {'phase': 0b01000000,
-                           'none': 0b00000000,
-                           'red': 0b00000001,
-                           'green': 0b00000010,
-                           'cyan': 0b00000100,
-                           'teal': 0b00001000,
-                           'blue': 0b00010000,
-                           'violet': 0b00100000}
+        # self.trigger = NIFPGADevice(bitfile=NIbitfile, resource=MIresource)
+        self.trigger = ARDUINO(com=acq_paras.COM_Arduino)
+        self.triggerMap = acq_paras.trigger_map
         self.current_index = 0
 
-        self.channel_dict = {'bf': {'exciterSate': 'phase', 'exposure': 25, 'intensity': {'Intensity': 24}},
-                             'green': {'exciterSate': 'cyan', 'exposure': 20, 'intensity': {'Cyan_Level': 20}},
-                             'red': {'exciterSate': 'green', 'exposure': 100, 'intensity': {'Green_Level': 50}}}
-
+        self.channel_dict = acq_paras.channels
+        # crate device wrappers
         for key, name in mmDeviceName.items():
             self.__dict__[key] = mmDevice(name, self.mmCore)
 
+        #
         self.acq_state = False
         self.img_shape = None
         self.img_depth = None
@@ -146,6 +145,18 @@ class AcqTrigger:
         self.stopAcq()
 
     def set_channel(self, channel_name):
+        """
+        Standard API for setting exposure time, light source intensity.
+
+        Parameters
+        ----------
+        channel_name: str
+            the keys in channel_dict
+
+        Returns
+        -------
+
+        """
 
         channel_set = self.channel_dict[channel_name]  # type: dict
         for key, item in channel_set.items():
@@ -160,6 +171,10 @@ class AcqTrigger:
                     else:
                         self.flu.__setattr__(name, level)
                     mm.waiting_device()
+            elif key == 'filter':
+                if item:
+                    for name, level in item.items():
+                        self.filter.set_property(name, level)
             self.current_channel = channel_name
         return None
 
@@ -184,14 +199,17 @@ class AcqTrigger:
         ---------------
         Exposure time in ms
         """
-        return self.trigger.ONTime / 1000
+        # exposure_time = self.trigger.ONTime / 1000
+        exposure_time = self.camera.get_property('Exposure')  # get camera exposure time
+        return float(exposure_time)
 
     @exposure.setter
     def exposure(self, exposure_time):
         """
-        Set expsure time in ms
+        Set exposure time in ms
         """
-        self.trigger.ONTime = exposure_time * 1000
+        # self.trigger.ONTime = exposure_time * 1000
+        self.camera.set_property('Exposure', exposure_time)  # set camera exposure time
 
     def initAcq(self):
         if self.mmCore.is_sequence_running():
@@ -393,11 +411,11 @@ class imgSave:
 class AcqControl:
     def __init__(self, mmDeviceName=None, mmCore=None):
         if mmDeviceName is None:
-            mmDeviceName = {'z': 'TIZDrive', 'pfs_state': 'TIPFSStatus', 'pfs_offset': 'TIPFSOffset'}
+            mmDeviceName = acq_paras.position_device
         self.z = None  # type: Optional[mmDevice]
         self.pfs_state = None  # type: Optional[mmDevice]
         self.pfs_offset = None  # type: Optional[mmDevice]
-        self.xy = PriorScan(com=4)  # PriorScan(com=4) FakeAcq()
+        self.xy = PriorScan(com=acq_paras.COM_PriorScan)  # PriorScan(com=4) FakeAcq()
 
         self.xy_num = None
         self.z_num = None
@@ -410,6 +428,7 @@ class AcqControl:
         # self.acqTrigger.napari = self.napari  # rewrite Napari of trigger
         self.mmCore = mmCore
         self._current_position = 0
+        # crate instance of devices that controlled by micromanager
         for key, name in mmDeviceName.items():
             self.__dict__[key] = mmDevice(name, mmCore)
 

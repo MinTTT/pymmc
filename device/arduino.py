@@ -32,6 +32,14 @@ class ARDUINO:
     def trigger_pattern(self, pattern):
         self._trigger_pattern = pattern
         self.cmd((1, self._trigger_pattern))
+    @property
+    def OutPutPinMap(self):
+        return self._trigger_pattern
+
+    @OutPutPinMap.setter
+    def OutPutPinMap(self, pattern):
+        self._trigger_pattern = pattern
+        self.cmd((1, self._trigger_pattern))
 
     def get_current_pattern(self):
         self.cmd((2, ))
@@ -84,6 +92,25 @@ class ARDUINO:
     def close_session(self):
         self._series.close()
 
+    def trigger_continuously(self):
+        pass
+    def stop_trigger_continuously(self):
+        pass
+    def trigger_one_pulse(self):
+        pass
+    @property
+    def ONTime(self):
+        return 1
+    @ONTime.setter
+    def ONTime(self, time):
+        pass
+
+    @property
+    def OFFTime(self):
+        return 1
+    @OFFTime.setter
+    def OFFTime(self, time):
+        pass
 #%%
 if __name__ == '__mian__':
 #%%
