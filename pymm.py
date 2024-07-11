@@ -51,12 +51,15 @@ def get_loaded_devices_property() -> dict:
     return all_prop
 
 
-def get_current_time():
+def get_current_time(full=True):
     """
     get current time.
     :return: formatted time: Year-Month-Day-Hours-Minutes-Seconds,Seconds
     """
-    formatted_time = time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime()) + ',' + str(time.time())
+    if full:
+        formatted_time = time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime()) + ',' + str(time.time())
+    else:
+        formatted_time = time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())
     return formatted_time
 
 

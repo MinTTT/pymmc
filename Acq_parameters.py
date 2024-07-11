@@ -23,12 +23,12 @@ Phase	0b10000000
 """
 
 COM_PriorScan = 4
-COM_Arduino = 'COM12'
+COM_Arduino = 'COM13'
 
 trigger_device = {'camera': 'TUCam',
-                            'flu': 'Spectra',
-                            'dia': 'X-Cite120PC',
-                            'filter': 'TIFilterBlock1'}  # this depends on the devices of microscopes
+                  'flu': 'Spectra',
+                  'dia': 'X-Cite120PC',
+                  'filter': 'TIFilterBlock1'}  # this depends on the devices of microscopes
 
 position_device = {'z': 'TIZDrive', 'pfs_state': 'TIPFSStatus', 'pfs_offset': 'TIPFSOffset'}
 
@@ -43,9 +43,15 @@ trigger_map = {'phase': 0b10000000,
                'violet': 0b00100000}
 
 # Note some keys in the dictionary may name sensitive that depends on one the devices properties if the microscopes
-channels = {'bf': {'exciterSate': 'phase', 'exposure': 25, 'intensity': {'LampIntensity': 24}, 'filter': None},
-            'green': {'exciterSate': 'cyan', 'exposure': 20, 'intensity': {'Cyan_Level': 20}, 'filter': {'State': 1}},
-            'red': {'exciterSate': 'green', 'exposure': 100, 'intensity': {'Green_Level': 50}, 'filter': {'State': 1}}}
+channels = {'bf': {'exciterSate': 'phase', 'exposure': 25, 
+                   'intensity': {'LampIntensity': 24}, 
+                   'filter': None, 'colormap': 'gray'},
+            'green': {'exciterSate': 'cyan', 'exposure': 20, 
+                      'intensity': {'Cyan_Level': 20}, 
+                      'filter': {'State': '1'}, 'colormap': 'green'},
+            'red': {'exciterSate': 'green', 'exposure': 100, 
+                    'intensity': {'Green_Level': 50}, 
+                    'filter': {'State': '1'}, 'colormap': 'red'}}
 
 # This can be acquired by function in module: pymm.get_loaded_devices_property()
 device_properties = {'COM10': ['AnswerTimeout', 'BaudRate', 'DTR', 'DataBits', 'DelayBetweenCharsMs', 'Description',

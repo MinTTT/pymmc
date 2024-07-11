@@ -212,7 +212,7 @@ class ArduinoPID_GUI(Container):
         self.arduino: ArduinoPID = arduino_obj
         self.SetTemp.changed.connect(self.arduino.rec_temp)
         self.SetHumd.changed.connect(self.arduino.rec_Humd)
-        self.update = False
+        self.update = False  # type: bool
         self.updateState()
 
     # def update_graph(self, ):
@@ -236,9 +236,6 @@ class ArduinoPID_GUI(Container):
     #     # ax2.scatter(times_plot, humds_plot, color='b')
     #     # self.ax2.set_ylim(55, 65)
     #     self.fig.canvas.draw()
-
-
-
 
     def _updateState(self):
         while self.update:

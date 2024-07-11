@@ -38,25 +38,26 @@ byte repeatPattern_ = 0;
 volatile long triggerNr_ = 0;  // total # of triggers in this run (0-based)
 volatile long sequenceNr_ = 0; // # of trigger in sequence (0-based)
 int skipTriggers_ = 0;     // # of triggers to skip before starting to generate patterns
-byte currentPattern_ = B10000001;
+byte currentPattern_ = B11000000;
 // const unsigned long timeOut_ = 1000;
 bool blanking_ = true;  // initial as blanking mode
 bool blankOnHigh_ = true;  // set high as the default mode
 bool triggerMode_ = false;
 bool inputTrigger_ = false;
+long int triggerNumber = 0;
 boolean triggerState_ = false;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  pinMode(inputPin, INPUT);
-  pinMode(outputPin, OUTPUT);
+  // pinMode(inputPin, INPUT);
+  // pinMode(outputPin, OUTPUT);
 
   DDRD = B11111100;
-  DDRB = B00101111; //set pin 12 as input
+  DDRB = B00000011; //set pin 12 as input
 
-  // PORTB = (closeState & phaseGYMask) >> 6;
-  // PORTD = (closeState & fluorMask ^ onMap) << 2;  // close all pins of port D
+  PORTB = (closeState & phaseGYMask) >> 6;
+  PORTD = (closeState & fluorMask ^ onMap) << 2;  // close all pins of port D
   TRIGGER(closeState)
   
   delay(100);
@@ -75,12 +76,6 @@ void loop() {
       if (waitForSerial(timeOut_))
       {
         currentPattern_ = Serial.read();
-        if (!blanking_){
-        // PORTD  = currentPattern_;
-        TRIGGER(currentPattern_)
-        }
-
-        Serial.write(byte(1));
       }
       break;
 
@@ -92,22 +87,28 @@ void loop() {
 
     // trigger camera once
     case 3:
-      if (waitForSerial(timeOut_))
-      {
-
-          currentPattern_ = Serial.read();  // map is the trigger map
-          // trigger camera
-          inputTrigger_ = true;
-          digitalWrite(outputPin, HIGH);
-          digitalWrite(outputPin, LOW);
-
-          if (!blanking_)
-          {
-            TRIGGER(currentPattern_)
-          }
-          
-
-      }
+        // trigger camera
+        inputTrigger_ = true;
+        digitalWrite(outputPin, HIGH);
+        delay(1);
+        digitalWrite(outputPin, LOW);
+        triggerNumber +=1;
+        if (!blanking_)
+        {
+          TRIGGER(currentPattern_)
+        }
+      break;
+    // trigger camera once, but camera will acq continously.
+    case 4:
+        // trigger camera
+        inputTrigger_ = false;
+        digitalWrite(outputPin, HIGH);
+        delay(1);
+        digitalWrite(outputPin, LOW);
+        if (!blanking_)
+        {
+          TRIGGER(currentPattern_)
+        }
       break;
 
     // Sets the specified digital pattern
@@ -276,44 +277,50 @@ void loop() {
 
 
   // stateMap(inputPin, outputPin);
+if (inputTrigger_ && triggerNumber >=1){
+    if (PINB & inputPinMap)
+  {
+    TRIGGER(currentPattern_)
+  }
+  else
+  {
+    TRIGGER(closeState)
+  }
+  triggerNumber -= 1;
+} else if (!inputTrigger_){
+
   if (blanking_ && (patternLength_ == 0))
+{
+  if (PINB & inputPinMap)
   {
-    if (PINB & inputPinMap)
-    {
-      TRIGGER(currentPattern_)
+    TRIGGER(currentPattern_)
 
-    }
-    else
-    {
-      TRIGGER(closeState)
-    }
-    
-  }else if (blanking_ && (patternLength_ > 0))
+  }
+  else
   {
-    if (PINB & inputPinMap)
-    {
-      TRIGGER(triggerPattern_[sequenceNr_])
-      // PORTD = triggerPattern_[sequenceNr_];
-      sequenceNr_++;
-      sequenceNr_ = sequenceNr_ % patternLength_;
-    }
-    else
-    {
-      // PORTD = closeState;
-      TRIGGER(closeState)
-
-    }
+    TRIGGER(closeState)
+  }
+  
+}else if (blanking_ && (patternLength_ > 0))
+{
+  if (PINB & inputPinMap)
+  {
+    TRIGGER(triggerPattern_[sequenceNr_])
+    // PORTD = triggerPattern_[sequenceNr_];
+    sequenceNr_++;
+    sequenceNr_ = sequenceNr_ % patternLength_;
+  }
+  else
+  {
+    // PORTD = closeState;
+    TRIGGER(closeState)
 
   }
 
-    //   if (triggerNr_ >= 0)
-    // {
-    // PORTD = triggerPattern_[sequenceNr_];
-    // sequenceNr_++;
-    // if (sequenceNr_ >= patternLength_)
-    //   sequenceNr_ = 0;
-    // }
-    // triggerNr_++;
+}
+
+}
+
 
 }
 

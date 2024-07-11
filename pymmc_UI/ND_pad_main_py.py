@@ -16,12 +16,15 @@ sys.path.append('../')
 # […]
 
 # Own modules
-
-from PySide2.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QShortcut
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QKeySequence
-import PySide2
-from pymmc_UI.pymmc_ND_pad_qt5 import Ui_MainWindow
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QShortcut
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
+# from PySide2.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QShortcut
+# from PySide2.QtCore import Qt
+# from PySide2.QtGui import QKeySequence
+# import PySide2
+from pymmc_UI.pymmc_ND_pad_pyqt5 import Ui_MainWindow
 from random import random
 from typing import Optional
 from functools import partial
@@ -34,8 +37,8 @@ class FakeAcq:
                            {'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]},
                            {'xy': [random(), random()], 'z': [random()], 'pfsoffset': [random()]}]
         self._current_position = len(self.positions) - 1
-        self.ND_ui = None
-        self.ND_app = None
+        # self.ND_ui = None
+        # self.ND_app = None
         # self.nd_ui = NDRecorderUI(self)
 
     @property
@@ -107,28 +110,28 @@ class FakeAcq:
         for i in sorted(pos_index, reverse=True):
             del self.positions[i]
 
-    def open_NDUI(self, test_flag=True):
-        def open_in_subprocess(obj, testFlag):
-            # app = QApplication(sys.argv)
-            if not QApplication.instance():
-                obj.ND_app = QApplication(sys.argv)
-                obj.ND_ui = NDRecorderUI(obj, test=testFlag)
-                obj.ND_ui.show()
-                obj.ND_app.exec_()
-            else:
-                obj.ND_ui.show()
-                obj.ND_app.exec_()
-                # app = QApplication.instance()
-                # ui = NDRecorderUI(obj, test=testFlag)
-                # ui.show()
-                # app.exec_()
-            # ui = NDRecorderUI(obj, test=testFlag)
-            # ui.show()
-            # app.exec_()
+    # def open_NDUI(self, test_flag=True):
+    #     def open_in_subprocess(obj, testFlag):
+    #         # app = QApplication(sys.argv)
+    #         if not QApplication.instance():
+    #             obj.ND_app = QApplication(sys.argv)
+    #             obj.ND_ui = NDRecorderUI(obj, test=testFlag)
+    #             obj.ND_ui.show()
+    #             obj.ND_app.exec_()
+    #         else:
+    #             obj.ND_ui.show()
+    #             obj.ND_app.exec_()
+    #             # app = QApplication.instance()
+    #             # ui = NDRecorderUI(obj, test=testFlag)
+    #             # ui.show()
+    #             # app.exec_()
+    #         # ui = NDRecorderUI(obj, test=testFlag)
+    #         # ui.show()
+    #         # app.exec_()
 
 
-        worker = threading.Thread(target=open_in_subprocess, args=(self, test_flag))
-        worker.start()
+    #     worker = threading.Thread(target=open_in_subprocess, args=(self, test_flag))
+    #     worker.start()
 
 
 
@@ -150,7 +153,7 @@ class NDRecorderUI(QMainWindow, Ui_MainWindow):
         self.update_button.clicked.connect(self.do_update_pos)
         self.selected_index = []
         if test:
-            self.positions = self.acq_obj.positions
+            self.positions = self.acq_obj.positions  # in test mode, manuplates positions 
         else:
             self.positions = self.acq_obj.nd_recorder.positions
         self.ui.move_up.clicked.connect(partial(self.move_xy, 'up'))
@@ -264,3 +267,4 @@ if __name__ == "__main__":
 
 
 # %%
+
