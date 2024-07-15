@@ -62,6 +62,11 @@ class Ui_MainWindow(object):
         self.checkBox_2 = QtWidgets.QCheckBox(self.horizontalLayoutWidget)
         self.checkBox_2.setObjectName("checkBox_2")
         self.function_region.addWidget(self.checkBox_2)
+        # ===========
+        self.checkBox_3 = QtWidgets.QCheckBox(self.horizontalLayoutWidget)
+        self.checkBox_3.setObjectName("checkBox_3")
+        self.function_region.addWidget(self.checkBox_3)
+        # ===========
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.function_region.addItem(spacerItem1)
         self.delete_pos = QtWidgets.QPushButton(self.horizontalLayoutWidget)
@@ -146,6 +151,7 @@ class Ui_MainWindow(object):
         item = self.ND_table.horizontalHeaderItem(4)
         item.setText(_translate("MainWindow", "select"))
         self.checkBox_2.setText(_translate("MainWindow", "goto selected"))
+        self.checkBox_3.setText(_translate("MainWindow", "PFS on"))
         self.delete_pos.setText(_translate("MainWindow", "Delete"))
         self.record_position.setText(_translate("MainWindow", "Record"))
         self.update.setText(_translate("MainWindow", "Update"))

@@ -1,5 +1,6 @@
 # %%
 
+import napari.viewer
 from pymmc_UI.ND_pad_main_py import NDRecorderUI, FakeAcq
 from napari.qt.threading import thread_worker
 import napari
@@ -20,13 +21,13 @@ import pycromanager
 import pymm as mm
 from device.prior_device import PriorScan
 from device.arduino import TriggerArduinoDue
-from typing import Optional, Annotated
+from typing import Optional, Annotated, Union
 import time
 import numpy as np
 from tqdm import tqdm
 from threading import Thread
 from math import fabs
-from re import T
+from re import L, T
 import sys
 import os
 
@@ -219,6 +220,7 @@ class AcqTrigger:
         self._get_img_info()
         self.buffer = np.zeros(
             (self.buffer_size, *self.img_shape), dtype=self.img_depth)
+        self.seq_acq_buffer = None
 
         self.live_flag = False
         self.current_channel = 'Custom'
@@ -340,32 +342,68 @@ class AcqTrigger:
         # 2. Trigger once
         if triggermode == 'TTL':
             self.trigger.trigger_one_pulse()
+            print('AcqTrigger -> Triggered once')
         # 2.a if camera trigger mode set to software, use API from MMCore
         elif triggermode == 'MMCore':
             self.mmCore.snap_image()
-        while True:
-            if self.mmCore.get_remaining_image_count() == 1:
-                break
-            time.sleep(0.01)
+        # while True:
+        #     if self.mmCore.get_remaining_image_count() == 1:
+        #         break
+        #     time.sleep(0.01)
+        self.wiating_iamge()
         # 3. get image from MMCore
-        jv_img = self.mmCore.pop_next_tagged_image()
-        image = jv_img.pix.reshape(self.img_shape)
-        imgtag = jv_img.tags
-        # # 4. update image in buffer
-        # if self.buffer is None:
-        #     self.buffer = np.zeros((1000, *self.img_shape), dtype=self.img_depth)
-
-        # self.buffer[self.current_index, ...] = image
+        image, imgtag = self._pop_image()
 
         self.stopAcq()
         return image, imgtag
 
+    def _pop_image(self):
+        print('AcqTrigger -> get Image')
+        jv_img = self.mmCore.pop_next_tagged_image()
+        image = jv_img.pix.reshape(self.img_shape)
+        imgtag = jv_img.tags
+        return image, imgtag
+
+    def wiating_iamge(self):
+        while True:
+            if self.mmCore.get_remaining_image_count() >= 1:
+                break
+            time.sleep(0.001)
+        return True
+
     @thread_worker
-    def _continuous_acq(self, duration_time: float, step: float):
+    def _continuous_acq(self,):
         """
         :param duration_time: duration time, how long will acquisition lasting. unit: ms
         :param step: time interval. unit: ms
         """
+
+        frame_num = self.seq_acq_buffer.shape[0]
+        if not self.acq_state:
+            self.initAcq()
+        print('start acq!')
+        self.trigger.trigger_continuously()
+        im_count = 0
+        self.current_index = 0
+
+        pbar = tqdm(total=frame_num)  # create progress bar
+        while im_count < frame_num:
+            while self.mmCore.get_remaining_image_count() == 0:
+                pass
+            if self.mmCore.get_remaining_image_count() > 0:
+                self.seq_acq_buffer[im_count, ...] = self.mmCore.pop_next_image().reshape(
+                    self.img_shape)
+                self.current_index = im_count
+                im_count += 1
+                pbar.update(1)
+        self.trigger.stop_trigger_continuously()
+        pbar.close()
+        self.stopAcq()
+        self.live_flag = False
+        print(f'FPS: {1e6 / (self.trigger.ONTime + self.trigger.OFFTime): .4f}.')
+        return None
+
+    def continuous_acq(self,  duration_time: float, step: float):
         print(f'AcqTrigger -> Start Sequential Acq.')
         self._get_img_info()
         one_step_time = self.trigger.ONTime + self.trigger.OFFTime
@@ -379,35 +417,10 @@ class AcqTrigger:
         one_step_time = self.trigger.ONTime + self.trigger.OFFTime
         frame_num = int(duration_time * 1e3 / one_step_time)
         # create a buffer
-        self.buffer = np.zeros(
+        self.seq_acq_buffer = np.zeros(
             (round(frame_num), *self.img_shape), dtype=self.img_depth)
-
-        if not self.acq_state:
-            self.initAcq()
-        print('start acq!')
-        self.trigger.trigger_continuously()
-        im_count = 0
-        self.current_index = 0
-        pbar = tqdm(total=frame_num)  # create progress bar
-        while im_count < frame_num:
-            _time_cur = time.time()
-            while self.mmCore.get_remaining_image_count() == 0:
-                pass
-            if self.mmCore.get_remaining_image_count() > 0:
-                self.buffer[im_count, ...] = self.mmCore.pop_next_image().reshape(
-                    self.img_shape)
-                self.current_index = im_count
-                im_count += 1
-                pbar.update(1)
-        self.trigger.stop_trigger_continuously()
-        pbar.close()
-        self.stopAcq()
-        vedio = self.buffer  # clean the buffer
-        print(f'FPS: {1e3 / one_step_time: .4f}.')
-        return vedio
-
-    def continuous_acq(self,  duration_time: float, step: float):
-        worker = self._continuous_acq(duration_time, step)
+        self.live_flag = True
+        worker = self._continuous_acq()
         worker.start()
 
     @thread_worker
@@ -420,7 +433,8 @@ class AcqTrigger:
         # create here for show steaming of the vedio from camera.
         if self.buffer is None:
             frame_num = None
-            self.buffer = np.zeros((frame_num, *self.img_shape), dtype=self.img_depth)
+            self.buffer = np.zeros(
+                (frame_num, *self.img_shape), dtype=self.img_depth)
             self.buffer_size = len(self.buffer)
         # if not self.acq_state:
         if not self.acq_state:
@@ -452,50 +466,6 @@ class AcqTrigger:
 
     def live_stop(self):
         self.live_flag = False
-    #
-    # def show_live(self):
-    #     @thread_worker
-    #     def _camera_image(obj, layer_name, verbose=False):
-    #         print('start live!')
-    #         if verbose:
-    #             im_count = 0
-    #         if self.napari._flag is None:
-    #             self.napari._flag = True
-    #
-    #         while obj.live_flag:
-    #             while obj.mmCore.get_remaining_image_count() == 0:
-    #                 time.sleep(0.0001)
-    #             image = obj.mmCore.get_last_image().reshape(obj.img_shape)
-    #             # obj.img_buff = obj.mmCore.pop_next_image().reshape(obj.img_shape)
-    #             if verbose:
-    #                 im_count += 1
-    #                 print(im_count)
-    #             yield image, layer_name
-    #         print('Stop Live!')
-    #         return None
-    #
-    #     self.napari._flag = True
-    #     if self.napari.napari_viewer is None:
-    #         self.napari.napari_viewer = napari.Viewer()
-    #
-    #     if not self.acq_state:
-    #         self.initAcq()
-    #
-    #     self.trigger.trigger_continuously()
-    #     self.live_flag = True
-    #     # _camera_image(self, 'Live')
-    #
-    #     worker = _camera_image(self, 'Live', False)
-    #     worker.yielded.connect(self.napari.update_layer)
-    #     worker.start()
-    #     # self.napari.start_live(self, channel_name='Live')
-    #     return None
-    #
-    # def stop_live(self):
-    #     self.live_flag = False
-    #     self.napari._flag = False
-    #     self.stopAcq()
-    #     return None
 
 
 class imgSave:
@@ -514,13 +484,16 @@ class imgSave:
             self.save()
 
     def get_index(self):
+        if not os.path.isdir(self.dir):
+            os.makedirs(self.dir)
+            print(f'imgSave -> Create folder {self.dir}.')
         if self.name:
             self.suffix = self.name.split('.')[-1]
             self.main_name = self.name.split('.')[0]
             image_list = [file.split('.')[0] for file in os.listdir(
                 self.dir) if file.split('.')[-1] == self.suffix]
             image_same_name = [int(file.split('_')[-1]) for file in image_list
-                               if len(file.split('_')) >= 2 and file.split('_')[0] == self.main_name]
+                               if len(file.split('_')) >= 2 and '_'.join(file.split('_')[:-1]) == self.main_name]
             if image_same_name:
                 self.index = max(image_same_name) + 1
             else:
@@ -547,8 +520,10 @@ class imgSave:
         # tiff.imwrite(self.file_name, data=self.data,
         #              photometric='minisblack',
         #              metadata=self.meta, ome=True, bigtiff=True)
-        with tiff.TiffWriter(self.file_name, bigtiff=True, ome=True) as tif:
+        with tiff.TiffWriter(self.file_name) as tif:
             tif.write(self.data, metadata=self.meta)
+        # with tiff.TiffWriter(self.file_name, bigtiff=True, ome=True) as tif:
+        #     tif.write(self.data, metadata=self.meta)
 
         self.index += 1
         return None
@@ -566,7 +541,6 @@ class AcqControl:
         self.z = None  # type: Optional[mmDevice]
         self.pfs_state = None  # type: Optional[mmDevice]
         self.pfs_offset = None  # type: Optional[mmDevice]
-        # PriorScan(com=4) FakeAcq()
         self.xy = PriorScan(com=acq_paras.COM_PriorScan)
 
         self.xy_num = None
@@ -827,12 +801,14 @@ class randCamera:
 class AcqViewer:
 
     def __init__(self, acq_trigger: Optional[AcqTrigger] = None,
-                 acq_control=None, triggerMap=None, acq_setup=None) -> None:
+                 acq_control: Optional[AcqControl] = None,
+                 triggerMap=None, acq_setup=None) -> None:
         self.viewer = napari.Viewer()
         if acq_trigger:
-            self.camera = acq_trigger
+            self.camera = acq_trigger  # type: Union[AcqTrigger, randCamera]
         else:
             # wrapper for provide images and controlling image acq
+            # type: Union[AcqTrigger, randCamera]
             self.camera = randCamera(100, 512, 512)
         if triggerMap:
             self.triggerMap = triggerMap
@@ -843,11 +819,11 @@ class AcqViewer:
         else:
             self.acq_setup = acq_paras.channels
         if acq_control:
-            self.acq_control = acq_control
-            self.ND_recorder_ui = NDRecorderUI(self.acq_control)
+            self.acq_control = acq_control  # types: Union[AcqControl, FakeAcq]
+            self.XY_recorder_ui = NDRecorderUI(self.acq_control)
         else:
-            self.acq_control = FakeAcq()
-            self.ND_recorder_ui = NDRecorderUI(self.acq_control, test=True)
+            self.acq_control = FakeAcq()  # types: Union[AcqControl, FakeAcq]
+            self.XY_recorder_ui = NDRecorderUI(self.acq_control, test=True)
         self.ND_ui = None
         self.acq_config = microConfigManag(
             config_dict=self.acq_setup)  # microConfigManag helps to edit the values in acq_setup
@@ -893,12 +869,12 @@ class AcqViewer:
                                                       min=0,
                                                       label='Lasting time (s): ')
         self.SequentialAcqFrameRate = widgets.FloatSpinBox(value=25,
-                                                      min=0,
-                                                      label='Frame rate (frames/s): ')
+                                                           min=0,
+                                                           label='Frame rate (frames/s): ')
         self.SeqAcqStartBottom = widgets.PushButton(
             text='Start Acq', value=False)
-        
-        self.SeqAcqGUI = widgets.Container(widgets=[widgets.Container(widgets=[self.SequentialAcqTime,self.SequentialAcqFrameRate], 
+
+        self.SeqAcqGUI = widgets.Container(widgets=[widgets.Container(widgets=[self.SequentialAcqTime, self.SequentialAcqFrameRate],
                                                     layout='horizontal'),
                                                     self.SeqAcqStartBottom],
                                            layout='vertical')
@@ -906,11 +882,11 @@ class AcqViewer:
         # GUI 2. ND acq
         self.firstPhase = widgets.Container(
             widgets=[widgets.CheckBox(value=False, text=key)
-                                      for key in self.acq_setup.keys()],
+                     for key in self.acq_setup.keys()],
             label='1st phase', layout='horizontal')
         self.secondPhase = widgets.Container(
             widgets=[widgets.CheckBox(value=False, text=key)
-                                      for key in self.acq_setup.keys()],
+                     for key in self.acq_setup.keys()],
             label='2nd phase', layout='horizontal')
         self.firstPhaseNum = widgets.FloatSpinBox(
             value=1, min=1, step=1, label='1st phase number/loop: ')
@@ -924,23 +900,25 @@ class AcqViewer:
 
         self.estimateTime = widgets.Label(label='Estimate time: ')
         # calcEstimateTime()
-
         self.LoopStep.changed.connect(self.calcEstimateTime)
         self.PhaseNum.changed.connect(self.calcEstimateTime)
         self.PhaseNum.changed.connect(self.calcEstimateTime)
 
-        # GUI 3. ND pad
-        # acq_loop = FakeAcq()
-        # NDSelectionUI = NDRecorderUI(acq_loop, test=True)
+        # GUI 3. XY pad
 
-        # acq_loop.open_NDUI(test_flag=True)
-        self.NDSelectionBottom = widgets.PushButton(
+        self.XYSelectionBottom = widgets.PushButton(
             text='Open location selection', value=False)
-        self.NDSelectionBottom.changed.connect(self.show_NDSelectionUI)
+        self.XYSelectionBottom.changed.connect(self.show_XYSelectionUI)
 
         # GUI 4. save direct
         self.dirSelect = widgets.FileEdit(
             mode='d', value=os.path.dirname(sys.path[-1]))
+
+        # GUI x. ND Acq
+        # create a new ND viewer
+        self.NDGuiBottom = widgets.PushButton(
+            text='Open ND selection', value=False)
+        self.NDGuiBottom.changed.connect(self.create_ND_viewer)
 
         # GUI integration
         self.viewer.window.add_dock_widget(
@@ -949,30 +927,16 @@ class AcqViewer:
         self.viewer.window.add_dock_widget(
             self.SeqAcqGUI, area='right', name='Sequential Acq')
 
-        self.viewer.window.add_dock_widget(widgets.Container(widgets=[self.dirSelect]), area='right',
-                                           name='File save directory')
+        # self.viewer.window.add_dock_widget(widgets.Container(widgets=[self.dirSelect]), area='right',
+        #                                    name='File save directory')
         # pos
-        self.viewer.window.add_dock_widget(widgets.Container(widgets=[self.NDSelectionBottom]), area='right',
+        self.viewer.window.add_dock_widget(widgets.Container(widgets=[self.XYSelectionBottom]), area='right',
                                            name='Position selection')
-        self.viewer.window.add_dock_widget(widgets.Container(
-            widgets=[self.firstPhase, self.secondPhase, self.PhaseNum, self.LoopStep, self.estimateTime]),
-            area='right', name='ND setup')
-        print(f'[{mm.get_current_time(False)}]AcqViewer -> GUI initialized.')
-
-    def show_NDSelectionUI(self):
-        self.viewer.window.add_dock_widget(self.ND_recorder_ui,
-                                           area='right')
-
-    def calcEstimateTime(self):
-        time = self.LoopStep[0].value * (self.firstPhaseNum.value +
-                                         self.secondPhaseNum.value) * self.LoopStep[1].value
-        self.estimateTime.value = minute2Time(time)
-
-    def update_point(self, index):
-        self.viewer.dims.set_point(axis=0, value=index)
+        # ND pad
+        self.viewer.window.add_dock_widget(widgets.Container(widgets=[self.NDGuiBottom]), area='right',
+                                           name='ND selection')
 
     def update_channel_config(self,):
-
         channel_name = self.acqSetUpChoice.value
         print(f"AcqViewer -> Update channel: {channel_name} in AcqTrigger.")
         # update the channel setup in acq_trigger
@@ -982,7 +946,7 @@ class AcqViewer:
     # @thread_worker(connect={'yielded': self.update_point})
 
     @thread_worker
-    def get_image_index(self, ):
+    def get_image_index(self, viewer):
         index_0 = self.camera.current_index
         time.sleep(1 / 50)
         print(f'AcqViewer -> get_image_index')
@@ -991,30 +955,37 @@ class AcqViewer:
                 index_0 = self.camera.current_index
                 time.sleep(1 / 30)  # 30 frame/s is good for all.
                 # print(f'AcqViewer -> Image index: {index_0}')
+                ret = (index_0, viewer)
+                yield ret  # delay one frame prventing unnormal display.
+        return ret
 
-                yield index_0  # delay one frame prventing unnormal display.
-        return index_0
+    def update_point(self, viewer_index):
+        index, viewer = viewer_index
+        viewer.dims.set_point(axis=0, value=index)
+        # print(f"AcqViewer -> Update index.")
 
     def connect_triggerBottom(self, value):
         print(f'AcqViewer -> triggerBottom = {value}')
         if value:
             # 1. live camera
             self.camera.live()
-            # viewer.dims.set_point(axis=0, value=camera.current_index)
-            # 2. check live layer
-            layer_names = [la.name for la in self.viewer.layers]
-            layer_index = 1
+            # 2. create a new viewer or not
+            viewer_names = list(self.__dict__.keys())
+            viewer_index = 1
             while True:
-                layer_name = f'Live_{layer_index}'
-                if layer_name not in layer_names:
-                    self.viewer.add_image(self.camera.buffer, name=layer_name)
+                viewer_name = f'Live_{viewer_index}'
+                if viewer_name not in viewer_names:
+                    self.__dict__[viewer_name] = napari.Viewer(
+                        title=viewer_name)
+                    self.__dict__[viewer_name].add_image(
+                        self.camera.buffer, name=viewer_name)
                     break
                 else:
-                    layer_index += 1
-            worker = self.get_image_index()
+                    viewer_index += 1
+            print(f'AcqViewer -> update index')
+            worker = self.get_image_index(self.__dict__[viewer_name])
             worker.yielded.connect(self.update_point)
             worker.start()
-
             # worker.start()
         else:
             self.camera.live_stop()
@@ -1026,27 +997,22 @@ class AcqViewer:
         if time_duration <= 0 or step <= 0:  # check time if validate.
             return 0
         self.camera.continuous_acq(time_duration*1e3, step)
-        time.sleep(0.1)  # waiting the image acq start
-        # 2. check seq layer
-        layer_names = [la.name for la in self.viewer.layers]
-        layer_index = 1
+        # 2. create a new viewer or not
+        viewer_names = list(self.__dict__.keys())
+        viewer_index = 1
         while True:
-            layer_name = f'SeqAcq_{layer_index}'
-            if layer_name not in layer_names:
-                self.viewer.add_image(self.camera.buffer, name=layer_name)
+            viewer_name = f'SeqAcq_{viewer_index}'
+            if viewer_name not in viewer_names:
+                self.__dict__[viewer_name] = napari.Viewer(title=viewer_name)
+                self.__dict__[viewer_name].add_image(
+                    self.camera.seq_acq_buffer, name=viewer_name)
                 break
             else:
-                layer_index += 1
-        worker = self.get_image_index()
+                viewer_index += 1
+        print(f'AcqViewer -> Start Sequential Acq.')
+        worker = self.get_image_index(self.__dict__[viewer_name])
         worker.yielded.connect(self.update_point)
         worker.start()
-             
-
-    def connect_exposureTime(self, value):
-        self.camera.time_step = value
-
-    def connect_triggerChoice(self, value):
-        pass
 
     def connect_snapBottom(self, value):
         print('AcqViewer -> Snap')
@@ -1054,6 +1020,7 @@ class AcqViewer:
         image, imgtag = self.camera.snap()
         channel_name = self.acqSetUpChoice.value
         # ceate layer
+        print('AcqViewer -> create layer')
         layer_names = [la.name for la in self.viewer.layers]
         index = 1
         while True:
@@ -1062,22 +1029,24 @@ class AcqViewer:
                 index += 1
             else:
                 break
-                
+        print('AcqViewer -> load image')
         if 'colormap' in list(self.acq_setup[channel_name].keys()):
-            colormap = self.acq_setup[channel_name]['colormap'] 
+            colormap = self.acq_setup[channel_name]['colormap']
             print(f'AcqViewer -> Create layer {layername}')
-            self.viewer.add_image(image, name=layername, colormap=colormap)
-        else :
+            self.viewer.add_image(image, name=layername,
+                                  colormap=colormap, blending='additive')
+        else:
             print(f'AcqViewer -> Create layer {layername}')
-            self.viewer.add_image(image, name=layername, rgb=False)
-        
+            self.viewer.add_image(image, name=layername,
+                                  rgb=False, blending='additive')
         return None
 
     def interconnect_change_guipars(self, value):
         microconfig = self.acq_config.get_config(value)
         self.exposureTime.value = microconfig['exposure']
         self.triggerChoice.value = microconfig['exciterSate']
-        self.intensityBar.value = float(list(microconfig['intensity'].values())[0])
+        self.intensityBar.value = float(
+            list(microconfig['intensity'].values())[0])
         print(microconfig)
 
     def config_connect_change_exposure(self, value):
@@ -1099,29 +1068,345 @@ class AcqViewer:
         microconfig['intensity'][intensity_key] = self.intensityBar.value
         # acq_config.load_config(current_setup, microconfig)
 
-# class NDRecorder(Container):
+    def create_ND_viewer(self,):
+        # GUI 2. ND acq
+        self.firstPhase = widgets.Container(
+            widgets=[widgets.CheckBox(value=False, text=key)
+                     for key in self.acq_setup.keys()],
+            label='1st phase: ', layout='horizontal')
+        self.secondPhase = widgets.Container(
+            widgets=[widgets.CheckBox(value=False, text=key)
+                     for key in self.acq_setup.keys()],
+            label='2nd phase: ', layout='horizontal')
+        self.firstPhaseNum = widgets.FloatSpinBox(
+            value=1, min=1, step=1, label='1st phase number/loop: ')
+        self.secondPhaseNum = widgets.FloatSpinBox(
+            value=0, min=0, step=1, label='2nd phase number/loop: ')
+        self.PhaseNum = widgets.Container(
+            widgets=[self.firstPhaseNum, self.secondPhaseNum])
+        self.LoopStep = widgets.Container(
+            widgets=[widgets.FloatSpinBox(value=1, min=0, step=.1, label='Time Step per Phase (min): '),
+                     widgets.FloatSpinBox(value=1, min=1, step=1, label='Loop number: ')])
+        self.XYEnable = widgets.Container(widgets=[widgets.CheckBox(value=False, text='XY enable')],
+                                          label='XY: ')
+        self.NDStartBottom = widgets.PushButton(
+            value=False, text='Start ND Acq')
+        self.NDStopBottom = widgets.PushButton(value=False, text='Stop ND Acq')
+        self.NDControlContainer = widgets.Container(widgets=[self.NDStartBottom, self.NDStopBottom],
+                                                    label=" ", layout='horizontal')
+        self.estimateTime = widgets.Label(label='Estimate time: ')
+        self.dirSelect = widgets.FileEdit(
+            mode='d', value=os.path.dirname(sys.path[-1]))
+        # calcEstimateTime()
+        self.ND_log = widgets.Label(label='ND log: ', value='')
+        self.NDStartBottom.changed.connect(self.connect_NDStartBottom)
+        self.NDStopBottom.changed.connect(self.stopNDAcq)
+        self.LoopStep.changed.connect(self.calcEstimateTime)
+        self.PhaseNum.changed.connect(self.calcEstimateTime)
+        self.PhaseNum.changed.connect(self.calcEstimateTime)
+        self.XY_recorder_ui = NDRecorderUI(self.acq_control)
+        self.ND_ui_viewer = napari.Viewer(title='ND Acq')
+        self.ND_ui_viewer.window.add_dock_widget(
+            self.XY_recorder_ui, area='right', tabify=True, name='XYSelector')
+        self.ND_ui_viewer.window.add_dock_widget(widgets.Container(
+            widgets=[self.firstPhase, self.secondPhase, self.PhaseNum, self.LoopStep, self.XYEnable,
+                     self.estimateTime, self.dirSelect, self.NDControlContainer, self.ND_log]),
+            area='right', name='ND setup', tabify=True)
+
+        print(f'[{mm.get_current_time(False)}]AcqViewer -> ND GUI initialized.')
+        
+    def stopNDAcq(self):
+        self.NDStopBottom.value = True
+    def print_ND_log(self, log:str):
+        self.ND_log.value = log
+    def show_XYSelectionUI(self):
+        self.viewer.window.add_dock_widget(self.XY_recorder_ui, area='right')
+
+    def calcEstimateTime(self):
+        time = self.LoopStep[0].value * (self.firstPhaseNum.value +
+                                         self.secondPhaseNum.value) * self.LoopStep[1].value
+        self.estimateTime.value = minute2Time(time)
+
+    # @thread_worker(start_thread=True)
+
+    def connect_NDStartBottom(self):
+        """
+        """
+
+        try:
+            # 1. make a pan of the ND acq
+            print(f'AcqViewer -> Prepare ND Acq.')
+            self.print_ND_log(f'AcqViewer -> Prepare ND Acq.')
+            phase_1_selected_channel = [
+                box.text for box in self.firstPhase._list if box.value is True]
+            phase_2_selected_channel = [
+                box.text for box in self.secondPhase._list if box.value is True]
+            all_selected_channel = list(
+                set(phase_1_selected_channel + phase_2_selected_channel))
+            phase_1_num_ploop = self.firstPhaseNum.value
+            phase_2_num_ploop = self.secondPhaseNum.value
+            phase_1_enable = True if phase_1_num_ploop > 0 and len(
+                phase_1_selected_channel) > 0 else False
+            phase_2_enable = True if phase_2_num_ploop > 0 and len(
+                phase_2_selected_channel) > 0 else False
+            # unint is minutes and converted to sceonds here
+            one_phase_time = self.LoopStep[0].value * 60
+            loop_num = self.LoopStep[1].value
+            # one_loop_time = one_phase_time * (phase_1_num_ploop * int(phase_1_enable) + phase_2_num_ploop * (phase_2_enable))
+            XY_enable = self.XYEnable[0].value
+            if XY_enable:
+                XY_list = self.XY_recorder_ui.acq_obj.nd_recorder.positions
+            else:
+                XY_list = [self.acq_control.get_position_dict()]
+            image_save_dir = self.dirSelect.value
+            image_save_subdirs = [os.path.join(image_save_dir, f'fov_{i}') for i in range(len(XY_list))]
+            # 1.a create subdirs and get initial index
+            index = 0
+            for subdir in image_save_subdirs:
+                for channel in all_selected_channel:
+                    subsubdir = os.path.join(subdir, channel)
+                    if not os.path.isdir(subsubdir):
+                        os.makedirs(subsubdir)
+                    else:
+                        files = os.listdir(subsubdir)
+                        index = max([int(file.split('_')[-1].split('.')[0])
+                                    # get the max index
+                                     for file in files] + [index])
+            # 1.b Recording the ND acq information
+            ND_acq_info = {'phase_1_selected_channel': phase_1_selected_channel,
+                           'phase_2_selected_channel': phase_2_selected_channel,
+                           'channels': all_selected_channel,
+                           'channels_setup': {channel: self.acq_setup[channel]
+                                              for channel in all_selected_channel}, }
+            with open(os.path.join(image_save_dir, 'ND_acq_info.json'), 'w') as file:
+                json.dump(ND_acq_info, file)
+            # 1.c Create a ND viewers and buffers.
+            print(f'AcqViewer -> Prepare ND Acq viewer.')
+            self.print_ND_log(f'AcqViewer -> Prepare ND Acq viewer.')
+            image_number_limit = 1000
+            if 'bf' in all_selected_channel and len(all_selected_channel) > 1:
+                # create flu buffer
+                flu_channel_num = len(all_selected_channel) - 1
+                flu_channel_name = [
+                    channel for channel in all_selected_channel if channel != 'bf']
+                self.ND_flu_viewer = napari.Viewer(title='ND fluore')
+                self.flu_buffer = np.zeros((flu_channel_num, len(XY_list),
+                                            int(image_number_limit /
+                                                len(XY_list) / flu_channel_num),
+                                            *self.camera.img_shape), dtype=self.camera.img_depth)
+                flu_buffer_time_len = self.flu_buffer.shape[2]
+                flu_channel_index = {channel: channel_i for channel_i, channel in enumerate(flu_channel_name)}
+                self.ND_flu_viewer.add_image(self.flu_buffer, channel_axis=0,
+                                             blending='additive',
+                                             name=flu_channel_name,
+                                             colormap=[self.acq_setup[channel]['colormap'] for channel in flu_channel_name])
+                flu_viewer = self.ND_flu_viewer
+                # create bf buffer
+                self.bf_buffer = np.zeros((len(XY_list), int(image_number_limit / len(XY_list)),
+                                           *self.camera.img_shape), dtype=self.camera.img_depth)
+                self.ND_ui_viewer.add_image(self.bf_buffer, name='BF')
+                bf_buffer_time_len = self.bf_buffer.shape[1]
+                bf_viewer = self.ND_ui_viewer
+            if 'bf' in all_selected_channel and len(all_selected_channel) == 1:
+                self.bf_buffer = np.zeros((len(XY_list), int(image_number_limit / len(XY_list)),
+                                           *self.camera.img_shape), dtype=self.camera.img_depth)
+                self.ND_ui_viewer.add_image(self.bf_buffer, name='BF')
+                bf_buffer_time_len = self.bf_buffer.shape[1]
+                bf_viewer = self.ND_ui_viewer
+            if 'bf' not in all_selected_channel:
+                self.flu_buffer = np.zeros((len(all_selected_channel), len(XY_list), int(image_number_limit / len(XY_list)),
+                                            *self.camera.img_shape), dtype=self.camera.img_depth)
+                flu_buffer_time_len = self.flu_buffer.shape[2]
+                flu_channel_index = {channel: channel_i for channel_i, channel in enumerate(flu_channel_name)}
+                self.ND_ui_viewer.add_image(self.flu_buffer, channel_axis=0,
+                                            name=all_selected_channel,
+                                            blending='additive',
+                                            colormap=[self.acq_setup[channel]['colormap'] for channel in all_selected_channel])
+                flu_viewer = self.ND_ui_viewer
+            flu_time_index = 0
+            bf_time_index = 0
+
+        except Exception as e:
+            print(f'AcqViewer -> Error: {e}')
+            self.print_ND_log(f'AcqViewer -> Error: {e}')
+        parameters2thread = (loop_num, index, phase_1_enable, phase_1_num_ploop, phase_2_enable, phase_2_num_ploop,
+                             one_phase_time, XY_list, XY_enable,
+                             phase_1_selected_channel, phase_2_selected_channel, image_save_subdirs, bf_viewer, flu_viewer,
+                             bf_buffer_time_len, flu_buffer_time_len, flu_channel_index, flu_time_index, bf_time_index)
+        worker = self.connect_NDStartBottom_start_ACQ(parameters2thread)
+        worker.start()
+        return None
+
+    @thread_worker
+    def connect_NDStartBottom_start_ACQ(self, parameters):
+        try:
+            (loop_num, index, phase_1_enable, phase_1_num_ploop, phase_2_enable, phase_2_num_ploop,
+             one_phase_time, XY_list, XY_enable,
+             phase_1_selected_channel, phase_2_selected_channel, image_save_subdirs, bf_viewer, flu_viewer,
+             bf_buffer_time_len, flu_buffer_time_len, flu_channel_index, flu_time_index, bf_time_index) = parameters
+            phase_1_flu_channel = [channel for channel in phase_1_selected_channel if channel != 'bf']
+            phase_2_flu_channel = [channel for channel in phase_2_selected_channel if channel != 'bf']
+            # create a flile to record acq time
+            file = open(os.path.join(self.dirSelect.value, 'acq_time.log'), 'a')
+            # 2. Start ND Acq
+            # 2.a Init Acqisition
+            print(f'AcqViewer -> Start ND Acq.')
+            self.print_ND_log(f'AcqViewer -> Start ND Acq.')
+            self.camera.initAcq()
+            for loop_i in range(int(loop_num)):
+                
+                # 2.b Start ND Acq
+                if phase_1_enable:
+                    for phase1_i in range(int(phase_1_num_ploop)):
+                        print(f'AcqViewer -> loop_{loop_i}-phase_1:{phase1_i}.')
+                        self.print_ND_log(f'AcqViewer -> loop_{loop_i}-phase_1:{phase1_i}.')
+                        time0 = time.time()
+                        for xy_i, xy in enumerate(XY_list):
+                            if XY_enable:
+                                self.acq_control.move_xyz_pfs(xy, step=0)
+                            for channel in phase_1_selected_channel:
+                                self.camera.set_channel(channel)
+                                self.camera.trigger.trigger_one_pulse()
+                                acq_time = mm.get_current_time(True)
+                                
+                                self.camera.wiating_iamge()
+                                image = self.camera.mmCore.pop_next_image().reshape(
+                                    self.camera.img_shape)  # get image
+                                # save image
+                                mm.save_image(image, os.path.join(image_save_subdirs[xy_i], channel),
+                                              name=f'fov_{xy_i}_{
+                                                  channel}_t_{index}',
+                                              meta={'acq_time': acq_time})
+                                file.write(f'fov_{xy_i}_{channel}_t_{index}\t{acq_time.split(',')[-1]}\n')
+                                # display in GUI
+                                if channel == 'bf':
+                                    self.bf_buffer[xy_i,
+                                                   bf_time_index, ...] = image
+                                    bf_viewer.dims.set_point(
+                                        axis=0, value=xy_i)
+                                    bf_viewer.dims.set_point(
+                                        axis=1, value=bf_time_index)
+                                else:
+                                    self.flu_buffer[flu_channel_index[channel],
+                                                    xy_i, flu_time_index, ...] = image
+                                    flu_viewer.dims.set_point(
+                                        axis=0, value=xy_i)
+                                    flu_viewer.dims.set_point(
+                                        axis=1, value=flu_time_index)
+                        if 'bf' in phase_1_selected_channel:
+                            bf_time_index = (1 + bf_time_index) % bf_buffer_time_len
+                        if len(phase_1_flu_channel) > 0:
+                            flu_time_index = (1 + flu_time_index) % flu_buffer_time_len
+                        index += 1
+                        self.countdown(one_phase_time - (time.time() - time0),
+                                  trigger=self.NDStopBottom)
+
+                if phase_2_enable:
+                    for phase2_i in range(int(phase_2_num_ploop)):
+                        print(f'AcqViewer -> loop_{loop_i}-phase_2:{phase2_i}.')
+                        self.print_ND_log(f'AcqViewer -> loop_{loop_i}-phase_2:{phase2_i}.')
+                        
+                        time0 = time.time()
+                        for xy_i, xy in enumerate(XY_list):
+                            if XY_enable:
+                                self.acq_control.move_xyz_pfs(xy, step=0)
+                            for channel in phase_2_selected_channel:
+                                self.camera.set_channel(channel)
+                                self.camera.trigger.trigger_one_pulse()
+                                acq_time = mm.get_current_time(True)
+                                self.camera.wiating_iamge()
+                                image = self.camera.mmCore.pop_next_image().reshape(self.camera.img_shape)  # get image
+                                # save image
+                                mm.save_image(image, os.path.join(image_save_subdirs[xy_i], channel),
+                                              name=f'fov_{xy_i}_{
+                                                  channel}_t_{index}',
+                                              meta={'acq_time': acq_time})
+                                file.write(f'fov_{xy_i}_{channel}_t_{index}\t{acq_time.split(',')[-1]}\n')
+                                # display in GUI
+                                if channel == 'bf':
+                                    self.bf_buffer[xy_i, bf_time_index, ...] = image
+                                    bf_viewer.dims.set_point(
+                                        axis=0, value=xy_i)
+                                    bf_viewer.dims.set_point(
+                                        axis=1, value=bf_time_index) 
+                                else:
+                                    self.flu_buffer[flu_channel_index[channel],
+                                                    xy_i, flu_time_index, ...] = image
+                                    flu_viewer.dims.set_point(
+                                        axis=0, value=xy_i)
+                                    flu_viewer.dims.set_point(
+                                        axis=1, value=flu_time_index)
+                                    
+                        if 'bf' in phase_2_selected_channel:
+                            bf_time_index = (1 + bf_time_index) % bf_buffer_time_len
+                        if len(phase_2_flu_channel) > 0:
+                            flu_time_index = (1 + flu_time_index) % flu_buffer_time_len
+                        index += 1
+                        self.countdown(one_phase_time - (time.time() - time0),
+                                  trigger=self.NDStopBottom)
+        except Exception as e:
+            print(f'AcqViewer -> Error: {e}')
+            self.print_ND_log(f'AcqViewer -> Error: {e}')
+        print(f'AcqViewer -> ND Acq finished.')
+        self.print_ND_log(f'AcqViewer -> ND Acq finished.')    
+        file.close()
+        return None
     
+    def countdown(self, t, step=1, trigger=None, msg='sleeping'):
+        """
+        a countdown timer print waiting time in second.
+        :param trigger: list, a global trigger
+        :param t: time lasting for sleeping
+        :param step: the time step between the refreshment of screen.
+        :param msg:
+        :return: None
+        """
+        CRED = '\033[91m'
+        CGRE = '\033[92m'
+        CEND = '\033[0m'
+        _current_time = time.time()
+        while time.time() - _current_time < t:
+            mins, secs = divmod(t + _current_time - time.time(), 60)
+            thread_lock.acquire()
+            print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
+            self.print_ND_log(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND)
+            
+            thread_lock.release()
+            time.sleep(step)
+            if trigger.value:
+                print(CGRE + 'Stop Acq.' + CEND)
+                self.print_ND_log('Stop Acq.')
+                return 1
+        # while t > 0:
+        #     mins, secs = divmod(t, 60)
+        #     print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
+        #     time.sleep(step)
+        #     t -= step
+        print(CGRE + 'Start the next loop.' + CEND)
+        self.print_ND_log('Start the next loop.')
+        return None
+
+
+# class NDRecorder(Container):
 #     def __init__(self ):
 #         super().__init__()
 #         self.SetTemp = FloatSpinBox(value=30, min=21, max=45, step=.5)
 #         self.append(FloatSpinBox(value=30, min=21, max=45, step=.5))
-        
-#%%     
-        
+# %%
 if __name__ == '__main__':
-#%%
-    # # scripts for testing AcqViewer 
+    # %%
+    # # scripts for testing AcqViewer
     # acq_viewer = AcqViewer()
     # napari.run()
     trigger = TriggerArduinoDue('COM13')
     acq_trigger = AcqTrigger(trigger=trigger, mmCore=core)
     acq_trigger.set_channel('bf')
 
-    acq_control = AcqControl(mmDeviceName=acq_paras.position_device, 
-                            mmCore=core, acq_trigger=acq_trigger)
-
+    acq_control = AcqControl(mmDeviceName=acq_paras.position_device,
+                             mmCore=core, acq_trigger=acq_trigger)
+    # acq_trigger.snap()
     time.sleep(1)
-    acq_viewer = AcqViewer(acq_control=acq_control, 
-                           acq_trigger=acq_trigger)
+#%%
+    acq_viewer = AcqViewer(acq_control=acq_control, acq_trigger=acq_trigger)
 
 # %%

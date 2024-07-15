@@ -26,7 +26,7 @@ from PyQt5.QtGui import QKeySequence
 # import PySide2
 from pymmc_UI.pymmc_ND_pad_pyqt5 import Ui_MainWindow
 from random import random
-from typing import Optional
+from typing import Optional, Union
 from functools import partial
 import threading
 
@@ -137,8 +137,8 @@ class FakeAcq:
 
 
 class NDRecorderUI(QMainWindow, Ui_MainWindow):
-    def __init__(self, acq_obj: FakeAcq, test: bool = False):
-        self.acq_obj = acq_obj
+    def __init__(self, acq_obj, test: bool = False):
+        self.acq_obj = acq_obj  # can be a instance of FakeAcq or AcqControl
         super(NDRecorderUI, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -223,7 +223,8 @@ class NDRecorderUI(QMainWindow, Ui_MainWindow):
         row = self.pos_table.currentRow()
         column = self.pos_table.currentColumn()
         if self.ui.checkBox_2.isChecked():
-            self.acq_obj.go_to_position(row)
+            pfs_on = True if self.ui.checkBox_3.isChecked() else False
+            self.acq_obj.go_to_position(row, turnoffz=pfs_on)
 
     def move_xy(self, direction: str):
         if direction == 'left':

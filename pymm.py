@@ -96,7 +96,7 @@ def snap_image(**kwargs):
     return im, tagged_image.tags
 
 
-def save_image(im, im_dir=None, name=None, meta=None):
+def save_image(im, im_dir=None, name=None, meta: dict={}):
     """
     save image acquired to defined dir.
     :param im: ndarray
@@ -110,13 +110,16 @@ def save_image(im, im_dir=None, name=None, meta=None):
     else:
         im_dir = os.path.dirname(name)
         save_im_dir = name
-    try:
+
+    if not os.path.exists(im_dir):
         os.makedirs(im_dir)
-    except FileExistsError:
-        pass
-    meta['time'] = get_current_time()
+        
+    # meta['time'] = get_current_time()
     meta['axes'] = 'YX'
-    tiff.imwrite(file=save_im_dir, data=im, metadata=meta)
+    
+    with tiff.TiffWriter(save_im_dir) as tif:
+        tif.write(im, metadata=meta)
+    # tiff.imwrite(file=save_im_dir, data=im, metadata=meta)
     return None
 
 

@@ -72,12 +72,14 @@ void loop() {
         pulseNum = 1;
         blinkNum = 0;
         startFlag = true;
+        ONFlag = false;
         break;
       // out put pulse continously
       case 4:
         pulseNum = 0;
         blinkNum = 1;
         startFlag = true;
+        ONFlag = false;
         break;
       // stop put pulse.
       case 5:
@@ -85,6 +87,7 @@ void loop() {
         blinkNum = 0;
         startFlag = true;
         pinport->PIO_CODR |= pinmask;
+        ONFlag = false;
         // Serial.println("Get");
         break;
       case 20:
