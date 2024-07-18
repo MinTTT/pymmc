@@ -1,5 +1,6 @@
 # %%
 
+from turtle import st
 import napari.viewer
 from pymmc_UI.ND_pad_main_py import NDRecorderUI, FakeAcq
 from napari.qt.threading import thread_worker
@@ -667,9 +668,17 @@ class AcqControl:
             pos['xy'][1] -= dist
         self.move_xyz_pfs(pos, step=0)
 
-    def go_to_position(self, index):
+    def go_to_position(self, index, **kwargs):
         pos = self.nd_recorder.positions[index]
-        self.move_xyz_pfs(pos, step=0)
+        if 'step' in kwargs:
+            step = kwargs['step']
+        else:
+            step = 0
+        if 'turnoffz' in kwargs:
+            turnoffz = kwargs['turnoffz']
+        else:
+            turnoffz = True
+        self.move_xyz_pfs(pos, step=step, turnoffz=turnoffz)
         self._current_position = self.nd_recorder.positions.index(pos)
 
     def go_to_next_position(self):
@@ -1369,7 +1378,7 @@ class AcqViewer:
             mins, secs = divmod(t + _current_time - time.time(), 60)
             thread_lock.acquire()
             print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
-            self.print_ND_log(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND)
+            self.print_ND_log(f"""{msg} for {int(mins)}:{int(secs)}.""")
             
             thread_lock.release()
             time.sleep(step)

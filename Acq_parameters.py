@@ -52,9 +52,16 @@ channels = {'bf': {'exciterSate': 'phase', 'exposure': 25,
             'red': {'exciterSate': 'green', 'exposure': 100, 
                     'intensity': {'Green_Level': 50}, 
                     'filter': {'State': '1'}, 'colormap': 'red'},
-            'cyan': {'exciterSate': 'blue', 'exposure': 100, 
-                    'intensity': {'Blue_Level': 50}, 
-                    'filter': {'State': '4'}, 'colormap': 'cyan'}}
+            'cyan': {'exciterSate': 'blue', 'exposure': 200, 
+                    'intensity': {'Blue_Level': 20}, 
+                    'filter': {'State': '4'}, 'colormap': 'cyan'},
+            'yellow': {'exciterSate': 'teal', 'exposure': 100, 
+                    'intensity': {'Teal_Level': 20}, 
+                    'filter': {'State': '4'}, 'colormap': 'yellow'},
+            'red2': {'exciterSate': 'green', 'exposure': 200, 
+                    'intensity': {'Green_Level': 100}, 
+                    'filter': {'State': '4'}, 'colormap': 'red'},
+            }
 
 # This can be acquired by function in module: pymm.get_loaded_devices_property()
 device_properties = {'COM10': ['AnswerTimeout', 'BaudRate', 'DTR', 'DataBits', 'DelayBetweenCharsMs', 'Description',
