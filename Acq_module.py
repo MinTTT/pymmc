@@ -1187,8 +1187,10 @@ class AcqViewer:
                            'channels': all_selected_channel,
                            'channels_setup': {channel: self.acq_setup[channel]
                                               for channel in all_selected_channel}, }
+            
             with open(os.path.join(image_save_dir, 'ND_acq_info.json'), 'w') as file:
                 json.dump(ND_acq_info, file)
+            self.acq_control.nd_recorder.export_pos_json(image_save_dir)
             # 1.c Create a ND viewers and buffers.
             print(f'AcqViewer -> Prepare ND Acq viewer.')
             self.print_ND_log(f'AcqViewer -> Prepare ND Acq viewer.')
@@ -1275,18 +1277,17 @@ class AcqViewer:
                                 self.acq_control.move_xyz_pfs(xy, step=0)
                             for channel in phase_1_selected_channel:
                                 self.camera.set_channel(channel)
-                                self.camera.trigger.trigger_one_pulse()
-                                acq_time = mm.get_current_time(True)
-                                
-                                self.camera.wiating_iamge()
-                                image = self.camera.mmCore.pop_next_image().reshape(
-                                    self.camera.img_shape)  # get image
+                                self.camera.trigger.trigger_one_pulse()  # trigger once
+                                acq_time = mm.get_current_time(True)  # get current time
+                                self.camera.wiating_iamge() # waiting image
+                                image = self.camera.mmCore.pop_next_image().reshape(self.camera.img_shape)  # get image
+                                image = np.copy(image)  # deep copy image
                                 # save image
+                                image_name = f'fov_{xy_i}_{channel}_t_{index}'
                                 mm.save_image(image, os.path.join(image_save_subdirs[xy_i], channel),
-                                              name=f'fov_{xy_i}_{
-                                                  channel}_t_{index}',
+                                              name=image_name,
                                               meta={'acq_time': acq_time})
-                                file.write(f'fov_{xy_i}_{channel}_t_{index}\t{acq_time.split(',')[-1]}\n')
+                                file.write(f'{image_name}\t{acq_time.split(',')[-1]}\n')
                                 # display in GUI
                                 if channel == 'bf':
                                     self.bf_buffer[xy_i,
@@ -1321,16 +1322,17 @@ class AcqViewer:
                                 self.acq_control.move_xyz_pfs(xy, step=0)
                             for channel in phase_2_selected_channel:
                                 self.camera.set_channel(channel)
-                                self.camera.trigger.trigger_one_pulse()
-                                acq_time = mm.get_current_time(True)
-                                self.camera.wiating_iamge()
+                                self.camera.trigger.trigger_one_pulse()  # trigger once
+                                acq_time = mm.get_current_time(True)  # get current time
+                                self.camera.wiating_iamge() # waiting image
                                 image = self.camera.mmCore.pop_next_image().reshape(self.camera.img_shape)  # get image
+                                image = np.copy(image)  # deep copy image
                                 # save image
+                                image_name = f'fov_{xy_i}_{channel}_t_{index}'
                                 mm.save_image(image, os.path.join(image_save_subdirs[xy_i], channel),
-                                              name=f'fov_{xy_i}_{
-                                                  channel}_t_{index}',
+                                              name=image_name,
                                               meta={'acq_time': acq_time})
-                                file.write(f'fov_{xy_i}_{channel}_t_{index}\t{acq_time.split(',')[-1]}\n')
+                                file.write(f'{image_name}\t{acq_time.split(',')[-1]}\n')
                                 # display in GUI
                                 if channel == 'bf':
                                     self.bf_buffer[xy_i, bf_time_index, ...] = image

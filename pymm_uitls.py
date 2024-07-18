@@ -94,8 +94,24 @@ class NDRecorder:
     def import_pos(self, file_ps):
         data_dic = load(file_ps)
         self.__dict__.update(data_dic)
+    
+    def export_pos_json(self, file_dir, file_name=None):
+        """
+        Export the position data into a json file.
 
+        file_dir: str
+            the path of the file.
+        file_name: str
+            the name of the file. default is 'XYPos.json'.
+        """
+        if file_name is None:
+            file_name = 'XYPos.json'
+        with open(os.path.join(file_dir, file_name), 'w') as jfile:
+            json.dump(self._positions, jfile)
 
+    def load_pos_json(self, file_ps):
+        with open(file_ps, 'r') as jfile:
+            self._positions = json.load(jfile)
 # ndr = NDRecorder(list(range(4)))
 # for i in ndr:
 #     print(i)
@@ -217,3 +233,5 @@ def h5_image_saver(image_ps, image_data:dict):
     h5_imag.close()
     return None
 
+
+# %%

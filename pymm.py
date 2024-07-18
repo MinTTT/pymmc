@@ -117,9 +117,9 @@ def save_image(im, im_dir=None, name=None, meta: dict={}):
     # meta['time'] = get_current_time()
     meta['axes'] = 'YX'
     
-    with tiff.TiffWriter(save_im_dir) as tif:
-        tif.write(im, metadata=meta)
-    # tiff.imwrite(file=save_im_dir, data=im, metadata=meta)
+    # with tiff.TiffWriter(save_im_dir) as tif:
+    #     tif.write(im, metadata=meta)
+    tiff.imwrite(file=save_im_dir, data=im, imagej=True, metadata=meta)
     return None
 
 
