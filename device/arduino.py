@@ -314,7 +314,7 @@ if __name__ == '__mian__':
     arduino = TriggerArduinoDue()
     arduino.stop_trigger_continuously()
     # arduino.cmd(1)
-    arduino.ONTime = 15000
+    arduino.ONTime = 35000
     arduino.trigger_continuously()
     # while True:
     #     exposure = 21

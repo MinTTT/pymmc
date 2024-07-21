@@ -1,6 +1,6 @@
 # %%
 
-from turtle import st
+
 import napari.viewer
 from pymmc_UI.ND_pad_main_py import NDRecorderUI, FakeAcq
 from napari.qt.threading import thread_worker
@@ -347,11 +347,11 @@ class AcqTrigger:
         # 2.a if camera trigger mode set to software, use API from MMCore
         elif triggermode == 'MMCore':
             self.mmCore.snap_image()
-        # while True:
-        #     if self.mmCore.get_remaining_image_count() == 1:
-        #         break
-        #     time.sleep(0.01)
-        self.wiating_iamge()
+        while True:
+            if self.mmCore.get_remaining_image_count() >= 1:
+                break
+            time.sleep(0.01)
+        # self.wiating_iamge()
         # 3. get image from MMCore
         image, imgtag = self._pop_image()
 
@@ -365,12 +365,23 @@ class AcqTrigger:
         imgtag = jv_img.tags
         return image, imgtag
 
-    def wiating_iamge(self):
+    def wiating_iamge(self, time_out=5):
+        """
+        Waiting for image from camera
+        
+        Parameters
+        time_out: float
+            waiting time, unit: s
+        
+        """
+        time0 = time.time()
         while True:
             if self.mmCore.get_remaining_image_count() >= 1:
-                break
+                return True
             time.sleep(0.001)
-        return True
+            if time.time() - time0 > time_out:
+                break
+        return False
 
     @thread_worker
     def _continuous_acq(self,):
@@ -1194,7 +1205,7 @@ class AcqViewer:
             # 1.c Create a ND viewers and buffers.
             print(f'AcqViewer -> Prepare ND Acq viewer.')
             self.print_ND_log(f'AcqViewer -> Prepare ND Acq viewer.')
-            image_number_limit = 1000
+            image_number_limit = 2000
             if 'bf' in all_selected_channel and len(all_selected_channel) > 1:
                 # create flu buffer
                 flu_channel_num = len(all_selected_channel) - 1
@@ -1259,13 +1270,14 @@ class AcqViewer:
             phase_2_flu_channel = [channel for channel in phase_2_selected_channel if channel != 'bf']
             # create a flile to record acq time
             file = open(os.path.join(self.dirSelect.value, 'acq_time.log'), 'a')
+            trigger_timeout = 5
             # 2. Start ND Acq
             # 2.a Init Acqisition
             print(f'AcqViewer -> Start ND Acq.')
             self.print_ND_log(f'AcqViewer -> Start ND Acq.')
             self.camera.initAcq()
             for loop_i in range(int(loop_num)):
-                
+                self.camera.initAcq()
                 # 2.b Start ND Acq
                 if phase_1_enable:
                     for phase1_i in range(int(phase_1_num_ploop)):
@@ -1275,13 +1287,18 @@ class AcqViewer:
                         for xy_i, xy in enumerate(XY_list):
                             if XY_enable:
                                 self.acq_control.move_xyz_pfs(xy, step=0)
+                                self.print_ND_log(f'AcqViewer -> loop_{loop_i}-phase_1:{phase1_i}-XY:{xy_i + 1}.')
                             for channel in phase_1_selected_channel:
                                 self.camera.set_channel(channel)
-                                self.camera.trigger.trigger_one_pulse()  # trigger once
-                                acq_time = mm.get_current_time(True)  # get current time
-                                self.camera.wiating_iamge() # waiting image
-                                image = self.camera.mmCore.pop_next_image().reshape(self.camera.img_shape)  # get image
-                                image = np.copy(image)  # deep copy image
+                                
+                                while True:
+                                    self.camera.mmCore.clear_circular_buffer()
+                                    self.camera.trigger.trigger_one_pulse()  # trigger once
+                                    acq_time = mm.get_current_time(True)  # get current time
+                                    if self.camera.wiating_iamge(): # waiting image
+                                        image = self.camera.mmCore.pop_next_image().reshape(self.camera.img_shape)  # get image
+                                        break
+                                
                                 # save image
                                 image_name = f'fov_{xy_i}_{channel}_t_{index}'
                                 mm.save_image(image, os.path.join(image_save_subdirs[xy_i], channel),
@@ -1320,13 +1337,16 @@ class AcqViewer:
                         for xy_i, xy in enumerate(XY_list):
                             if XY_enable:
                                 self.acq_control.move_xyz_pfs(xy, step=0)
+                                self.print_ND_log(f'AcqViewer -> loop_{loop_i}-phase_2:{phase1_i}-XY:{xy_i + 1}.')
                             for channel in phase_2_selected_channel:
                                 self.camera.set_channel(channel)
-                                self.camera.trigger.trigger_one_pulse()  # trigger once
-                                acq_time = mm.get_current_time(True)  # get current time
-                                self.camera.wiating_iamge() # waiting image
-                                image = self.camera.mmCore.pop_next_image().reshape(self.camera.img_shape)  # get image
-                                image = np.copy(image)  # deep copy image
+                                while True:
+                                    self.camera.mmCore.clear_circular_buffer()
+                                    self.camera.trigger.trigger_one_pulse()  # trigger once
+                                    acq_time = mm.get_current_time(True)  # get current time
+                                    if self.camera.wiating_iamge(): # waiting image
+                                        image = self.camera.mmCore.pop_next_image().reshape(self.camera.img_shape)  # get image
+                                        break
                                 # save image
                                 image_name = f'fov_{xy_i}_{channel}_t_{index}'
                                 mm.save_image(image, os.path.join(image_save_subdirs[xy_i], channel),
@@ -1410,11 +1430,13 @@ if __name__ == '__main__':
     # acq_viewer = AcqViewer()
     # napari.run()
     trigger = TriggerArduinoDue('COM13')
+    # trigger.stop_blanking_mode()
     acq_trigger = AcqTrigger(trigger=trigger, mmCore=core)
     acq_trigger.set_channel('bf')
 
     acq_control = AcqControl(mmDeviceName=acq_paras.position_device,
                              mmCore=core, acq_trigger=acq_trigger)
+    acq_control.nd_recorder.load_pos_json(r'D:\Fulab\zjw\20240719\XYPos.json')
     # acq_trigger.snap()
     time.sleep(1)
 #%%

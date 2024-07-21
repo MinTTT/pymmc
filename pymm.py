@@ -119,7 +119,7 @@ def save_image(im, im_dir=None, name=None, meta: dict={}):
     
     # with tiff.TiffWriter(save_im_dir) as tif:
     #     tif.write(im, metadata=meta)
-    tiff.imwrite(file=save_im_dir, data=im, imagej=True, metadata=meta)
+    tiff.imwrite(save_im_dir, im, imagej=True, metadata=meta)
     return None
 
 

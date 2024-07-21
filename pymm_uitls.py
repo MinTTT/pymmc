@@ -4,6 +4,7 @@
  @auther: Pan M. CHU
 """
 
+from operator import le
 import os
 import time
 import json
@@ -112,6 +113,7 @@ class NDRecorder:
     def load_pos_json(self, file_ps):
         with open(file_ps, 'r') as jfile:
             self._positions = json.load(jfile)
+            self._pos_num = len(self._positions)
 # ndr = NDRecorder(list(range(4)))
 # for i in ndr:
 #     print(i)

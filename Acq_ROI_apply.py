@@ -26,14 +26,14 @@ def Acq_ROI_apply(data: np.ndarray, index_ax1: int, index_ax2: int,
     return data_roi
 
 
-axis0 = 819
+axis0 = 500
 axis1 = 0
-axis0_len = 820
+axis0_len = 700
 axis1_length = 2048
 
 
-source_directory = r'D:\Fulab\zjw\20240717'
-target_directory = r'Z:\chupan\Data_Raid\OSC_project\moma_data\20240717_OSC'
+source_directory = r'D:\Fulab\zjw\20240719-3'
+target_directory = r'Z:\chupan\Data_Raid\OSC_project\moma_data\20240719-3_OSC'
 
 
 fov_dir = os.listdir(source_directory)
@@ -64,7 +64,6 @@ for fov in tqdm(fov_dir):
                     target_image_path = os.path.join(target_channel_path, image)
                     with tiff.TiffFile(image_path) as image_data:
                             image_array = image_data.asarray()
-                    
                             image_meta = image_data.imagej_metadata
                             if image_meta is None:
                                 image_meta = image_data.shaped_metadata[0]
