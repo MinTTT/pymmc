@@ -1436,7 +1436,7 @@ if __name__ == '__main__':
 
     acq_control = AcqControl(mmDeviceName=acq_paras.position_device,
                              mmCore=core, acq_trigger=acq_trigger)
-    acq_control.nd_recorder.load_pos_json(r'D:\Fulab\zjw\20240719\XYPos.json')
+    # acq_control.nd_recorder.load_pos_json(r'D:\Fulab\zjw\20240719\XYPos.json')
     # acq_trigger.snap()
     time.sleep(1)
 #%%

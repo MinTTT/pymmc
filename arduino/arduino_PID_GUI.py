@@ -74,14 +74,14 @@ class ArduinoPID:
             time.sleep(.001)
         # comm_close()
 
-        self.Temp_sv: float = 30
-        self.Humd_sv: float = 60
+        self.Temp_sv: float = 37
+        self.Humd_sv: float = 10
         self.Humd_crt: float = 0
         self.Temp_crt: float = 0
         self.Temp_PID: float = 0
         self.Humd_PID: float = 0
-        self.Temp_SV_UI = 30.
-        self.Humd_SV_UI = 60.
+        self.Temp_SV_UI = 37.
+        self.Humd_SV_UI = 10.
         self.timeStart = time.time()
 
         self.timeBuffer = np.ones(buffer) * np.nan
@@ -110,7 +110,6 @@ class ArduinoPID:
     def set_humd(self, hum):
 
         value = f'Y{hum}'
-
         self.serial_arduino.flushInput()
         self.serial_arduino.write(value.encode('ascii'))
         while self.serial_arduino.in_waiting:
@@ -121,12 +120,14 @@ class ArduinoPID:
         while True:
             # print('Sending M')
             self.serial_arduino.write('M'.encode())
-            time.sleep(.1)
-            line = self.serial_arduino.read_until()
+            
+            self.serial_arduino.flush()
+            line = self.serial_arduino.readline()
             line_split = line.decode().strip(' \r\n').split(' ')
-            print(line_split)
+            # print(line_split)
             if len(line_split) == 6:
                 break
+            time.sleep(.1)
 
         if len(line_split) >= 3:
             line_split = [float(val) for val in line_split]
@@ -138,16 +139,16 @@ class ArduinoPID:
     def update(self):
         def _update():
             while True:
-                if abs(self.Humd_SV_UI - self.Humd_sv) > 0.1:
-                    print(self.Humd_SV_UI)
-                    print(self.Humd_sv)
+                if abs(self.Humd_SV_UI - self.Humd_sv) > 0:
+                    print("Set Hum:", self.Humd_SV_UI)
+                    print("Hum in Arduino:",self.Humd_sv)
                     self.set_humd(self.Humd_SV_UI)
-                if abs(self.Temp_SV_UI - self.Temp_sv) > 0.1:
-                    print(self.Temp_SV_UI)
-                    print(self.Temp_sv)
+                if abs(self.Temp_SV_UI - self.Temp_sv) > 0:
+                    print("Set Temp:", self.Temp_SV_UI)
+                    print("Temp in Arduino:",self.Temp_sv)
                     self.set_temp(self.Temp_SV_UI)
                 self.getArduinoMsg()
-                time.sleep(.2)
+                time.sleep(.5)
 
         worker = Thread(target=_update)
         worker.start()
@@ -178,11 +179,11 @@ class ArduinoPID_GUI(Container):
         # self.fig, self.ax1 = plt.subplots()
         # self.ax2 = plt.twinx(self.ax1)
         # self.native.layout().addWidget(FigureCanvas(self.fig))
-        self.SetTemp = FloatSpinBox(value=30, min=21, max=45, step=.5)
+        self.SetTemp = FloatSpinBox(value=37.0, min=21, max=45, step=.5)
 
         self.SetTempBox = Container(widgets=[Label(value='Set_Temperature (℃): '),
                                              self.SetTemp], layout='horizontal')
-        self.SetHumd = FloatSpinBox(value=55, min=10, max=100, step=1)
+        self.SetHumd = FloatSpinBox(value=10, min=0, max=100, step=1)
 
         self.SetHumdBox = Container(widgets=[Label(value='Set_Humidity (%): '),
                                              self.SetHumd], layout='horizontal')
@@ -282,6 +283,7 @@ if __name__ == "__main__":
 
     gui.show(run=True)
     exit(0)
+    
 # # %%
 # com_port = 'COM8'
 # budrate = 9600

@@ -26,14 +26,14 @@ def Acq_ROI_apply(data: np.ndarray, index_ax1: int, index_ax2: int,
     return data_roi
 
 
-axis0 = 500
+axis0 = 662
 axis1 = 0
 axis0_len = 700
 axis1_length = 2048
 
 
-source_directory = r'D:\Fulab\zjw\20240719-3'
-target_directory = r'Z:\chupan\Data_Raid\OSC_project\moma_data\20240719-3_OSC'
+source_directory = r'D:\Fulab\zjw\20240813_RDM-Gluc_Toggle-L3'
+target_directory = r'Z:\chupan\Data_Raid\Colony_Project\Moma_data\20240813_RDM-Gluc_Toggle-L3'
 
 
 fov_dir = os.listdir(source_directory)
