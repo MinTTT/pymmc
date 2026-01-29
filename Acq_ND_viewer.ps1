@@ -1,0 +1,1 @@
+cd C:\Users\fulab\Documents\GitHub\pymmc; C:\Users\fulab\miniconda3\envs\microscope-auto\python.exe c:/Users/fulab/Documents/GitHub/pymmc/Acq_module.py

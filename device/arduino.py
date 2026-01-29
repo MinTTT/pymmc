@@ -131,12 +131,12 @@ class TriggerArduinoDue:
         self.com_port = com
         self.baud = baud
         self.time_out = time_out
-        self._trigger_pattern = None
+        self._trigger_pattern = 0b10000000
         self.ret: Optional[list] = None  # type: Optional[list]
 
         self._series = None  # type: Optional[serial.Serial]
         self._ONTime = 27000
-        self._OFFTime = 20000
+        self._OFFTime = 30000
         
         self._FPS = None  # type: Optional[float]
         self._cycle_time = None  # type: Optional[float]
@@ -309,12 +309,15 @@ class TriggerArduinoDue:
 
 # %%
 if __name__ == '__mian__':
-    # %%
+#%%
     import time
     arduino = TriggerArduinoDue()
+    arduino.OutPutPinMap = 0b10000000  # 1
+    arduino.start_blanking_mode()
     arduino.stop_trigger_continuously()
     # arduino.cmd(1)
-    arduino.ONTime = 35000
+    arduino.ONTime = 50000
+    arduino.OFFTime = 500000
     arduino.trigger_continuously()
     # while True:
     #     exposure = 21

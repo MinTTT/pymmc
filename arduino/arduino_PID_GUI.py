@@ -1,4 +1,5 @@
 # %%
+from tkinter import N
 import serial
 import time
 from datetime import datetime
@@ -11,6 +12,7 @@ import numpy as np
 from magicgui import widgets
 from magicgui.widgets import FloatRangeSlider, Container, FloatSpinBox, Label
 from threading import Thread, Lock
+
 
 ThreadLock = Lock()
 
@@ -60,20 +62,26 @@ class ArduinoPID:
     """
     com: str
     baudrate: int
-
+    serial_arduino: serial.Serial
+    
     def __init__(self, com: str, baudrate: int, auto=True, buffer=40000) -> None:
         self.com = com
         self.baudrate = baudrate
-        self.serial_arduino: serial.Serial = serial.Serial(port=self.com, baudrate=self.baudrate,
-                                                           timeout=1)  # type serial.Serial
-        # waiting_comm()
-        time.sleep(2)
-        msg = self.serial_arduino.read_until()
-        print(msg.decode())
-        while self.serial_arduino.in_waiting:
-            time.sleep(.001)
-        # comm_close()
+        
+        self.connect_arduino()
+        # # waiting_comm()
+        # time.sleep(2)
+        # msg = self.serial_arduino.read_until()
+        # print(msg.decode())
+        # while self.serial_arduino.in_waiting:
+        #     time.sleep(.01)
+        # # comm_close()
+        
+        self.time_out = 2
+        self.update_time = 0.5
 
+        self.force_reconnect_arduino()
+        
         self.Temp_sv: float = 37
         self.Humd_sv: float = 10
         self.Humd_crt: float = 0
@@ -92,6 +100,22 @@ class ArduinoPID:
 
         if auto:
             self.update()
+    def connect_arduino(self):
+        self.serial_arduino = serial.Serial(port=self.com, baudrate=self.baudrate,
+                                                           timeout=1)  # type serial.Serial
+        # waiting_comm()
+        time.sleep(2)
+        msg = self.serial_arduino.read_until()
+        print(msg.decode())
+        while self.serial_arduino.in_waiting:
+            time.sleep(.01)
+        # comm_close()        
+        
+    def force_reconnect_arduino(self):
+        if self.serial_arduino is not None:
+            self.serial_arduino.close()
+            self.serial_arduino.__del__()
+        self.connect_arduino()
 
     def rec_temp(self, temp):
         self.Temp_SV_UI = temp
@@ -101,44 +125,68 @@ class ArduinoPID:
 
     def set_temp(self, temp):
         # waiting_comm()
-        value = f'X{temp}'
+        value = f'X{temp}\n'
         # waiting_comm()
         self.serial_arduino.write(value.encode())
+        time_now = time.time()
         while self.serial_arduino.in_waiting:
             time.sleep(.001)
+            if time.time() - time_now > self.time_out:
+                print("Set Temp Timeout")
+                break
 
     def set_humd(self, hum):
 
-        value = f'Y{hum}'
-        self.serial_arduino.flushInput()
+        value = f'Y{hum}\n'
+        self.serial_arduino.flush()
         self.serial_arduino.write(value.encode('ascii'))
+        time_now = time.time()
         while self.serial_arduino.in_waiting:
             time.sleep(.001)
+            if time.time() - time_now > self.time_out:
+                print("Set Humidity Timeout")
+                break
 
     def getArduinoMsg(self):
-        self.serial_arduino.flushOutput()
+        """
+        Get Arduino Message
+        
+        """
+        self.serial_arduino.flush()
+        time_now = time.time()
         while True:
-            # print('Sending M')
-            self.serial_arduino.write('M'.encode())
-            
-            self.serial_arduino.flush()
+            self.serial_arduino.write(b'M\n')
             line = self.serial_arduino.readline()
-            line_split = line.decode().strip(' \r\n').split(' ')
-            # print(line_split)
+            try:
+                line_split = line.decode().strip(' \r\n').split(' ')
+            except Exception as e:
+                print(f"Decode error: {e}, raw line: {line}")
+                line_split = []
+            # Skip empty or incomplete lines
             if len(line_split) == 6:
                 break
-            time.sleep(.1)
-
-        if len(line_split) >= 3:
+            if time.time() - time_now > self.time_out:
+                print(f"Get Arduino Msg Timeout. {line_split}")
+                self.force_reconnect_arduino()
+                return False
+        try:
             line_split = [float(val) for val in line_split]
-            if len(line_split) == 6:
-                self.set_msg(line_split)
-                print(line_split)
+            self.set_msg(line_split)
+            print(line_split)
+        except Exception as e:
+            print(f"Value error: {e}, line_split: {line_split}")
+            return False
+        
+        # wating for a while, until the the exceed timeout
+        wait_time = self.time_out - (time.time() - time_now)
+        wait_time = max(0, wait_time)
+        time.sleep(wait_time)
         return None
 
     def update(self):
         def _update():
             while True:
+                self.getArduinoMsg()
                 if abs(self.Humd_SV_UI - self.Humd_sv) > 0:
                     print("Set Hum:", self.Humd_SV_UI)
                     print("Hum in Arduino:",self.Humd_sv)
@@ -147,9 +195,7 @@ class ArduinoPID:
                     print("Set Temp:", self.Temp_SV_UI)
                     print("Temp in Arduino:",self.Temp_sv)
                     self.set_temp(self.Temp_SV_UI)
-                self.getArduinoMsg()
-                time.sleep(.5)
-
+                time.sleep(self.update_time)
         worker = Thread(target=_update)
         worker.start()
 
@@ -215,37 +261,33 @@ class ArduinoPID_GUI(Container):
         self.SetHumd.changed.connect(self.arduino.rec_Humd)
         self.update = False  # type: bool
         self.updateState()
+    # close serial port
+    def __del__(self):
+        self.update = False
+        if hasattr(self, 'arduino'):
+            self.arduino.__del__()
+        # if hasattr(self, 'fig'):
+        #     plt.close(self.fig)
+        # if hasattr(self, 'ax1'):
+        #     del self.ax1
+        # if hasattr(self, 'ax2'):
+        #     del self.ax2
 
-    # def update_graph(self, ):
-    #     """Re-plot when a parameter changes.
-    #
-    #     Note
-    #     ----
-    #     For big data, this could be slow, maybe `auto_call` should
-    #     not be true in the method above...
-    #     """
-    #     # self.ax.cla()
-    #     # sig.plot(ax=self.ax)
-    #     # self.fig.canvas.draw()
-    #
-    #     self.ax1.cla()
-    #     self.ax2.cla()
-    #     self.ax1.plot(self.arduino.timeBuffer, self.arduino.tempBuffer, 'r--')
-    #     # ax1.scatter(times_plot, temps_plot, color='r')
-    #     # self.ax1.set_ylim(36, 38)
-    #     self.ax2.plot(self.arduino.timeBuffer, self.arduino.humdBuffer, 'b-')
-    #     # ax2.scatter(times_plot, humds_plot, color='b')
-    #     # self.ax2.set_ylim(55, 65)
-    #     self.fig.canvas.draw()
+    # close serial port
+    def close(self):
+        self.update = False
+        if hasattr(self, 'arduino'):
+            self.arduino.__del__()
+
 
     def _updateState(self):
         while self.update:
-            self.CurHumd.value = self.arduino.Humd_crt
-            self.CurTemp.value = self.arduino.Temp_crt
-            self.HeatingIndc.value = self.arduino.Temp_PID
-            self.HumdIndc.value = self.arduino.Humd_PID
-            self.TempSV.value = self.arduino.Temp_sv
-            self.HumdSV.value = self.arduino.Humd_sv
+            self.CurHumd.value = str(self.arduino.Humd_crt)
+            self.CurTemp.value = str(self.arduino.Temp_crt)
+            self.HeatingIndc.value = str(self.arduino.Temp_PID)
+            self.HumdIndc.value = str(self.arduino.Humd_PID)
+            self.TempSV.value = str(self.arduino.Temp_sv)
+            self.HumdSV.value = str(self.arduino.Humd_sv)
             # self.update_graph()
             time.sleep(.5)
 
@@ -262,6 +304,8 @@ def logFile(file_path, temperature, humidity):
         file.write(f"{fmt_time}\tT: {temperature}\t H: {humidity}\n")
 
     return None
+
+
 
 
 # com_port = 'COM8'
@@ -282,6 +326,7 @@ if __name__ == "__main__":
     gui = ArduinoPID_GUI(arduino)
 
     gui.show(run=True)
+    
     exit(0)
     
 # # %%

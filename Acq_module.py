@@ -1,6 +1,4 @@
 # %%
-
-
 import napari.viewer
 from pymmc_UI.ND_pad_main_py import NDRecorderUI, FakeAcq
 from napari.qt.threading import thread_worker
@@ -193,13 +191,10 @@ class AcqTrigger:
         if mmDeviceName is None:
             # this depends on the devices of microscopes
             mmDeviceName = acq_paras.trigger_device
-        # type: Optional[mmDevice] # wrapper for controlling camera
-        self.camera = None
-        # type: Optional[mmDevice] # wrapper for controlling phase light
-        self.dia = None
-        # type: Optional[mmDevice] # wrapper for controlling LED light
-        self.flu = None
-        self.filter = None
+        self.camera = None # types: Optional[mmDevice]
+        self.dia = None # types: Optional[mmDevice]
+        self.flu = None # types: Optional[mmDevice]
+        self.filter = None # types: Optional[mmDevice] # wrapper for controlling filter
         self.mmCore = mmCore
         # self.trigger = NIFPGADevice(bitfile=NIbitfile, resource=MIresource)
         if trigger:
@@ -211,16 +206,16 @@ class AcqTrigger:
 
         self.channel_dict = acq_paras.channels
         # crate device wrappers
+        # load device from mmCore, current include camera, dia, flu, filter
         for key, name in mmDeviceName.items():
-            self.__dict__[key] = mmDevice(name, self.mmCore)
+            self.__dict__[key] = mmDevice(name, self.mmCore)  
 
         self.acq_state = False
         self.img_shape = None
         self.img_depth = None
         self.buffer_size = 1000
         self._get_img_info()
-        self.buffer = np.zeros(
-            (self.buffer_size, *self.img_shape), dtype=self.img_depth)
+        self.buffer = np.zeros((self.buffer_size, *self.img_shape), dtype=self.img_depth)
         self.seq_acq_buffer = None
 
         self.live_flag = False
@@ -250,8 +245,8 @@ class AcqTrigger:
                 self.exposure = item
             elif key == 'intensity':
                 for name, level in item.items():
-                    if name == 'Intensity':
-                        self.dia.Intensity = level
+                    if name in ['Intensity', 'Lamp-Intensity']:
+                        self.dia.__setattr__(name, level)
                     else:
                         self.flu.__setattr__(name, level)
                     mm.waiting_device()
@@ -264,10 +259,13 @@ class AcqTrigger:
         return None
 
     def _get_img_info(self):
-        depth_dict = {16: np.uint16, 8: np.uint8, 12: np.uint16}
+        depth_dict = {16: np.uint16, 8: np.uint8, 12: np.uint16, 11: np.uint16}
         width, height = self.mmCore.get_image_width(), self.mmCore.get_image_height()
         self.img_shape = (height, width)
-        self.img_depth = depth_dict[self.mmCore.get_image_bit_depth()]
+        print(f'AcqTrigger -> Image shape: {self.img_shape}')
+        bit_depth = self.mmCore.get_image_bit_depth()
+        print(f'AcqTrigger -> Image bit depth: {bit_depth}')
+        self.img_depth = depth_dict[bit_depth]
 
     @property
     def exciterSate(self):
@@ -854,11 +852,12 @@ class AcqViewer:
                                                choices=self.acq_config.config_names,
                                                label='Acquisition Setup')
         exposure_Time = dict(value=20., min=15., max=1000.,
-                             step=1.)  # value, min, max, step
+                             step=1.)  # type: dict
         self.intensityBar = widgets.FloatSlider(
             value=0., min=0., max=100., step=1, label='Intensity: ')
-        self.startBottom = widgets.ToggleButton(
-            text='Start/Stop Live', value=False)
+        self.filterTurrent = widgets.ComboBox(choices=['1', '2', '3', '4', '5', '6'],
+                                             label='Filter Turrent: ')         
+        self.startBottom = widgets.ToggleButton(text='Start/Stop Live', value=False)
         self.snapBottom = widgets.PushButton(text='Snap', value=False)
         self.acqSetUpAppliedBottom = widgets.PushButton(
             text='Setup apply', value=False)
@@ -867,13 +866,13 @@ class AcqViewer:
         self.exposureTime = widgets.FloatSpinBox(
             **exposure_Time, label='Exposure time (ms): ')
         self.configParsWidges = widgets.Container(
-            widgets=[self.triggerChoice, self.exposureTime, self.intensityBar])
-        self.liveGUI = widgets.Container(widgets=[self.acqSetUpChoice,
-                                                  self.configParsWidges,
+            widgets=[self.triggerChoice, self.exposureTime, self.intensityBar, self.filterTurrent,])
+        self.liveGUI = widgets.Container(widgets=[self.acqSetUpChoice,  # Acquisition setup choice from Acq_parameters
+                                                  self.configParsWidges,  # Exposure time, intensity, filter turrent
                                                   self.acqSetUpAppliedBottom,
+                                                  
                                                   widgets.Container(widgets=[self.startBottom, self.snapBottom],
                                                                     layout='horizontal')])
-
         self.interconnect_change_guipars(
             self.acq_config.config_names[1])  # init all Acq parameters
         self.acqSetUpChoice.changed.connect(self.interconnect_change_guipars)
@@ -925,7 +924,6 @@ class AcqViewer:
         self.PhaseNum.changed.connect(self.calcEstimateTime)
 
         # GUI 3. XY pad
-
         self.XYSelectionBottom = widgets.PushButton(
             text='Open location selection', value=False)
         self.XYSelectionBottom.changed.connect(self.show_XYSelectionUI)
@@ -1065,8 +1063,20 @@ class AcqViewer:
         microconfig = self.acq_config.get_config(value)
         self.exposureTime.value = microconfig['exposure']
         self.triggerChoice.value = microconfig['exciterSate']
-        self.intensityBar.value = float(
-            list(microconfig['intensity'].values())[0])
+
+        if 'intensity' in microconfig:
+            # if intensity is set, set the value of intensity bar
+            self.intensityBar.value = float(list(microconfig['intensity'].values())[0])
+        elif 'Intensity' in self.acq_setup[value]:
+            # if intensity is not set, but in acq_setup, set the value of intensity bar
+            self.intensityBar.value = float(list(self.acq_setup[value]['Intensity'].values())[0])
+
+        # turrent state, Note: if the filter turrent is not set, the value will be None in config parameters
+        if microconfig['filter']:
+            self.filterTurrent.value = microconfig['filter']['State']
+        else: # if the filter parameters is None, set the filter satate as current value.
+            self.filterTurrent.value = self.camera.filter.get_property('State')
+
         print(microconfig)
 
     def config_connect_change_exposure(self, value):
@@ -1087,6 +1097,11 @@ class AcqViewer:
         intensity_key = list(microconfig['intensity'].keys())[0]
         microconfig['intensity'][intensity_key] = self.intensityBar.value
         # acq_config.load_config(current_setup, microconfig)
+    
+    def config_connect_change_filterTurrent(self, value):
+        current_setup = self.acqSetUpChoice.value
+        microconfig = self.acq_config.get_config(current_setup)
+        microconfig['filter']['State'] = self.filterTurrent.value  # filter state
 
     def create_ND_viewer(self,):
         # GUI 2. ND acq
@@ -1151,10 +1166,11 @@ class AcqViewer:
 
     def connect_NDStartBottom(self):
         """
+        Connect the ND start button to prepare the ND acq and create a new viewer.
         """
 
         try:
-            # 1. make a pan of the ND acq
+            # 1. make a plan of the ND acq
             print(f'AcqViewer -> Prepare ND Acq.')
             self.print_ND_log(f'AcqViewer -> Prepare ND Acq.')
             phase_1_selected_channel = [
@@ -1198,7 +1214,7 @@ class AcqViewer:
                            'channels': all_selected_channel,
                            'channels_setup': {channel: self.acq_setup[channel]
                                               for channel in all_selected_channel}, }
-            
+            # 1.b save the ND acq information
             with open(os.path.join(image_save_dir, 'ND_acq_info.json'), 'w') as file:
                 json.dump(ND_acq_info, file)
             self.acq_control.nd_recorder.export_pos_json(image_save_dir)
@@ -1229,7 +1245,10 @@ class AcqViewer:
                 self.ND_ui_viewer.add_image(self.bf_buffer, name='BF')
                 bf_buffer_time_len = self.bf_buffer.shape[1]
                 bf_viewer = self.ND_ui_viewer
-            if 'bf' in all_selected_channel and len(all_selected_channel) == 1:
+            if 'bf' in all_selected_channel and len(all_selected_channel) == 1:  # No fluore channel
+                flu_viewer = None
+                flu_channel_index = None
+                flu_buffer_time_len = 0
                 self.bf_buffer = np.zeros((len(XY_list), int(image_number_limit / len(XY_list)),
                                            *self.camera.img_shape), dtype=self.camera.img_depth)
                 self.ND_ui_viewer.add_image(self.bf_buffer, name='BF')
@@ -1255,12 +1274,12 @@ class AcqViewer:
                              one_phase_time, XY_list, XY_enable,
                              phase_1_selected_channel, phase_2_selected_channel, image_save_subdirs, bf_viewer, flu_viewer,
                              bf_buffer_time_len, flu_buffer_time_len, flu_channel_index, flu_time_index, bf_time_index)
-        worker = self.connect_NDStartBottom_start_ACQ(parameters2thread)
+        worker = self.connect_NDStartBottom_start_ACQ(parameters = parameters2thread)
         worker.start()
         return None
 
     @thread_worker
-    def connect_NDStartBottom_start_ACQ(self, parameters):
+    def connect_NDStartBottom_start_ACQ(self, parameters: tuple):
         try:
             (loop_num, index, phase_1_enable, phase_1_num_ploop, phase_2_enable, phase_2_num_ploop,
              one_phase_time, XY_list, XY_enable,
@@ -1325,8 +1344,11 @@ class AcqViewer:
                         if len(phase_1_flu_channel) > 0:
                             flu_time_index = (1 + flu_time_index) % flu_buffer_time_len
                         index += 1
-                        self.countdown(one_phase_time - (time.time() - time0),
+                        cut_down_ret = self.countdown(one_phase_time - (time.time() - time0),
                                   trigger=self.NDStopBottom)
+                        if cut_down_ret == 1:
+                            self.print_ND_log(f'AcqViewer -> ND Acq finished (via Finish bottom).')    
+                            return None
 
                 if phase_2_enable:
                     for phase2_i in range(int(phase_2_num_ploop)):
@@ -1373,8 +1395,11 @@ class AcqViewer:
                         if len(phase_2_flu_channel) > 0:
                             flu_time_index = (1 + flu_time_index) % flu_buffer_time_len
                         index += 1
-                        self.countdown(one_phase_time - (time.time() - time0),
-                                  trigger=self.NDStopBottom)
+                        cut_down_ret = self.countdown(one_phase_time - (time.time() - time0),
+                                        trigger=self.NDStopBottom)
+                        if cut_down_ret ==1:
+                            self.print_ND_log(f'AcqViewer -> ND Acq finished (via Finish bottom).')    
+                            return None
         except Exception as e:
             print(f'AcqViewer -> Error: {e}')
             self.print_ND_log(f'AcqViewer -> Error: {e}')
@@ -1383,7 +1408,7 @@ class AcqViewer:
         file.close()
         return None
     
-    def countdown(self, t, step=1, trigger=None, msg='sleeping'):
+    def countdown(self, t, step=1, trigger: Optional[widgets.PushButton]=None, msg='sleeping'):
         """
         a countdown timer print waiting time in second.
         :param trigger: list, a global trigger
@@ -1398,21 +1423,16 @@ class AcqViewer:
         _current_time = time.time()
         while time.time() - _current_time < t:
             mins, secs = divmod(t + _current_time - time.time(), 60)
-            thread_lock.acquire()
+            # thread_lock.acquire()
             print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
             self.print_ND_log(f"""{msg} for {int(mins)}:{int(secs)}.""")
-            
-            thread_lock.release()
+            # thread_lock.release()
+            if trigger: # if trigger is not None, check the trigger value.
+                if trigger.value:
+                    print(CGRE + 'Stop Acq.' + CEND)
+                    self.print_ND_log('Stop Acq.')
+                    return 1
             time.sleep(step)
-            if trigger.value:
-                print(CGRE + 'Stop Acq.' + CEND)
-                self.print_ND_log('Stop Acq.')
-                return 1
-        # while t > 0:
-        #     mins, secs = divmod(t, 60)
-        #     print(CRED + f"""{msg} for {int(mins)}:{int(secs)}.""" + CEND, end='\r')
-        #     time.sleep(step)
-        #     t -= step
         print(CGRE + 'Start the next loop.' + CEND)
         self.print_ND_log('Start the next loop.')
         return None
@@ -1425,7 +1445,7 @@ class AcqViewer:
 #         self.append(FloatSpinBox(value=30, min=21, max=45, step=.5))
 # %%
 if __name__ == '__main__':
-    # %%
+#%%
     # # scripts for testing AcqViewer
     # acq_viewer = AcqViewer()
     # napari.run()
@@ -1436,10 +1456,14 @@ if __name__ == '__main__':
 
     acq_control = AcqControl(mmDeviceName=acq_paras.position_device,
                              mmCore=core, acq_trigger=acq_trigger)
-    # acq_control.nd_recorder.load_pos_json(r'D:\Fulab\zjw\20240719\XYPos.json')
+    prior_controller = acq_control.xy
+    prior_controller.set_filter_position(3)  # initial position 
+
+    # acq_control.nd_recorder.load_pos_json(r'D:\Fulab\zjw\20250819_Moma_NH5.17-CPP713-pSC101-PfliC_MOPS-Gluc\XYPos.json')
     # acq_trigger.snap()
     time.sleep(1)
 #%%
     acq_viewer = AcqViewer(acq_control=acq_control, acq_trigger=acq_trigger)
-
+    napari.run()
+    
 # %%

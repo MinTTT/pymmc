@@ -8,15 +8,15 @@ This script for controling Dyhana Camera, for other type camera, the strategies 
 #define TicksPerMicroSec 84
 #define TicksPerMilliSec 84000
 #define pinport PIOB
-#define pinmask (0x01 << 27)        // Arduino pin 13 is port B pin 27.
-#define triggerMask 0b000111111110  // Arduion pin PC1-8  000111111110  0xFF << 1
-#define triggerType 0b000001111110
-#define phaseGYMask 0b000110000000
+#define pinmask (0x01 << 27)        // Arduino pin 13 is port B pin 27. This is the pin for LED on Arduino Due board, and it is used to indicate the trigger status, and also trigger the camera.
+#define triggerMask 0b000111111110  // trigger mask for enable Arduion pin PC1-8  000111111110  0xFF << 1
+#define triggerType 0b000001111110  // 0x3F << 1 This defines the initial state of the trigger pins. 1st and 2nd bit are for phase, and GY, the rest are for the fluorescence excitation, SpectraX exicitation's TTL polarity is set to Acive low.
+#define phaseGYMask 0b000110000000  // 0xC0 << 1, this is the mask for phase GY
 // #define TRIGGER(MAP) PIOC -> PIO_SODR = ((MAP << 1) ^ triggerType)
 // #define CLOSE(MAP) PIOC -> PIO_CODR = ((MAP << 1) ^ triggerType)
 #define TRIGGER(MAP) PIOC->PIO_ODSR = ((MAP << 1) ^ triggerType)
-#define CLOSE PIOC->PIO_ODSR = triggerType
-#define GETINPUT PIOD->PIO_PDSR & 0x0040 // D11 PD7 as input
+#define CLOSE PIOC->PIO_ODSR = 0b000001111110  // close the trigger, set all trigger pins to initial state.
+#define GETINPUT PIOD->PIO_PDSR & (0x1 << 7) //0b1000000 D11 PD7 as input
 #define TIMEOUT 500
 long int t0, t1, lapseTicks, measureTicks, msCount, targetmsCount, TimeTicks, ONTimeTicks, OFFTimeTicks;
 long int t_ms;
@@ -37,10 +37,14 @@ uint8_t dataBuffer[4];
 void setup() {
   PIOB->PIO_OER |= pinmask;
   PIOB->PIO_CODR |= pinmask;    // Turn off the LED
-  // PIOD->PIO_ODR = 0xffff;  // set D11 PD7 as input
+  // set D11 PD7 as input
   pinMode(11, INPUT);
+  // PIOD->PIO_ODR = 0xffff;  
+
+
   PIOC->PIO_OER = triggerMask;     // set  D33-D40, PC1-PC8 as output
   CLOSE;
+
   Serial.begin(9600);
   t_ms = millis();
   msCount = 0;
@@ -49,6 +53,8 @@ void setup() {
   ONTimeTicks = ONTime * TicksPerMicroSec;
   OFFTimeTicks = OFFTime * TicksPerMicroSec;
 }
+
+
 void loop() {
   if (Serial.available() > 0) {
     // Serial.println("Read Serial.");
@@ -60,13 +66,11 @@ void loop() {
           currentPattern_ = Serial.read();
         }
         break;
-
       // Get current digital pattern
       case 2:
         Serial.write(byte(2));
         Serial.write(currentPattern_);
         break;
-
       // out put pulse once
       case 3:
         pulseNum = 1;
@@ -90,15 +94,7 @@ void loop() {
         ONFlag = false;
         // Serial.println("Get");
         break;
-      case 20:
-        blanking = true;
-        break;
-      case 21:
-        blanking = false;
-        break;
-
-
-
+        
       // set ON time and OFF time
       case 6:
         // Serial.println("Set Time ON OFF.");
@@ -129,11 +125,19 @@ void loop() {
           blinkNum = 0;
           startFlag = true;
         }
+        break;
+
+      case 20:
+        blanking = true;
+        break;
+        
+      case 21:
+        blanking = false;
+        break;
     }
   }
 
   if (pulseNum != blinkNum) {
-
     // determining the paramters of high and low TTL.
     if (startFlag) {
       // t0 = SysTick->VAL;
@@ -154,7 +158,6 @@ void loop() {
       startFlag = true;
       lapseTicks = 0;
       msCount = 0;
-
       if (ONFlag) {
         // pinport->PIO_CODR |= pinmask;  // Turn off the LED
         PIOB->PIO_ODSR = 0x00 << 27;
@@ -183,7 +186,7 @@ void loop() {
       }
     }
   } else {  // blanding mode
-    if (PIOD->PIO_PDSR & 0x0080){
+    if (GETINPUT){
       TRIGGER(currentPattern_);
       // Serial.write(PIOD->PIO_PDSR);
     } else {
@@ -218,7 +221,9 @@ bool waitForSerial(unsigned long timeOut) {
   return false;
 }
 
-long int fourBytes2LongInt(uint8_t *buffer) {
+// convert 4 bytes to long int
+long int fourBytes2LongInt(uint8_t *buffer)
+{
   long int number;
   number = (long int)buffer[0] << 24
            | (long int)buffer[1] << 16

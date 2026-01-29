@@ -32,7 +32,6 @@ int index;
 SHT35 sensor(SCLPIN, SENSOR_ADDRESS);
 
 // Display and its parameters
-
 int yshift = 6;
 
 //I/O
@@ -53,7 +52,7 @@ float Temp_corrt = 0;  // SV 30: -1.7  SV 37: -0.2
 //PID constants
 //////////////////////////////////////////////////////////
 int kp =  8000; int ki = 10;  int kd = 85000;
-int tempKp = 300; int tempKi = 0;  int tempKd = 18000;
+int tempKp = 300; int tempKi = 10;  int tempKd = 18000;
 // 20230110 test: int tempKp = 200; int tempKi = 0.;  int tempKd = 5000; int kp = 1000; int ki = 0;  int kd = 8000;
 //////////////////////////////////////////////////////////
 
@@ -96,6 +95,7 @@ void setup() {
 
 void loop() {
   Read_serial();
+  
   if (getTempandHum(&Temp_read, &Hum_read, &sensor) == 0) {
     getAvgTempHum(avgSize, &Temp_read, &Hum_read, &sensor);
 
@@ -353,6 +353,11 @@ bool Read_serial() {
 
 
   
+void standBy() {
+  // Standby mode
+  // close all the output
+  digitalWrite(humPWM_pin, LOW);
+  digitalWrite(tempPWM_pin, LOW);
 
-
+}
 // String getValue()
